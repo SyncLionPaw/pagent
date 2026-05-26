@@ -1,0 +1,1 @@
+import{c as e,Q as n,j as t,m as a}from"./chunks/framework.xJfsqldP.js";const k=JSON.parse('{"title":"Agent events","description":"","frontmatter":{},"headers":[],"relativePath":"events.md","filePath":"events.md"}'),i={name:"events.md"};function l(o,s,p,d,h,r){return n(),t("div",null,[...s[0]||(s[0]=[a("",42)])])}const E=e(i,[["render",l]]);export{k as __pageData,E as default};
