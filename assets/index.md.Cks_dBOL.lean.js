@@ -1,1 +1,0 @@
-import{c as i,Q as a,j as n,m as t}from"./chunks/framework.xJfsqldP.js";const g=JSON.parse('{"title":"pagent","description":"","frontmatter":{},"headers":[],"relativePath":"index.md","filePath":"index.md"}'),e={name:"index.md"};function l(h,s,p,k,r,d){return a(),n("div",null,[...s[0]||(s[0]=[t("",15)])])}const E=i(e,[["render",l]]);export{g as __pageData,E as default};
