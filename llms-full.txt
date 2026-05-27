@@ -225,7 +225,8 @@ uv run --with fastapi --with uvicorn python examples/wire_demo/server.py
 
 | Script | Description |
 |--------|-------------|
-| [cli.py](https://github.com/SyncLionPaw/pagent/blob/main/examples/cli.py) | Interactive CLI, `/context` |
+| [cli.py](https://github.com/SyncLionPaw/pagent/blob/main/examples/cli.py) | Interactive CLI (`arun`, text only) |
+| [cli_events.py](https://github.com/SyncLionPaw/pagent/blob/main/examples/cli_events.py) | CLI with tools/reasoning via `arun_events` |
 | [simple_qa.py](https://github.com/SyncLionPaw/pagent/blob/main/examples/simple_qa.py) | Tools demo |
 | [reasoning_stream.py](https://github.com/SyncLionPaw/pagent/blob/main/examples/reasoning_stream.py) | Reasoning + answer stream |
 | [wire_demo](https://github.com/SyncLionPaw/pagent/tree/main/examples/wire_demo) | FastAPI + browser UI |
@@ -364,7 +365,7 @@ await agent.run("Weather in Xiamen?")
 
 Multiple tools: `tools=[a, b]`. Custom name: `@tool(name="weather", description="...")`.
 
-Built-in: [defaults](./defaults) (`clock`, `region`, `web_search`).
+Built-in: [defaults](./defaults) (`clock`, `region`, `readfile`, `web_search`, `bash`).
 
 ## See also
 
@@ -377,10 +378,10 @@ Built-in: [defaults](./defaults) (`clock`, `region`, `web_search`).
 
 # Built-in tools
 
-Optional tools in `pagent.defaults`: `clock`, `region`, `web_search`.
+Optional tools in `pagent.defaults`: `clock`, `region`, `readfile`, `web_search`, `bash`.
 
 ```python
-from pagent import Agent, LLM, Session, DEFAULT_TOOLS, clock, region, web_search
+from pagent import Agent, LLM, Session, DEFAULT_TOOLS, bash, clock, readfile, region, web_search
 
 agent = Agent(
     llm=LLM("gpt-4o-mini"),
@@ -407,6 +408,26 @@ OS locale and timezone hint (no GPS).
 
 ```python
 tools=[region]
+```
+
+## readfile {#readfile}
+
+Read a UTF-8 text file under process `cwd` (absolute or relative path; `~` expanded). Up to **500 code points** per call (`max_chars`). Use **`offset`** to read the next window when the header says `continues at offset N`.
+
+```python
+tools=[readfile]
+# readfile("src/pagent/defaults.py", max_chars=500, offset=0)
+# readfile("src/pagent/defaults.py", max_chars=500, offset=500)
+```
+
+## bash {#bash}
+
+Run a **whitelisted** command in process `cwd` (no shell). Currently only **`ls`** is allowed; path arguments must resolve under the workspace (same rules as `readfile`).
+
+```python
+tools=[bash]
+# bash("ls")
+# bash("ls -la src")
 ```
 
 ## web_search {#web-search}
