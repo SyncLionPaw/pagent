@@ -1,0 +1,46 @@
+src/app/pagent.toml
+  s_76dba78ba4e06b::t_7c1f6afaa75371 55
+  s_76dba78ba4e06b::t_e7563eb9a148c9 50-54,56-57
+  s_76dba78ba4e06b::t_1020b0433863eb 7
+  s_76dba78ba4e06b::t_de5cd5702f8cf8 6
+tests/test_app_config.py
+  s_76dba78ba4e06b::t_13abf26e3301d0 361
+  s_76dba78ba4e06b::t_b1c61378f12d26 1-2
+  s_76dba78ba4e06b::t_fbc5a0b016aab2 72-73
+  s_76dba78ba4e06b::t_4d0ecff94c39ee 350-352
+  s_76dba78ba4e06b::t_26e42011c76bc3 362-377
+  s_76dba78ba4e06b::t_70be7b966bfe1a 378-379
+src/template/pagent.toml
+  s_76dba78ba4e06b::t_ec9e71184036df 9,11-13
+  s_76dba78ba4e06b::t_98707edc030d1e 62-72
+src/app/config.py
+  s_76dba78ba4e06b::t_89462bb09a7ed5 377-380
+  s_76dba78ba4e06b::t_5147284818fba9 356,358
+  s_76dba78ba4e06b::t_a7e6269ca18819 89-91,93-97
+  s_76dba78ba4e06b::t_97c22b0235da86 183-193,195
+  s_76dba78ba4e06b::t_c301d067893956 413-414
+  s_76dba78ba4e06b::t_75cd9682e875a8 381
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "87013ec8e13e2acd6ea3d9fb229a877df9febc99",
+  "prompts": {},
+  "humans": {
+    "h_e0237b570924a6": {
+      "author": "gongyulei <gongyulei@bytedance.com>"
+    }
+  },
+  "sessions": {
+    "s_76dba78ba4e06b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a5f1142882605c83d5c293e",
+        "model": "openrouter-3o__dev"
+      },
+      "human_author": "gongyulei <gongyulei@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
