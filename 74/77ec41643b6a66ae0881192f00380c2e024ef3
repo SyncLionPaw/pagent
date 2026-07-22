@@ -1,0 +1,29 @@
+tests/test_pagentv4_paths.py
+  s_76dba78ba4e06b::t_3cf8782bf74b75 39,45-49
+src/pagentv4/paths.py
+  s_76dba78ba4e06b::t_d021e16d49154d 79-81
+  s_76dba78ba4e06b::t_a5eacb771e2bf2 74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "7477ec41643b6a66ae0881192f00380c2e024ef3",
+  "prompts": {},
+  "humans": {
+    "h_e0237b570924a6": {
+      "author": "gongyulei <gongyulei@bytedance.com>"
+    }
+  },
+  "sessions": {
+    "s_76dba78ba4e06b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a5f1142882605c83d5c293e",
+        "model": "openrouter-3o__dev"
+      },
+      "human_author": "gongyulei <gongyulei@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
