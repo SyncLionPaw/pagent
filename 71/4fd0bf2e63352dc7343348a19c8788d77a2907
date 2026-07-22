@@ -1,0 +1,33 @@
+src/app/render.py
+  s_76dba78ba4e06b::t_069faea2a32f98 290,305
+  s_76dba78ba4e06b::t_dfc9303bc5bf7d 109-123
+  s_76dba78ba4e06b::t_a967e6012a7c78 298
+tests/test_app_banner.py
+  s_76dba78ba4e06b::t_04dfc2d1eea4ed 45
+  s_76dba78ba4e06b::t_df42af056afbb3 1-8,12-19
+  s_76dba78ba4e06b::t_b24ccdeb9e2436 70
+  s_76dba78ba4e06b::t_5b49b57339066a 20-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "714fd0bf2e63352dc7343348a19c8788d77a2907",
+  "prompts": {},
+  "humans": {
+    "h_e0237b570924a6": {
+      "author": "gongyulei <gongyulei@bytedance.com>"
+    }
+  },
+  "sessions": {
+    "s_76dba78ba4e06b": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a5f1142882605c83d5c293e",
+        "model": "openrouter-3o__dev"
+      },
+      "human_author": "gongyulei <gongyulei@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {},
+  "remote_transcripts": {}
+}
