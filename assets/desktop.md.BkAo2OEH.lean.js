@@ -1,1 +1,0 @@
-import{c as t,Q as a,j as s,m as n}from"./chunks/framework.t4rEqR7d.js";const g=JSON.parse('{"title":"Desktop app","description":"","frontmatter":{},"headers":[],"relativePath":"desktop.md","filePath":"desktop.md"}'),o={name:"desktop.md"};function i(r,e,d,l,p,h){return a(),s("div",null,[...e[0]||(e[0]=[n("",54)])])}const u=t(o,[["render",i]]);export{g as __pageData,u as default};
