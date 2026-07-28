@@ -949,7 +949,6 @@ function buildWireBridge(): AgentBridge {
     command: wireInvocation.command,
     args: wireInvocation.args,
     cwd: bridgeWorkingDirectory(),
-    env: { PAGENT_HOME: userPagentHome() },
     ...bridgeCallbacks("wire"),
   });
 }

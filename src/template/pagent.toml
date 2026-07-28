@@ -1,19 +1,17 @@
-# pagent 全局配置模板（全字段参考）
+# pagent 全局配置（全字段）
 #
-# 这是「全局」配置：管 REPL 启动时的缺省。新建对话时把 sandbox / agent /
-# skills / [sub.*] 等冻结进该 thread 的 thread.toml；之后以 thread.toml 为准。
+# 这是运行时加载的唯一一份包内默认配置（随 wheel 打包）。管 REPL 启动时的缺省；
+# 新建对话时把 sandbox / agent / skills / [sub.*] 等冻结进该 thread 的 thread.toml；
+# 之后以 thread.toml 为准。
 #
 # 生效 pagent home（数据根：配置 / threads / skills 同根，≠ 系统 $HOME）：
 #   uv run pagent --dev  → ./.pagent/pagent.toml
 #   uv run pagent        → ~/.pagent/pagent.toml
-# 缺该文件时从包内默认物化一份；只认这一个文件，另可用 --config <file> 叠加、CLI flag 覆盖。
+# 缺该文件时从这份物化一份；只认这一个文件，另可用 --config <file> 叠加、CLI flag 覆盖。
 #
 # host_root（agent 能观察/取文件的用户目录，list_host_files / copy_from_host 的根）：
 #   默认 = 启动 pagent 时的当前工作目录（cwd）；用 [project.local] path 或 --project 显式绑定。
 #   注意它与 pagent home 无关：--dev 只改数据根，不改 host_root。
-#
-# 注：运行时真正加载的包内默认层当前是 src/app/pagent.toml；本文件是收拢中的
-# 全字段模板，后续 breaking change 会把运行时默认迁到 src/template/ 下统一。
 
 # ── [runner] 循环控制 ─────────────────────────────────
 [runner]

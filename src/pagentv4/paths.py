@@ -11,7 +11,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Literal
 
@@ -56,13 +55,11 @@ def reset_home() -> None:
 def resolve_pagent_home(cwd: str | Path | None = None) -> Path:
     """解析当前生效的 pagent home。
 
-    优先级：``activate_home`` 设定值 → ``PAGENT_HOME`` 环境变量 → ``~/.pagent``。
+    只有两种：``activate_home`` 设定值（``--dev`` → ``<root>/.pagent``），
+    未设则 ``~/.pagent``。没有别的来源。
     """
     if _active_home is not None:
         return _active_home
-    explicit = os.getenv("PAGENT_HOME")
-    if explicit and explicit.strip():
-        return Path(explicit).expanduser().resolve()
     return user_pagent_home().resolve()
 
 

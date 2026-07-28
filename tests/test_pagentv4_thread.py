@@ -14,7 +14,6 @@ from pagentv4.runtime.thread import default_threads_root
 
 
 def test_default_threads_root_is_user_home(monkeypatch, tmp_path):
-    monkeypatch.delenv("PAGENT_HOME", raising=False)
     home = tmp_path / "home"
     cwd = tmp_path / "cwd"
     home.mkdir()

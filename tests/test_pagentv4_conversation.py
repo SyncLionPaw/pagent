@@ -40,7 +40,6 @@ class FakeProvider:
 
 
 def test_default_conversations_root_is_user_home(tmp_path, monkeypatch):
-    monkeypatch.delenv("PAGENT_HOME", raising=False)
     home = tmp_path / "home"
     cwd = tmp_path / "cwd"
     home.mkdir()

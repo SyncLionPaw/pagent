@@ -53,11 +53,4 @@ def test_default_is_user_home_without_activation(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HOME", str(home))
-    monkeypatch.delenv("PAGENT_HOME", raising=False)
     assert resolve_pagent_home() == (home / ".pagent").resolve()
-
-
-def test_pagent_home_env_overrides_default(tmp_path, monkeypatch):
-    explicit_home = tmp_path / "fixed-home"
-    monkeypatch.setenv("PAGENT_HOME", str(explicit_home))
-    assert resolve_pagent_home() == explicit_home.resolve()

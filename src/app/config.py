@@ -15,7 +15,8 @@ from pagentv4.paths import (
 )
 from pagentv4.tools import HARNESS_WEB_TOOL_NAMES
 
-BUNDLED_CONFIG = Path(__file__).with_name("pagent.toml")
+# 运行时加载的包内默认配置：唯一一份 pagent.toml，位于 src/template/，随 wheel 打包。
+BUNDLED_CONFIG = Path(__file__).parent.parent / "template" / "pagent.toml"
 CONFIG_FILENAMES = ("pagent.toml",)
 # 兼容旧名：用户级 home 下的配置路径（未解析项目模式时）。
 USER_CONFIG_PATH = "~/.pagent/pagent.toml"
@@ -86,7 +87,7 @@ class ReplConfig:
 
         ``roots`` 就是完整扫描列表，不隐式追加任何目录：写了才扫，删了就没有。
         ``{pagent_home}``（兼容旧写法 ``{home}``）展开成当前生效的 pagent 数据根
-        （prod/dev/PAGENT_HOME 由 activate_home 决定），让模板不必写死绝对路径。
+        （prod/dev 由 activate_home 决定），让模板不必写死绝对路径。
         """
         pagent_home = str(default_pagent_home())
         return tuple(
@@ -347,11 +348,10 @@ def merge_config(base: ReplConfig, override: ReplConfig) -> ReplConfig:
 
 
 def ensure_home_config(workdir: str | None = None) -> Path:
-    """定位当前 home 的 ``pagent.toml``；不存在就从包内模板物化一份写盘。
+    """定位当前 home 的 ``pagent.toml``；不存在就从包内默认物化一份写盘。
 
     home 由入口的 ``activate_home`` 决定：``--dev`` → ``<root>/.pagent``，否则
-    ``~/.pagent``。种子取已打包的 ``src/app/pagent.toml``（``src/template`` 不进
-    wheel，安装版机器上没有），两份解析结果由测试锁死一致。
+    ``~/.pagent``。种子取随 wheel 打包的 ``src/template/pagent.toml``。
     """
     existing = find_home_config(workdir)
     if existing:

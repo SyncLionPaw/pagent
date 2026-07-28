@@ -114,9 +114,10 @@ def test_resolved_api_key_falls_back_to_env(monkeypatch):
 
 
 def test_refresh_provider_from_disk_picks_up_new_key(tmp_path, monkeypatch):
-    home = tmp_path / "home" / ".pagent"
+    root = tmp_path / "home"
+    home = root / ".pagent"
     home.mkdir(parents=True)
-    monkeypatch.setenv("PAGENT_HOME", str(home))
+    activate_home("dev", root)
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     stale = ReplConfig()
     assert stale.resolved_api_key() is None
@@ -257,17 +258,9 @@ def test_parse_repl_config_bundled_template():
     assert config.ssh_workdir == "~/pagent"
 
 
-def test_bundled_and_reference_templates_parse_identically():
-    # 运行时默认层（src/app）与全字段模板（src/template）终点是归一。
-    # 归一形态未定前，先用测试锁死两份解析结果完全一致，漂移即红。
-    template = BUNDLED_CONFIG.parent.parent / "template" / "pagent.toml"
-    assert load_config_file(BUNDLED_CONFIG) == load_config_file(template)
-
-
-def test_reference_template_parses_full_schema():
-    # src/template/pagent.toml 是收拢中的全字段参考模板，锁定它能被解析器解析且不腐烂成死字段。
-    template = BUNDLED_CONFIG.parent.parent / "template" / "pagent.toml"
-    config = load_config_file(template)
+def test_bundled_config_parses_full_schema():
+    # 包内唯一一份默认配置（src/template/pagent.toml），锁定全字段能被解析且不腐烂成死字段。
+    config = load_config_file(BUNDLED_CONFIG)
     assert config.max_turns == 24
     assert config.model == "deepseek-v4-flash"
     assert config.backend == "local"
