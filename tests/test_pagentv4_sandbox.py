@@ -663,6 +663,37 @@ async def test_build_sandbox_tools_unknown_raises(tmp_path):
             build_sandbox_tools(box)
 
 
+@pytest.mark.asyncio
+async def test_build_sandbox_tools_override_narrows_without_touching_spec(tmp_path):
+    # 沙箱本身放开全部（spec.tools 为空），override 只收窄交出去的工具集。
+    async with await Sandbox.create(backend="local", workdir=str(tmp_path)) as box:
+        narrowed = build_sandbox_tools(box, ("read_file", "list_dir"))
+        assert [t.name for t in narrowed] == ["read_file", "list_dir"]
+        # spec 未被改动，默认仍是全量。
+        assert box.spec.tools == ()
+        assert len(build_sandbox_tools(box)) == 8
+
+
+@pytest.mark.asyncio
+async def test_sandbox_tools_override_via_method(tmp_path):
+    async with await Sandbox.create(backend="local", workdir=str(tmp_path)) as box:
+        assert [t.name for t in box.tools(("read_file",))] == ["read_file"]
+        assert len(box.tools()) == 8
+
+
+@pytest.mark.asyncio
+async def test_sandbox_describe_override_lists_only_subset(tmp_path):
+    async with await Sandbox.create(backend="local", workdir=str(tmp_path)) as box:
+        text = await box.describe(("read_file", "list_dir"))
+        # 只断言"工具清单"段落：本机 backend 的 extra 里也会提到 run_command 的
+        # 工作目录，故按 `- 工具名：` 行来判定工具是否列出。
+        assert "- read_file：" in text
+        assert "- list_dir：" in text
+        assert "- run_command：" not in text
+        assert "- write_file：" not in text
+        assert "- copy_to_host：" not in text
+
+
 class FakeToolCallDelta:
     def __init__(self, *, index, tool_id=None, name=None, arguments=None):
         self.index = index

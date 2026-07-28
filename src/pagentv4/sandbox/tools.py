@@ -52,11 +52,16 @@ def resolve_tool_names(allowed: tuple[str, ...] | list[str] | None) -> list[str]
     return [name for name in SANDBOX_TOOL_NAMES if name in picked]
 
 
-def build_sandbox_tools(sandbox: Sandbox) -> list[FunctionTool]:
+def build_sandbox_tools(
+    sandbox: Sandbox, tool_names: tuple[str, ...] | list[str] | None = None
+) -> list[FunctionTool]:
     """把 sandbox 能力包装成 agent 工具。
 
-    实际注册哪些工具由 `sandbox.spec.tools` 白名单决定（见 resolve_tool_names）；
+    默认注册哪些工具由 `sandbox.spec.tools` 白名单决定（见 resolve_tool_names）；
     工具顺序按 SANDBOX_TOOL_NAMES，与配置书写顺序无关。
+
+    ``tool_names`` 传非 None 时覆盖 spec：借用同一个沙箱、但要给某个消费方（如只读
+    子 agent）一份更窄的工具清单时用它——沙箱本身不变，只改交出去的工具集。
     """
     builders = {
         "run_command": make_run_command,
@@ -68,7 +73,10 @@ def build_sandbox_tools(sandbox: Sandbox) -> list[FunctionTool]:
         "copy_from_host": make_copy_from_host,
         "copy_to_host": make_copy_to_host,
     }
-    names = resolve_tool_names(getattr(sandbox.spec, "tools", ()))
+    allowed = (
+        tool_names if tool_names is not None else getattr(sandbox.spec, "tools", ())
+    )
+    names = resolve_tool_names(allowed)
     return [builders[name](sandbox) for name in names]
 
 

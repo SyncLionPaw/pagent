@@ -447,11 +447,15 @@ class Sandbox:
             "size": size,
         }
 
-    def tools(self):
-        """把 sandbox 能力包装成 agent 工具列表。"""
+    def tools(self, tool_names: tuple[str, ...] | list[str] | None = None):
+        """把 sandbox 能力包装成 agent 工具列表。
+
+        ``tool_names`` 非 None 时覆盖 spec 白名单，用于给借用同一沙箱的子 agent
+        一份更窄的工具集（沙箱本身不变）。
+        """
         from .tools import build_sandbox_tools
 
-        return build_sandbox_tools(self)
+        return build_sandbox_tools(self, tool_names)
 
     async def install_skills(self, registry) -> dict[str, str]:
         """把 SkillRegistry 里的 skill 拷进 sandbox 的 `<home>/.skills/<name>/`。
@@ -477,17 +481,22 @@ class Sandbox:
             mount[skill.name] = base
         return mount
 
-    async def describe(self) -> str:
+    async def describe(
+        self, tool_names: tuple[str, ...] | list[str] | None = None
+    ) -> str:
         """自报家门：拼一段 system prompt 描述这台电脑。
 
         - 系统信息统一走 `uname -a`；后端不必自己实现。
         - backend.describe() 只描述自己特有的部分（宿主 workdir、远端连接串、镜像等）。
         - uv 环境探测通过同一个 run_probe 完成。
+        - ``tool_names`` 非 None 时覆盖 spec 白名单，让提示词只列这份更窄的工具集，
+          与借用沙箱的子 agent 实际拿到的工具保持一致。
         """
         os_info = await self.probe_os_info()
         identity = self.backend.describe(self.spec, self.workdir)
         from .tools import resolve_tool_names
 
+        allowed = tool_names if tool_names is not None else self.spec.tools
         return await build_computer_description(
             computer_name=identity.computer_name,
             os_info=os_info,
@@ -495,7 +504,7 @@ class Sandbox:
             host_root=self.host_root,
             artifacts_dir=self.ARTIFACTS_DIRNAME,
             extra=identity.extra,
-            tool_names=resolve_tool_names(self.spec.tools),
+            tool_names=resolve_tool_names(allowed),
             run_probe=self.run_probe,
         )
 

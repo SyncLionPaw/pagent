@@ -111,9 +111,21 @@ async def build_sub_frame(context, name: str, sub_spec: SubAgentSpec) -> RunFram
 
     sandbox, owns_sandbox = await open_sub_sandbox(thread, sub_spec, parent_sandbox)
 
-    computer_desc = await sandbox.describe() if sandbox is not None else ""
+    # 借用主沙箱时（owns_sandbox=False），主沙箱的 spec.tools 是主 agent 的白名单。
+    # 子 agent 若显式设了自己的 sandbox_tools，就用它收窄工具与提示词（如只读的
+    # explore）；没设则传 None，沿用主沙箱既有白名单。自己开的沙箱其 spec 已带子
+    # agent 的白名单，无需覆盖。
+    tool_override = (
+        sub_spec.sandbox_tools
+        if (not owns_sandbox and sub_spec.sandbox_tools)
+        else None
+    )
+    computer_desc = ""
+    tools = []
+    if sandbox is not None:
+        computer_desc = await sandbox.describe(tool_override)
+        tools = sandbox.tools(tool_override)
     system_prompt = "\n".join(part for part in (computer_desc, sub_spec.system) if part)
-    tools = sandbox.tools() if sandbox is not None else []
 
     provider = provider_with_model(context.agent.provider, sub_spec.model)
     sub_agent = Agent(

@@ -308,3 +308,33 @@ async def test_subagent_tool_delegates_by_type(tmp_path, monkeypatch):
     sub_ids = [cid for cid in runner.store.list() if ".sub.coder." in cid]
     assert sub_ids, "子对话应已落盘"
     await runner.close()
+
+
+@pytest.mark.asyncio
+async def test_build_sub_frame_borrowed_sandbox_honors_sub_whitelist(
+    tmp_path, monkeypatch
+):
+    # 借用主沙箱时，子 agent 的 sandbox_tools 白名单要收窄它拿到的工具与提示词，
+    # 且不影响主沙箱（主 agent 仍能用全量工具）。
+    monkeypatch.chdir(tmp_path)
+    from pagentv4.tools.delegate import build_sub_frame
+
+    provider = FakeProvider({"main-model": []})
+    runner = await Runner.create("borrow", provider, overrides={"backend": "local"})
+    try:
+        # 主沙箱是全量的。
+        assert len(runner.sandbox.tools()) == 8
+
+        sub_spec = SubAgentSpec(sandbox_tools=("read_file", "list_dir"))
+        frame = await build_sub_frame(runner, "explore", sub_spec)
+
+        sub_tool_names = [t.name for t in frame.agent.tools]
+        assert sub_tool_names == ["read_file", "list_dir"]
+        assert "write_file" not in sub_tool_names
+        assert "run_command" not in sub_tool_names
+        # 借来的沙箱就是主沙箱本体，spec 未被改动。
+        assert frame.sandbox is runner.sandbox
+        assert runner.sandbox.spec.tools == ()
+        assert len(runner.sandbox.tools()) == 8
+    finally:
+        await runner.close()

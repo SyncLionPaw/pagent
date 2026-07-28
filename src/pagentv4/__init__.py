@@ -110,6 +110,7 @@ from .skills import (
     load_skills_from_root,
     make_use_skill_tool,
 )
+from .subagents import PRESET_SUBAGENTS, preset_subs
 
 __all__ = [
     "Agent",
@@ -146,6 +147,7 @@ __all__ = [
     "PostToolHookContext",
     "Provider",
     "ProviderProtocol",
+    "PRESET_SUBAGENTS",
     "ReasoningDelta",
     "RunBegin",
     "RunEnd",
@@ -199,6 +201,7 @@ __all__ = [
     "load_skill",
     "load_skills_from_root",
     "make_use_skill_tool",
+    "preset_subs",
     "reply_text",
     "to_openai_tools",
     "tool",
