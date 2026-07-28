@@ -2,9 +2,9 @@
 
 [![CI](https://github.com/SyncLionPaw/pagent/actions/workflows/ruff.yml/badge.svg)](https://github.com/SyncLionPaw/pagent/actions/workflows/ruff.yml)
 [![Coverage](https://codecov.io/gh/SyncLionPaw/pagent/graph/badge.svg)](https://app.codecov.io/gh/SyncLionPaw/pagent)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 
-Language: [中文](./README.zh-CN.md) | [English](./README.en.md) · [Docs](https://synclionpaw.github.io/pagent/) · [For agents](./AGENTS.md) · [llms.txt](./llms.txt)
+Language: [中文](./README.zh-CN.md) | [English](./README.en.md) · [Docs](https://synclionpaw.github.io/pagent/) · [For agents](../AGENTS.md) · [llms.txt](../llms.txt)
 
 **pagent** is a small **async** Python library for an **Agent + tools** loop over **OpenAI-compatible Chat Completions**. Good for scripts, experiments, and teaching—transparent message history, your own tools.
 
@@ -91,7 +91,7 @@ asyncio.run(main())
 | `agent.arun_events(prompt)` | Python **`Event`** dataclasses | **In-process Python**: CLI, services, `match` / types |
 | `agent.arun_wire(prompt)` | **NDJSON** lines (JSON-RPC 2.0) | **Cross-language / frontend**: SSE, WebSocket, TS `switch (method)` |
 
-Wire serializes the same events as native `Event`; see [docs/events.md](docs/events.md) and [docs/wire.md](docs/wire.md).
+Wire serializes the same events as native `Event`; see [events.md](./events.md) and [wire.md](./wire.md).
 
 Minimal event consumer (build your own UI or logs):
 
@@ -128,7 +128,7 @@ asyncio.run(main())
 
 Common events: `TextDelta` (answer stream), `ReasoningDelta` (model thinking, if supported), `ToolCallBegin` / `ToolResult`, `RunEnd` (final result with `.content` and `.reasoning_content`).
 
-Full list: [docs/events.md](docs/events.md). **Frontend / JSON:** [docs/wire.md](docs/wire.md) — each line is `{"jsonrpc":"2.0","method":"TextDelta","params":{...}}`.
+Full list: [events.md](./events.md). **Frontend / JSON:** [wire.md](./wire.md) — each line is `{"jsonrpc":"2.0","method":"TextDelta","params":{...}}`.
 
 ```python
 async for line in agent.arun_wire("Hello"):
@@ -165,7 +165,7 @@ Server must expose OpenAI-compatible `/v1/chat/completions`.
 | `uv run examples/reasoning_stream.py` | Stream reasoning + answer |
 | `uv run --with fastapi --with uvicorn python examples/wire_demo/server.py` | Wire NDJSON + browser UI |
 
-Guide: [docs/reasoning.md](docs/reasoning.md). Full-stack wire demo: [examples/wire_demo/](examples/wire_demo/).
+Guide: [reasoning.md](./reasoning.md). Full-stack wire demo: [examples/wire_demo/](../examples/wire_demo/).
 
 ```bash
 export DEEPSEEK_API_KEY="your-key"
@@ -186,8 +186,8 @@ See `clock`, `region` in `pagent.defaults`.
 
 - Requires an **OpenAI Chat Completions**–compatible API.
 - A minimal embeddable loop—not a full coding-agent product with file edit/shell.
-- Development & internals: [docs/development.md](docs/development.md)
+- Development & internals: [development.md](./development.md)
 
 ## License
 
-[MIT](./LICENSE)
+[MIT](../LICENSE)

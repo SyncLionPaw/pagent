@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="docs/public/logo.png" alt="pagent" width="420" />
+  <img src="public/logo.png" alt="pagent" width="420" />
 </p>
 
 # pagent（中文）
 
 [![CI](https://github.com/SyncLionPaw/pagent/actions/workflows/ruff.yml/badge.svg)](https://github.com/SyncLionPaw/pagent/actions/workflows/ruff.yml)
 [![Coverage](https://codecov.io/gh/SyncLionPaw/pagent/graph/badge.svg)](https://app.codecov.io/gh/SyncLionPaw/pagent)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](../LICENSE)
 
-语言： [中文](./README.zh-CN.md) | [English](./README.en.md) · [文档站](https://synclionpaw.github.io/pagent/) · [给 Agent 看](./AGENTS.md) · [llms.txt](./llms.txt)
+语言： [中文](./README.zh-CN.md) | [English](./README.en.md) · [文档站](https://synclionpaw.github.io/pagent/) · [给 Agent 看](../AGENTS.md) · [llms.txt](../llms.txt)
 
 **pagent** 是一个轻量的 **async** Python 库：用 OpenAI 兼容的 Chat Completions API 跑 **Agent + 工具** 循环。适合脚本、实验和教学——消息列表透明、工具自己写。
 
@@ -101,7 +101,7 @@ asyncio.run(main())
 | `agent.arun_events(prompt)` | Python **`Event`** dataclass | **Python 内**消费：CLI、服务、`match` / 类型检查 |
 | `agent.arun_wire(prompt)` | **NDJSON** 行（JSON-RPC 2.0） | **跨语言 / 前端**：SSE、WebSocket、TS 按 `method` 分支 |
 
-Wire 是 Event 的 JSON 序列化；字段含义见 [docs/events.zh-CN.md](docs/events.zh-CN.md)，线格式见 [docs/wire.zh-CN.md](docs/wire.zh-CN.md)。
+Wire 是 Event 的 JSON 序列化；字段含义见 [events.zh-CN.md](./events.zh-CN.md)，线格式见 [wire.zh-CN.md](./wire.zh-CN.md)。
 
 消费事件流的最小示例（可接自己的 UI 或日志）：
 
@@ -138,7 +138,7 @@ asyncio.run(main())
 
 常见事件：`TextDelta`（回答流）、`ReasoningDelta`（思考流，视模型而定）、`ToolCallBegin` / `ToolResult`、`RunEnd`（完整结果，含 `.content`、`.reasoning_content`）。
 
-事件一览：[docs/events.zh-CN.md](docs/events.zh-CN.md)。**前端 / JSON：** [docs/wire.zh-CN.md](docs/wire.zh-CN.md) — 每行形如 `{"jsonrpc":"2.0","method":"TextDelta","params":{...}}`。
+事件一览：[events.zh-CN.md](./events.zh-CN.md)。**前端 / JSON：** [wire.zh-CN.md](./wire.zh-CN.md) — 每行形如 `{"jsonrpc":"2.0","method":"TextDelta","params":{...}}`。
 
 ```python
 async for line in agent.arun_wire("你好"):
@@ -175,7 +175,7 @@ llm = Ollama("llama3.2")             # http://127.0.0.1:11434/v1
 | `uv run examples/reasoning_stream.py` | 流式输出思考 + 回答 |
 | `uv run --with fastapi --with uvicorn python examples/wire_demo/server.py` | Wire NDJSON + 浏览器单页 UI |
 
-思考过程（`reasoning_content`）说明：[docs/reasoning.zh-CN.md](docs/reasoning.zh-CN.md)。Wire 全栈 demo：[examples/wire_demo/](examples/wire_demo/)。
+思考过程（`reasoning_content`）说明：[reasoning.zh-CN.md](./reasoning.zh-CN.md)。Wire 全栈 demo：[examples/wire_demo/](../examples/wire_demo/)。
 
 ```bash
 export DEEPSEEK_API_KEY="your-key"
@@ -200,8 +200,8 @@ agent = Agent(
 
 - 需要 **OpenAI Chat Completions** 兼容接口。
 - 适合嵌入自己的小循环；不是带文件编辑/终端的完整编程 Agent 产品。
-- 参与开发、内部实现：[docs/development.zh-CN.md](docs/development.zh-CN.md)
+- 参与开发、内部实现：[development.zh-CN.md](./development.zh-CN.md)
 
 ## 许可证
 
-[MIT](./LICENSE)
+[MIT](../LICENSE)

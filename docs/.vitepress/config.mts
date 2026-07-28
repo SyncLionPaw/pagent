@@ -52,6 +52,8 @@ export default withMermaid(
     },
   },
   rewrites: zhLegacyRewrites,
+  // README.* 副本随仓库根 README 存放于 docs/ 便于集中管理，但不作为站点页面构建。
+  srcExclude: ["README.md", "README.en.md", "README.zh-CN.md"],
   ignoreDeadLinks: [/(?:^|\/)README/, /\.\.\//, /\.py$/, /examples\//],
   head: [
     ["link", { rel: "icon", type: "image/png", href: `${base}logo-icon.png` }],

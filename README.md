@@ -8,7 +8,7 @@
 [![Coverage](https://codecov.io/gh/SyncLionPaw/pagent/graph/badge.svg)](https://app.codecov.io/gh/SyncLionPaw/pagent)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-Language: [中文](./README.zh-CN.md) | [English](./README.en.md) · [Docs](https://synclionpaw.github.io/pagent/) · [For agents](./AGENTS.md) · [llms.txt](./llms.txt)
+Language: [中文](./docs/README.zh-CN.md) | [English](./docs/README.en.md) · [Docs](https://synclionpaw.github.io/pagent/) · [For agents](./AGENTS.md) · [llms.txt](./llms.txt)
 
 **pagent** is a small **async** Python library for an **Agent + tools** loop over **OpenAI-compatible Chat Completions**. Good for scripts, experiments, and teaching—transparent message history, your own tools.
 
