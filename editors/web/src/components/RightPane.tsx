@@ -5,9 +5,14 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
+  CodeXml,
+  Copy,
   Cpu,
   Database,
+  Download,
   File,
+  FileJson,
+  FileText,
   Folder,
   FolderOpen,
   PanelRightClose,
@@ -15,7 +20,7 @@ import {
   RefreshCw,
   Zap,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   ArtifactPreview,
   ArtifactSummary,
@@ -24,9 +29,12 @@ import type {
   SandboxTreeNode,
 } from "../api/types";
 import { formatBytes } from "../lib/format";
+import { highlightCode } from "../lib/highlight";
+import { toast } from "../lib/toast";
 
 export type RightTab = "project" | "sandbox" | "terminal";
 export type ProjectPane = "files" | "artifacts";
+export type ActivityState = "running" | "sleeping" | "error";
 export type TerminalEntry = {
   kind: "command" | "stdout" | "stderr" | "status";
   text: string;
@@ -42,7 +50,7 @@ type Props = {
   artifacts: ArtifactSummary[];
   artifactPreview: ArtifactPreview | undefined;
   terminalEntries: TerminalEntry[];
-  running: boolean;
+  activityState: ActivityState;
   onTabChange: (tab: RightTab) => void;
   onProjectPaneChange: (pane: ProjectPane) => void;
   onToggleCollapsed: () => void;
@@ -62,7 +70,7 @@ export function RightPane({
   artifacts,
   artifactPreview,
   terminalEntries,
-  running,
+  activityState,
   onTabChange,
   onProjectPaneChange,
   onToggleCollapsed,
@@ -73,12 +81,36 @@ export function RightPane({
 }: Props) {
   const [expandedProject, setExpandedProject] = useState<ReadonlySet<string>>(new Set());
   const [expandedSandbox, setExpandedSandbox] = useState<ReadonlySet<string>>(new Set());
-  const resources = resourceSnapshot(running);
+  const [projectBusy, setProjectBusy] = useState(false);
+  const [sandboxBusy, setSandboxBusy] = useState(false);
+  const resources = resourceSnapshot(activityState);
 
   const toggleProject = (id: string) =>
     setExpandedProject((current) => toggleSet(current, id));
   const toggleSandbox = (id: string) =>
     setExpandedSandbox((current) => toggleSet(current, id));
+
+  // 每次目录树刷新后自动展开顶层目录，并撤下刷新按钮的忙碌态。
+  useEffect(() => {
+    setExpandedProject((current) => expandTopLevel(current, projectTree));
+    setProjectBusy(false);
+  }, [projectTree]);
+  useEffect(() => {
+    setExpandedSandbox((current) => expandTopLevel(current, sandboxTree));
+    setSandboxBusy(false);
+  }, [sandboxTree]);
+  useEffect(() => {
+    setProjectBusy(false);
+  }, [artifacts]);
+
+  const handleRefreshProject = () => {
+    setProjectBusy(true);
+    onRefreshProject();
+  };
+  const handleRefreshSandbox = () => {
+    setSandboxBusy(true);
+    onRefreshSandbox();
+  };
 
   return (
     <aside className="pane pane-right" data-right-pane>
@@ -128,11 +160,11 @@ export function RightPane({
                   </button>
                 </div>
                 <button
-                  className="file-panel-refresh"
+                  className={`file-panel-refresh${projectBusy ? " is-busy" : ""}`}
                   type="button"
                   title={projectPane === "files" ? "刷新项目目录" : "刷新产物"}
                   aria-label={projectPane === "files" ? "刷新项目目录" : "刷新产物"}
-                  onClick={onRefreshProject}
+                  onClick={handleRefreshProject}
                 >
                   <RefreshCw className="desktop-icon" aria-hidden="true" />
                 </button>
@@ -165,7 +197,7 @@ export function RightPane({
                         onClick={() => onPreviewArtifact(artifact.path)}
                       >
                         <span className="artifact-icon">
-                          <File className="desktop-icon" aria-hidden="true" />
+                          <ArtifactIcon name={artifact.name} />
                         </span>
                         <div className="artifact-main">
                           <div className="artifact-name">{artifact.name}</div>
@@ -173,8 +205,16 @@ export function RightPane({
                             {formatBytes(artifact.size)} · {new Date(artifact.mtimeMs).toLocaleString()}
                           </div>
                         </div>
-                        <span className="artifact-open" title="预览">
-                          <FolderOpen className="desktop-icon" aria-hidden="true" />
+                        <span
+                          className="artifact-open"
+                          title="复制路径"
+                          role="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void copyPath(artifact.path);
+                          }}
+                        >
+                          <Copy className="desktop-icon" aria-hidden="true" />
                         </span>
                       </button>
                     ))
@@ -197,11 +237,11 @@ export function RightPane({
               <div className="file-panel-header">
                 <span>文件系统</span>
                 <button
-                  className="file-panel-refresh"
+                  className={`file-panel-refresh${sandboxBusy ? " is-busy" : ""}`}
                   type="button"
                   title="刷新沙箱文件"
                   aria-label="刷新沙箱文件"
-                  onClick={onRefreshSandbox}
+                  onClick={handleRefreshSandbox}
                 >
                   <RefreshCw className="desktop-icon" aria-hidden="true" />
                 </button>
@@ -404,6 +444,13 @@ function ArtifactPreviewCard({
     }
     return DOMPurify.sanitize(marked.parse(preview.text ?? "", { async: false }));
   }, [preview.kind, preview.text]);
+  const highlighted = useMemo(() => {
+    if (preview.kind !== "text") {
+      return "";
+    }
+    return highlightCode(preview.text ?? "", preview.language);
+  }, [preview.kind, preview.text, preview.language]);
+  const downloadable = Boolean(preview.dataUrl);
   return (
     <>
       <div className="artifact-preview-head">
@@ -417,7 +464,7 @@ function ArtifactPreviewCard({
           <ArrowLeft className="desktop-icon" aria-hidden="true" />
         </button>
         <span className="artifact-preview-icon">
-          <File className="desktop-icon" aria-hidden="true" />
+          <ArtifactIcon name={preview.name} />
         </span>
         <span className="artifact-preview-name" title={preview.path}>
           {preview.name}
@@ -426,6 +473,25 @@ function ArtifactPreviewCard({
           {formatBytes(preview.size)}
           {preview.language ? ` · ${preview.language}` : ""}
         </span>
+        <button
+          className="artifact-preview-open"
+          type="button"
+          title={downloadable ? "下载文件" : "复制路径"}
+          aria-label={downloadable ? "下载文件" : "复制路径"}
+          onClick={() => {
+            if (downloadable && preview.dataUrl) {
+              downloadDataUrl(preview.dataUrl, preview.name);
+            } else {
+              void copyPath(preview.path);
+            }
+          }}
+        >
+          {downloadable ? (
+            <Download className="desktop-icon" aria-hidden="true" />
+          ) : (
+            <Copy className="desktop-icon" aria-hidden="true" />
+          )}
+        </button>
       </div>
       {preview.truncated ? (
         <div className="artifact-preview-note">内容较大，仅显示前 512KB。</div>
@@ -452,7 +518,7 @@ function ArtifactPreviewCard({
       ) : preview.kind === "text" ? (
         <div className="artifact-preview-body">
           <pre className="artifact-preview-code hljs">
-            <code>{preview.text ?? ""}</code>
+            <code dangerouslySetInnerHTML={{ __html: highlighted }} />
           </pre>
         </div>
       ) : (
@@ -515,17 +581,68 @@ function sandboxPathRootLabel(backend: string): string {
   return "沙箱";
 }
 
-function resourceSnapshot(running: boolean) {
-  if (running) {
+function resourceSnapshot(activityState: ActivityState) {
+  if (activityState === "running") {
     return {
       cpu: { value: "41%", percent: 41 },
       memory: { value: "1.3 GB", percent: 57 },
       disk: { value: "2.4 GB", percent: 34 },
     };
   }
+  if (activityState === "error") {
+    return {
+      cpu: { value: "--", percent: 12 },
+      memory: { value: "--", percent: 18 },
+      disk: { value: "2.4 GB", percent: 34 },
+    };
+  }
   return {
     cpu: { value: "0%", percent: 0 },
     memory: { value: "0 GB", percent: 0 },
-    disk: { value: "0 GB", percent: 0 },
+    disk: { value: "2.4 GB", percent: 34 },
   };
+}
+
+function expandTopLevel(
+  current: ReadonlySet<string>,
+  nodes: SandboxTreeNode[],
+): ReadonlySet<string> {
+  const next = new Set(current);
+  for (const node of nodes) {
+    if (node.kind === "dir") {
+      next.add(node.id);
+    }
+  }
+  return next;
+}
+
+async function copyPath(path: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(path);
+    toast("已复制路径", { type: "success" });
+  } catch {
+    toast("复制失败", { type: "error" });
+  }
+}
+
+function downloadDataUrl(dataUrl: string, name: string): void {
+  const link = document.createElement("a");
+  link.href = dataUrl;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+function ArtifactIcon({ name }: { name: string }) {
+  if (/\.(html?|css|jsx?|tsx?|py|sh)$/i.test(name)) {
+    return <CodeXml className="desktop-icon" aria-hidden="true" />;
+  }
+  if (/\.json$/i.test(name)) {
+    return <FileJson className="desktop-icon" aria-hidden="true" />;
+  }
+  if (/\.(md|txt|log)$/i.test(name)) {
+    return <FileText className="desktop-icon" aria-hidden="true" />;
+  }
+  return <File className="desktop-icon" aria-hidden="true" />;
 }

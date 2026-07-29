@@ -1,4 +1,5 @@
 import { Folder, HardDrive, Server } from "lucide-react";
+import type { ContextUsageRing } from "@webview/context-usage";
 import { ChatView } from "../chat/ChatView";
 import type { RuntimeState, ThreadSummary, WireEvent } from "../api/types";
 import { projectLabel } from "../lib/format";
@@ -12,6 +13,9 @@ type Props = {
   running: boolean;
   lastError: string;
   slashCommands: SlashCommand[];
+  projectFiles: string[];
+  sandboxFiles: string[];
+  sidebarDocked: boolean;
   onPermit: (toolCallId: string, approved: boolean) => void;
   onSend: (text: string) => void;
   onCancel: () => void;
@@ -19,6 +23,9 @@ type Props = {
   onToggleSkills: () => void;
   onClearError: () => void;
   onOpenNewSession: () => void;
+  onComposingChange: (composing: boolean) => void;
+  onHistoryDock: () => void;
+  onRingReady: (ring: ContextUsageRing | null) => void;
 };
 
 export function CenterPane({
@@ -29,6 +36,9 @@ export function CenterPane({
   running,
   lastError,
   slashCommands,
+  projectFiles,
+  sandboxFiles,
+  sidebarDocked,
   onPermit,
   onSend,
   onCancel,
@@ -36,6 +46,9 @@ export function CenterPane({
   onToggleSkills,
   onClearError,
   onOpenNewSession,
+  onComposingChange,
+  onHistoryDock,
+  onRingReady,
 }: Props) {
   const title =
     sessions.find((session) => session.id === runtime.currentThreadId)?.title || "新建任务";
@@ -79,11 +92,17 @@ export function CenterPane({
         yoloMode={runtime.yoloMode}
         lastError={lastError}
         slashCommands={slashCommands}
+        projectFiles={projectFiles}
+        sandboxFiles={sandboxFiles}
+        sidebarDocked={sidebarDocked}
         onSend={onSend}
         onCancel={onCancel}
         onToggleYolo={onToggleYolo}
         onToggleSkills={onToggleSkills}
         onClearError={onClearError}
+        onComposingChange={onComposingChange}
+        onHistoryDock={onHistoryDock}
+        onRingReady={onRingReady}
       />
     </section>
   );

@@ -79,3 +79,6 @@ export function readStoredTheme(): "dark" | "light" {
 export function docsUrl(): string {
   return "https://synclionpaw.github.io/pagent/zh/desktop";
 }
+
+/** 与 desktop shared/docs.ts 的 DOCUMENTATION_URL 保持一致，用于二维码与「在浏览器中打开」。 */
+export const DOCUMENTATION_URL = "https://synclionpaw.github.io/pagent/";

@@ -1,13 +1,14 @@
-import { BookOpen, Keyboard, Moon, Settings, Sun } from "lucide-react";
+import { BookOpen, Keyboard, Settings } from "lucide-react";
 import { docsUrl } from "../lib/format";
 
 type Props = {
   theme: "dark" | "light";
   onToggleTheme: () => void;
   onOpenSettings: () => void;
+  onOpenShortcuts: () => void;
 };
 
-export function Titlebar({ theme, onToggleTheme, onOpenSettings }: Props) {
+export function Titlebar({ theme, onToggleTheme, onOpenSettings, onOpenShortcuts }: Props) {
   const light = theme === "light";
   return (
     <div className="desktop-titlebar">
@@ -46,6 +47,7 @@ export function Titlebar({ theme, onToggleTheme, onOpenSettings }: Props) {
           type="button"
           title="快捷键与心智模型"
           aria-label="快捷键与心智模型"
+          onClick={onOpenShortcuts}
         >
           <Keyboard className="desktop-icon" aria-hidden="true" />
         </button>
@@ -57,19 +59,6 @@ export function Titlebar({ theme, onToggleTheme, onOpenSettings }: Props) {
           onClick={onOpenSettings}
         >
           <Settings className="desktop-icon" aria-hidden="true" />
-        </button>
-        <button
-          className="titlebar-action"
-          type="button"
-          title="切换主题"
-          aria-label="切换主题"
-          onClick={onToggleTheme}
-        >
-          {light ? (
-            <Sun className="desktop-icon" aria-hidden="true" />
-          ) : (
-            <Moon className="desktop-icon" aria-hidden="true" />
-          )}
         </button>
       </div>
     </div>

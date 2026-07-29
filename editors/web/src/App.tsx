@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
+import type { ContextUsageRing } from "@webview/context-usage";
 import type {
   AppInfo,
   AppSettings,
@@ -19,18 +20,38 @@ import type {
 import { createHostApi } from "./api/host";
 import { HttpBridge, normalizeBaseUrl } from "./api/httpBridge";
 import { CenterPane } from "./components/CenterPane";
+import { ConfirmModal, type ConfirmOptions } from "./components/ConfirmModal";
+import { DocsQrModal } from "./components/DocsQrModal";
 import { LeftPane } from "./components/LeftPane";
 import { NewSessionModal } from "./components/NewSessionModal";
 import { Onboarding } from "./components/Onboarding";
-import { RightPane, type ProjectPane, type RightTab, type TerminalEntry } from "./components/RightPane";
+import {
+  RightPane,
+  type ActivityState,
+  type ProjectPane,
+  type RightTab,
+  type TerminalEntry,
+} from "./components/RightPane";
 import { SettingsModal, type ConfigSnapshot } from "./components/SettingsModal";
+import { ShortcutsModal } from "./components/ShortcutsModal";
+import { ThreadMetaModal } from "./components/ThreadMetaModal";
 import { Titlebar } from "./components/Titlebar";
 import type { SlashCommand } from "./components/Composer";
-import { formatRelativeTime, parseThreadTimestamp, readStoredTheme } from "./lib/format";
+import { docsUrl, formatRelativeTime, parseThreadTimestamp, readStoredTheme } from "./lib/format";
+import { mountToaster, toast } from "./lib/toast";
 
 const SERVER_URL_KEY = "pagent-web-server-url";
 const SERVER_TOKEN_KEY = "pagent-web-server-token";
 const THEME_KEY = "pagent-web-theme";
+const SIDEBAR_PINNED_KEY = "pagent-web-sidebar-pinned";
+const LEFT_PANE_WIDTH_PX = 232;
+const LEFT_COLLAPSED_WIDTH_PX = 44;
+const RIGHT_PANE_WIDTH_PX = 352;
+const RIGHT_COLLAPSED_WIDTH_PX = 44;
+const LEFT_MIN_WIDTH_PX = 200;
+const LEFT_MAX_WIDTH_PX = 320;
+const RIGHT_MIN_WIDTH_PX = 300;
+const RIGHT_MAX_WIDTH_PX = 420;
 
 const CHAT_METHODS = new Set([
   "RunBegin",
@@ -101,6 +122,21 @@ export default function App() {
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [leftWidth, setLeftWidth] = useState(LEFT_PANE_WIDTH_PX);
+  const [rightWidth, setRightWidth] = useState(RIGHT_PANE_WIDTH_PX);
+  const [sidebarPinned, setSidebarPinned] = useState(
+    () => window.localStorage.getItem(SIDEBAR_PINNED_KEY) === "1",
+  );
+  const [sidebarDocked, setSidebarDocked] = useState(false);
+  const [composing, setComposing] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [docsQrOpen, setDocsQrOpen] = useState(false);
+  const [threadMetaOpen, setThreadMetaOpen] = useState(false);
+  const [threadMeta, setThreadMeta] = useState<ThreadMeta>();
+  const [threadMetaSession, setThreadMetaSession] = useState<ThreadSummary>();
+  const [threadMetaError, setThreadMetaError] = useState("");
+  const [confirm, setConfirm] = useState<{ options: ConfirmOptions; onConfirm: () => void }>();
+  const [projectFiles, setProjectFiles] = useState<string[]>([]);
   const [showSkills, setShowSkills] = useState(false);
   const [activeTab, setActiveTab] = useState<RightTab>("project");
   const [projectPane, setProjectPane] = useState<ProjectPane>("files");
@@ -121,6 +157,11 @@ export default function App() {
   const runtimeRef = useRef(runtime);
   const yoloRef = useRef(runtime.yoloMode);
   const handleWireEventRef = useRef<(event: WireEvent) => void>(() => undefined);
+  const ringRef = useRef<ContextUsageRing | null>(null);
+  const keepSidebarOpenRef = useRef(false);
+
+  const sandboxFiles = useMemo(() => flattenSandboxTree(sandboxTree), [sandboxTree]);
+  const activityState: ActivityState = lastError ? "error" : running ? "running" : "sleeping";
 
   useEffect(() => {
     runtimeRef.current = runtime;
@@ -131,6 +172,17 @@ export default function App() {
     document.documentElement.dataset.theme = theme;
     window.localStorage.setItem(THEME_KEY, theme);
   }, [theme]);
+
+  useEffect(() => {
+    mountToaster();
+  }, []);
+
+  const refreshProjectFiles = useCallback(() => {
+    void hostApi
+      .listProjectFiles(runtimeRef.current.projectPath)
+      .then((files) => setProjectFiles(Array.isArray(files) ? files : []))
+      .catch(() => setProjectFiles([]));
+  }, [hostApi]);
 
   const appendTerminal = useCallback((kind: TerminalEntry["kind"], text: string) => {
     const compact = summarize(text, 220);
@@ -270,7 +322,8 @@ export default function App() {
   useEffect(() => {
     refreshProjectTree();
     refreshArtifacts();
-  }, [runtime.projectPath, refreshArtifacts, refreshProjectTree]);
+    refreshProjectFiles();
+  }, [runtime.projectPath, refreshArtifacts, refreshProjectTree, refreshProjectFiles]);
 
   const providerConfigured =
     configSnapshot?.provider?.api_key_configured === true ||
@@ -289,7 +342,113 @@ export default function App() {
     }
   }, [providerConfigured, providerKnownMissing]);
 
+  const setupBlocked = providerKnownMissing && !providerConfigured;
+
+  // 自动泊靠：对标 desktop syncComposerDock。未钉住时，聚焦/有草稿/运行中则收起左栏。
+  useEffect(() => {
+    if (sidebarPinned) {
+      keepSidebarOpenRef.current = false;
+      setSidebarDocked(false);
+      return;
+    }
+    const active = composing || running;
+    if (keepSidebarOpenRef.current) {
+      if (!active) {
+        keepSidebarOpenRef.current = false;
+      } else {
+        setSidebarDocked(false);
+        return;
+      }
+    }
+    setSidebarDocked(active);
+  }, [composing, running, sidebarPinned]);
+
+  const togglePin = useCallback(() => {
+    setSidebarPinned((prev) => {
+      const next = !prev;
+      window.localStorage.setItem(SIDEBAR_PINNED_KEY, next ? "1" : "0");
+      if (next) {
+        keepSidebarOpenRef.current = false;
+        setSidebarDocked(false);
+      }
+      return next;
+    });
+  }, []);
+
+  const undockSidebar = useCallback(() => {
+    keepSidebarOpenRef.current = true;
+    setSidebarDocked(false);
+    setLeftCollapsed(false);
+  }, []);
+
+  const handleRingReady = useCallback((ring: ContextUsageRing | null) => {
+    ringRef.current = ring;
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (confirm) {
+          setConfirm(undefined);
+          return;
+        }
+        if (newSessionOpen) {
+          setNewSessionOpen(false);
+          return;
+        }
+        if (threadMetaOpen) {
+          setThreadMetaOpen(false);
+          return;
+        }
+        if (settingsOpen) {
+          setSettingsOpen(false);
+          return;
+        }
+        if (docsQrOpen) {
+          setDocsQrOpen(false);
+          return;
+        }
+        if (shortcutsOpen) {
+          setShortcutsOpen(false);
+          return;
+        }
+        if (artifactPreview) {
+          setArtifactPreview(undefined);
+          return;
+        }
+        return;
+      }
+      if (!event.metaKey && !event.ctrlKey) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      if (key === "l") {
+        event.preventDefault();
+        setLeftCollapsed((collapsed) => !collapsed);
+        keepSidebarOpenRef.current = false;
+        setSidebarDocked(false);
+      } else if (key === "r") {
+        event.preventDefault();
+        setRightCollapsed((collapsed) => !collapsed);
+      } else if (key === "k") {
+        event.preventDefault();
+        setShortcutsOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [
+    confirm,
+    newSessionOpen,
+    threadMetaOpen,
+    settingsOpen,
+    docsQrOpen,
+    shortcutsOpen,
+    artifactPreview,
+  ]);
+
   const handleWireEvent = (event: WireEvent) => {
+    ringRef.current?.handleWireEvent(event);
     if (CHAT_METHODS.has(event.method)) {
       if (event.method === "HistoryReplay") {
         setChatEvents([event]);
@@ -465,13 +624,22 @@ export default function App() {
   };
 
   const deleteThread = (threadId: string) => {
-    if (!window.confirm("确定删除这个会话吗？")) {
-      return;
-    }
-    if (threadId === runtimeRef.current.currentThreadId) {
-      setChatEvents((events) => [...events, { method: "HistoryLoading", params: {} }]);
-    }
-    sendCommand(withProject({ cmd: "delete_thread", thread_id: threadId }));
+    setConfirm({
+      options: {
+        title: "删除会话",
+        message: "确定删除这个会话吗？此操作不可撤销。",
+        confirmText: "删除",
+        cancelText: "取消",
+        tone: "danger",
+      },
+      onConfirm: () => {
+        setConfirm(undefined);
+        if (threadId === runtimeRef.current.currentThreadId) {
+          setChatEvents((events) => [...events, { method: "HistoryLoading", params: {} }]);
+        }
+        sendCommand(withProject({ cmd: "delete_thread", thread_id: threadId }));
+      },
+    });
   };
 
   const toggleYolo = () => {
@@ -482,6 +650,11 @@ export default function App() {
       .then((result) => {
         setRuntime((current) => ({ ...current, yoloMode: result.yoloMode }));
         appendTerminal("status", result.yoloMode ? "YOLO 已开启" : "YOLO 已关闭");
+        if (result.yoloMode) {
+          toast("YOLO 已开启", { description: "工具调用将自动审批", type: "warning" });
+        } else {
+          toast("YOLO 已关闭", { description: "工具调用将逐个确认", type: "success" });
+        }
       })
       .catch((error: unknown) => setLastError(toErrorMessage(error)));
   };
@@ -506,15 +679,20 @@ export default function App() {
   };
 
   const showThreadInfo = (threadId: string) => {
+    setThreadMeta(undefined);
+    setThreadMetaError("");
+    setThreadMetaSession(sessions.find((item) => item.id === threadId));
+    setThreadMetaOpen(true);
     void hostApi
       .getThreadMeta(threadId)
-      .then((meta: ThreadMeta) => {
-        appendTerminal(
-          "status",
-          `${meta.title || threadId} · ${meta.messageCount ?? 0} messages · ${meta.threadPath}`,
-        );
-      })
-      .catch((error: unknown) => setLastError(toErrorMessage(error)));
+      .then((meta: ThreadMeta) => setThreadMeta(meta))
+      .catch((error: unknown) => setThreadMetaError(toErrorMessage(error)));
+  };
+
+  const openOnboarding = () => {
+    refreshEnvironment();
+    sendCommand({ cmd: "get_config" });
+    setOnboardingOpen(true);
   };
 
   const previewArtifact = (path: string) => {
@@ -525,28 +703,62 @@ export default function App() {
       .catch((error: unknown) => setLastError(toErrorMessage(error)));
   };
 
+  const leftHidden = sidebarDocked;
   const workbenchStyle = {
-    "--left-pane-width": leftCollapsed ? "44px" : "232px",
-    "--right-pane-width": rightCollapsed ? "44px" : "352px",
-    "--left-gap": leftCollapsed ? "0px" : "8px",
+    "--left-pane-width": leftHidden
+      ? "0px"
+      : `${leftCollapsed ? LEFT_COLLAPSED_WIDTH_PX : leftWidth}px`,
+    "--right-pane-width": `${rightCollapsed ? RIGHT_COLLAPSED_WIDTH_PX : rightWidth}px`,
+    "--left-gap": leftHidden || leftCollapsed ? "0px" : "8px",
     "--right-gap": rightCollapsed ? "0px" : "8px",
   } as CSSProperties;
+
+  const startResize = (side: "left" | "right") => (event: ReactPointerEvent<HTMLDivElement>) => {
+    if ((side === "left" && leftCollapsed) || (side === "right" && rightCollapsed)) {
+      return;
+    }
+    const handle = event.currentTarget;
+    const startX = event.clientX;
+    const startWidth = side === "left" ? leftWidth : rightWidth;
+    handle.setPointerCapture(event.pointerId);
+    const onMove = (moveEvent: PointerEvent) => {
+      const delta = moveEvent.clientX - startX;
+      if (side === "left") {
+        setLeftWidth(Math.max(LEFT_MIN_WIDTH_PX, Math.min(LEFT_MAX_WIDTH_PX, startWidth + delta)));
+      } else {
+        setRightWidth(
+          Math.max(RIGHT_MIN_WIDTH_PX, Math.min(RIGHT_MAX_WIDTH_PX, startWidth - delta)),
+        );
+      }
+    };
+    const onUp = () => {
+      handle.removeEventListener("pointermove", onMove);
+      handle.removeEventListener("pointerup", onUp);
+      handle.removeEventListener("pointercancel", onUp);
+    };
+    handle.addEventListener("pointermove", onMove);
+    handle.addEventListener("pointerup", onUp);
+    handle.addEventListener("pointercancel", onUp);
+  };
+
+  const toggleTheme = () => setTheme((current) => (current === "dark" ? "light" : "dark"));
 
   return (
     <div id="app" style={{ height: "100vh" }}>
       <div className="desktop-root">
-        <div className="desktop-shell macos" data-shell>
+        <div className={`desktop-shell macos${setupBlocked ? " is-setup-blocked" : ""}`} data-shell>
           <Titlebar
             theme={theme}
-            onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+            onToggleTheme={toggleTheme}
             onOpenSettings={openSettings}
+            onOpenShortcuts={() => setShortcutsOpen(true)}
           />
           <div
             className="desktop-workbench"
             data-workbench
             data-left-collapsed={leftCollapsed}
             data-right-collapsed={rightCollapsed}
-            data-sidebar-docked="false"
+            data-sidebar-docked={sidebarDocked}
             style={workbenchStyle}
           >
             <LeftPane
@@ -556,6 +768,7 @@ export default function App() {
               skills={skills}
               showSkills={showSkills}
               theme={theme}
+              sidebarPinned={sidebarPinned}
               onNewSession={openNewSession}
               onResumeThread={resumeThread}
               onDeleteThread={deleteThread}
@@ -565,8 +778,9 @@ export default function App() {
                 sendCommand({ cmd: "skills" });
                 setLeftCollapsed(false);
               }}
-              onToggleTheme={() => setTheme((current) => (current === "dark" ? "light" : "dark"))}
+              onToggleTheme={toggleTheme}
               onToggleCollapsed={() => setLeftCollapsed((collapsed) => !collapsed)}
+              onTogglePin={togglePin}
               onOpenLatest={() => {
                 const latest = sessions[0];
                 if (latest) {
@@ -574,8 +788,11 @@ export default function App() {
                 }
               }}
               onOpenSettings={openSettings}
+              onOpenDocsQr={() => setDocsQrOpen(true)}
+              onOpenOnboarding={openOnboarding}
+              onOpenDocs={() => window.open(docsUrl(), "_blank", "noreferrer")}
             />
-            <div className="pane-resizer" data-resizer="left" />
+            <div className="pane-resizer" data-resizer="left" onPointerDown={startResize("left")} />
             <CenterPane
               runtime={{
                 ...runtime,
@@ -588,6 +805,9 @@ export default function App() {
               running={running}
               lastError={lastError}
               slashCommands={slashCommands}
+              projectFiles={projectFiles}
+              sandboxFiles={sandboxFiles}
+              sidebarDocked={sidebarDocked}
               onPermit={(toolCallId, approved) =>
                 sendCommand(
                   approved
@@ -605,8 +825,11 @@ export default function App() {
               }}
               onClearError={() => setLastError("")}
               onOpenNewSession={openNewSession}
+              onComposingChange={setComposing}
+              onHistoryDock={undockSidebar}
+              onRingReady={handleRingReady}
             />
-            <div className="pane-resizer" data-resizer="right" />
+            <div className="pane-resizer" data-resizer="right" onPointerDown={startResize("right")} />
             <RightPane
               activeTab={activeTab}
               projectPane={projectPane}
@@ -617,7 +840,7 @@ export default function App() {
               artifacts={artifacts}
               artifactPreview={artifactPreview}
               terminalEntries={terminalEntries}
-              running={running}
+              activityState={activityState}
               onTabChange={(tab) => {
                 setActiveTab(tab);
                 if (tab === "sandbox") {
@@ -687,9 +910,40 @@ export default function App() {
             sendCommand({ cmd: "environment_check" });
           }}
         />
+        <ThreadMetaModal
+          open={threadMetaOpen}
+          meta={threadMeta}
+          session={threadMetaSession}
+          error={threadMetaError}
+          onClose={() => setThreadMetaOpen(false)}
+        />
+        <ShortcutsModal open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
+        <DocsQrModal open={docsQrOpen} onClose={() => setDocsQrOpen(false)} />
+        <ConfirmModal
+          open={Boolean(confirm)}
+          options={confirm?.options ?? { title: "", message: "" }}
+          onCancel={() => setConfirm(undefined)}
+          onConfirm={() => confirm?.onConfirm()}
+        />
       </div>
     </div>
   );
+}
+
+/** 把沙箱目录树拍平成相对路径清单，供 @ 引用补全。 */
+function flattenSandboxTree(nodes: SandboxTreeNode[]): string[] {
+  const paths: string[] = [];
+  const walk = (list: SandboxTreeNode[]): void => {
+    for (const node of list) {
+      if (node.kind === "file") {
+        paths.push(node.id);
+      } else if (node.children) {
+        walk(node.children);
+      }
+    }
+  };
+  walk(nodes);
+  return paths;
 }
 
 function readString(params: Record<string, unknown>, key: string): string {
