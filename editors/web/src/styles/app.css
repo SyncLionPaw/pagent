@@ -4245,11 +4245,29 @@ html:has(.desktop-shell.macos) .sonner-toaster {
 
 /* Mobile: single-column chat + slide-in drawers for sessions / workspace */
 @media (max-width: 768px) {
+    html,
+    body {
+        height: var(--app-height, 100svh);
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    .desktop-root {
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: var(--vv-offset-top, 0px);
+        width: 100%;
+        height: var(--app-height, 100svh);
+        max-height: var(--app-height, 100svh);
+        overflow: hidden;
+    }
+
     #app,
     .desktop-root,
     .desktop-shell {
-        height: 100dvh;
-        height: 100vh;
+        height: 100%;
+        max-height: 100%;
     }
 
     .desktop-shell.is-mobile {
@@ -4280,8 +4298,9 @@ html:has(.desktop-shell.macos) .sonner-toaster {
     .desktop-workbench[data-mobile-drawer="right"] .pane-right {
         display: flex;
         position: fixed;
-        top: 0;
-        bottom: 0;
+        top: var(--vv-offset-top, 0px);
+        height: var(--app-height, 100svh);
+        bottom: auto;
         z-index: 120;
         width: min(88vw, 320px);
         max-width: 100%;
@@ -4316,7 +4335,10 @@ html:has(.desktop-shell.macos) .sonner-toaster {
 
     .mobile-drawer-backdrop {
         position: fixed;
-        inset: 0;
+        left: 0;
+        right: 0;
+        top: var(--vv-offset-top, 0px);
+        height: var(--app-height, 100svh);
         z-index: 110;
         border: 0;
         padding: 0;
@@ -4376,7 +4398,7 @@ html:has(.desktop-shell.macos) .sonner-toaster {
         inset: auto;
         flex-shrink: 0;
         z-index: 2;
-        padding: 0 10px calc(10px + env(safe-area-inset-bottom, 0px) + var(--vv-bottom-inset, 0px));
+        padding: 0 10px calc(10px + env(safe-area-inset-bottom, 0px));
         pointer-events: auto;
     }
 

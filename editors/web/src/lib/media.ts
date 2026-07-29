@@ -18,30 +18,36 @@ export function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-/** Keep the composer above the mobile browser chrome and virtual keyboard. */
-export function useVisualViewportInset(enabled: boolean): void {
+/** Pin the mobile shell to the visible viewport (Safari bottom bar / keyboard). */
+export function useMobileViewport(enabled: boolean): void {
   useEffect(() => {
     if (!enabled) {
-      document.documentElement.style.removeProperty("--vv-bottom-inset");
+      document.documentElement.style.removeProperty("--app-height");
+      document.documentElement.style.removeProperty("--vv-offset-top");
       return;
     }
     const viewport = window.visualViewport;
-    if (!viewport) {
-      return;
-    }
     const sync = () => {
-      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop);
-      document.documentElement.style.setProperty("--vv-bottom-inset", `${inset}px`);
+      const height = viewport?.height ?? window.innerHeight;
+      const offsetTop = viewport?.offsetTop ?? 0;
+      document.documentElement.style.setProperty("--app-height", `${height}px`);
+      document.documentElement.style.setProperty("--vv-offset-top", `${offsetTop}px`);
+      if (window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
     };
     sync();
-    viewport.addEventListener("resize", sync);
-    viewport.addEventListener("scroll", sync);
+    viewport?.addEventListener("resize", sync);
+    viewport?.addEventListener("scroll", sync);
+    window.addEventListener("resize", sync);
     window.addEventListener("orientationchange", sync);
     return () => {
-      viewport.removeEventListener("resize", sync);
-      viewport.removeEventListener("scroll", sync);
+      viewport?.removeEventListener("resize", sync);
+      viewport?.removeEventListener("scroll", sync);
+      window.removeEventListener("resize", sync);
       window.removeEventListener("orientationchange", sync);
-      document.documentElement.style.removeProperty("--vv-bottom-inset");
+      document.documentElement.style.removeProperty("--app-height");
+      document.documentElement.style.removeProperty("--vv-offset-top");
     };
   }, [enabled]);
 }
