@@ -1,0 +1,33 @@
+{
+  "name": "pagent-web",
+  "private": true,
+  "version": "0.7.20",
+  "type": "module",
+  "description": "pagent Web — React UI 对标 Desktop，连接 pagent --http。",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "check": "tsc -b --pretty false",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.45",
+    "dompurify": "^3.2.6",
+    "highlight.js": "^11.11.1",
+    "lucide-react": "^0.525.0",
+    "marked": "^16.2.1",
+    "qrcode": "^1.5.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.2.0",
+    "@types/node": "^26.1.2",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.6.0",
+    "typescript": "^5.9.2",
+    "vite": "^7.0.4"
+  }
+}

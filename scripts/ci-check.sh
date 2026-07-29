@@ -26,4 +26,12 @@ step "docs build"
   npm run build
 )
 
-printf '\n✓ CI checks passed (ruff, pytest, coverage, docs)\n'
+step "web build"
+(
+  cd editors/web
+  npm ci
+  npm run check
+  npm run build
+)
+
+printf '\n✓ CI checks passed (ruff, pytest, coverage, docs, web)\n'
