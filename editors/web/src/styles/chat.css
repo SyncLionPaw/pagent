@@ -25,7 +25,7 @@ body {
 #app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
 }
 
 .chat-log {
@@ -611,6 +611,44 @@ body {
 .slash-menu-item.active .slash-menu-desc {
   color: inherit;
   opacity: 0.85;
+}
+
+@media (max-width: 768px) {
+  html,
+  body,
+  #app {
+    height: 100%;
+    max-height: 100%;
+  }
+
+  .chat-log {
+    padding: 10px 12px;
+  }
+
+  .composer {
+    margin: 0;
+    border-radius: 12px;
+  }
+
+  #prompt {
+    min-height: 44px;
+    padding: 11px 12px 8px;
+  }
+
+  .composer-actions {
+    min-height: 40px;
+    padding: 5px 8px;
+  }
+
+  .composer-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .slash-menu {
+    left: 6px;
+    right: 6px;
+  }
 }
 
 @media (max-width: 360px) {
