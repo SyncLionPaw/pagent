@@ -4262,6 +4262,8 @@ html:has(.desktop-shell.macos) .sonner-toaster {
 
     .desktop-workbench[data-mobile="true"] {
         grid-template-columns: minmax(0, 1fr) !important;
+        min-height: 0;
+        height: 100%;
         transition: none;
     }
 
@@ -4358,6 +4360,32 @@ html:has(.desktop-shell.macos) .sonner-toaster {
 
     .pane-center {
         box-shadow: none;
+        min-height: 0;
+        height: 100%;
+    }
+
+    .pane-center > .chat-log {
+        flex: 1;
+        min-height: 0;
+        padding: 12px 12px 16px;
+        scroll-padding-bottom: 16px;
+    }
+
+    .pane-center > .composer-dock {
+        position: relative;
+        inset: auto;
+        flex-shrink: 0;
+        z-index: 2;
+        padding: 0 10px calc(10px + env(safe-area-inset-bottom, 0px) + var(--vv-bottom-inset, 0px));
+        pointer-events: auto;
+    }
+
+    .pane-center > .composer-dock > .composer {
+        width: 100%;
+    }
+
+    .pane-center .composer-floating::after {
+        display: none;
     }
 
     .desktop-modal-card,

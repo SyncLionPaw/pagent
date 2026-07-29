@@ -38,7 +38,7 @@ import { ThreadMetaModal } from "./components/ThreadMetaModal";
 import { Titlebar } from "./components/Titlebar";
 import type { SlashCommand } from "./components/Composer";
 import { docsUrl, formatRelativeTime, parseThreadTimestamp, readStoredTheme } from "./lib/format";
-import { MOBILE_MEDIA_QUERY, useMediaQuery } from "./lib/media";
+import { MOBILE_MEDIA_QUERY, useMediaQuery, useVisualViewportInset } from "./lib/media";
 import { mountToaster, toast } from "./lib/toast";
 
 const SERVER_URL_KEY = "pagent-web-server-url";
@@ -131,6 +131,7 @@ export default function App() {
   const [sidebarDocked, setSidebarDocked] = useState(false);
   const [mobileDrawer, setMobileDrawer] = useState<"left" | "right" | null>(null);
   const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
+  useVisualViewportInset(isMobile);
   const [composing, setComposing] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [docsQrOpen, setDocsQrOpen] = useState(false);
