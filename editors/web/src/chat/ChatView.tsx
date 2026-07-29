@@ -12,7 +12,7 @@ type Props = {
 /**
  * 复用 VS Code / Desktop 的 ChatRenderer（DOM 命令式），保证聊天区 100% 对标。
  */
-export function ChatView({ onPermit, events, historyEpoch, running }: Props) {
+export function ChatView({ onPermit, events, historyEpoch }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<ChatRenderer | undefined>(undefined);
   const seenRef = useRef(0);
@@ -56,10 +56,6 @@ export function ChatView({ onPermit, events, historyEpoch, running }: Props) {
     }
     seenRef.current = events.length;
   }, [events]);
-
-  useEffect(() => {
-    // running 变化时无需额外处理；占位由 ChatRenderer 内部管理。
-  }, [running]);
 
   return <div className="chat-log" ref={rootRef} data-chat-log />;
 }
