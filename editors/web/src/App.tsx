@@ -38,6 +38,7 @@ import { ThreadMetaModal } from "./components/ThreadMetaModal";
 import { Titlebar } from "./components/Titlebar";
 import type { SlashCommand } from "./components/Composer";
 import { docsUrl, formatRelativeTime, parseThreadTimestamp, readStoredTheme } from "./lib/format";
+import { MOBILE_MEDIA_QUERY, useMediaQuery } from "./lib/media";
 import { mountToaster, toast } from "./lib/toast";
 
 const SERVER_URL_KEY = "pagent-web-server-url";
@@ -128,6 +129,8 @@ export default function App() {
     () => window.localStorage.getItem(SIDEBAR_PINNED_KEY) === "1",
   );
   const [sidebarDocked, setSidebarDocked] = useState(false);
+  const [mobileDrawer, setMobileDrawer] = useState<"left" | "right" | null>(null);
+  const isMobile = useMediaQuery(MOBILE_MEDIA_QUERY);
   const [composing, setComposing] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [docsQrOpen, setDocsQrOpen] = useState(false);
@@ -344,8 +347,19 @@ export default function App() {
 
   const setupBlocked = providerKnownMissing && !providerConfigured;
 
+  useEffect(() => {
+    if (!isMobile) {
+      return;
+    }
+    setMobileDrawer(null);
+    setSidebarDocked(false);
+  }, [isMobile]);
+
   // 自动泊靠：对标 desktop syncComposerDock。未钉住时，聚焦/有草稿/运行中则收起左栏。
   useEffect(() => {
+    if (isMobile) {
+      return;
+    }
     if (sidebarPinned) {
       keepSidebarOpenRef.current = false;
       setSidebarDocked(false);
@@ -361,7 +375,7 @@ export default function App() {
       }
     }
     setSidebarDocked(active);
-  }, [composing, running, sidebarPinned]);
+  }, [composing, running, sidebarPinned, isMobile]);
 
   const togglePin = useCallback(() => {
     setSidebarPinned((prev) => {
@@ -381,6 +395,29 @@ export default function App() {
     setLeftCollapsed(false);
   }, []);
 
+  const openMobileDrawer = useCallback((side: "left" | "right") => {
+    setMobileDrawer(side);
+    if (side === "left") {
+      keepSidebarOpenRef.current = true;
+      setSidebarDocked(false);
+      setLeftCollapsed(false);
+    } else {
+      setRightCollapsed(false);
+    }
+  }, []);
+
+  const closeMobileDrawer = useCallback(() => {
+    setMobileDrawer(null);
+  }, []);
+
+  const openSessions = useCallback(() => {
+    if (isMobile) {
+      openMobileDrawer("left");
+      return;
+    }
+    undockSidebar();
+  }, [isMobile, openMobileDrawer, undockSidebar]);
+
   const handleRingReady = useCallback((ring: ContextUsageRing | null) => {
     ringRef.current = ring;
   }, []);
@@ -388,6 +425,10 @@ export default function App() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        if (mobileDrawer) {
+          setMobileDrawer(null);
+          return;
+        }
         if (confirm) {
           setConfirm(undefined);
           return;
@@ -445,6 +486,7 @@ export default function App() {
     docsQrOpen,
     shortcutsOpen,
     artifactPreview,
+    mobileDrawer,
   ]);
 
   const handleWireEvent = (event: WireEvent) => {
@@ -621,6 +663,9 @@ export default function App() {
       thread_id: threadId,
       project_path: session?.projectPath || runtimeRef.current.projectPath,
     });
+    if (isMobile) {
+      setMobileDrawer(null);
+    }
   };
 
   const deleteThread = (threadId: string) => {
@@ -703,17 +748,22 @@ export default function App() {
       .catch((error: unknown) => setLastError(toErrorMessage(error)));
   };
 
-  const leftHidden = sidebarDocked;
-  const workbenchStyle = {
-    "--left-pane-width": leftHidden
-      ? "0px"
-      : `${leftCollapsed ? LEFT_COLLAPSED_WIDTH_PX : leftWidth}px`,
-    "--right-pane-width": `${rightCollapsed ? RIGHT_COLLAPSED_WIDTH_PX : rightWidth}px`,
-    "--left-gap": leftHidden || leftCollapsed ? "0px" : "8px",
-    "--right-gap": rightCollapsed ? "0px" : "8px",
-  } as CSSProperties;
+  const leftHidden = !isMobile && sidebarDocked;
+  const workbenchStyle = isMobile
+    ? undefined
+    : ({
+        "--left-pane-width": leftHidden
+          ? "0px"
+          : `${leftCollapsed ? LEFT_COLLAPSED_WIDTH_PX : leftWidth}px`,
+        "--right-pane-width": `${rightCollapsed ? RIGHT_COLLAPSED_WIDTH_PX : rightWidth}px`,
+        "--left-gap": leftHidden || leftCollapsed ? "0px" : "8px",
+        "--right-gap": rightCollapsed ? "0px" : "8px",
+      } as CSSProperties);
 
   const startResize = (side: "left" | "right") => (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (isMobile) {
+      return;
+    }
     if ((side === "left" && leftCollapsed) || (side === "right" && rightCollapsed)) {
       return;
     }
@@ -744,21 +794,34 @@ export default function App() {
   const toggleTheme = () => setTheme((current) => (current === "dark" ? "light" : "dark"));
 
   return (
-    <div id="app" style={{ height: "100vh" }}>
+    <div id="app">
       <div className="desktop-root">
-        <div className={`desktop-shell macos${setupBlocked ? " is-setup-blocked" : ""}`} data-shell>
+        <div
+          className={`desktop-shell macos${setupBlocked ? " is-setup-blocked" : ""}${isMobile ? " is-mobile" : ""}`}
+          data-shell
+        >
           <Titlebar
             theme={theme}
             onToggleTheme={toggleTheme}
             onOpenSettings={openSettings}
             onOpenShortcuts={() => setShortcutsOpen(true)}
           />
+          {isMobile && mobileDrawer ? (
+            <button
+              className="mobile-drawer-backdrop"
+              type="button"
+              aria-label="关闭侧栏"
+              onClick={closeMobileDrawer}
+            />
+          ) : null}
           <div
             className="desktop-workbench"
             data-workbench
-            data-left-collapsed={leftCollapsed}
-            data-right-collapsed={rightCollapsed}
-            data-sidebar-docked={sidebarDocked}
+            data-left-collapsed={isMobile ? true : leftCollapsed}
+            data-right-collapsed={isMobile ? true : rightCollapsed}
+            data-sidebar-docked={leftHidden}
+            data-mobile={isMobile ? "true" : "false"}
+            data-mobile-drawer={mobileDrawer ?? "none"}
             style={workbenchStyle}
           >
             <LeftPane
@@ -807,7 +870,10 @@ export default function App() {
               slashCommands={slashCommands}
               projectFiles={projectFiles}
               sandboxFiles={sandboxFiles}
-              sidebarDocked={sidebarDocked}
+              isMobile={isMobile}
+              sidebarDocked={isMobile ? mobileDrawer !== "left" : sidebarDocked}
+              onOpenSessions={() => openMobileDrawer("left")}
+              onOpenWorkspace={() => openMobileDrawer("right")}
               onPermit={(toolCallId, approved) =>
                 sendCommand(
                   approved
@@ -826,7 +892,7 @@ export default function App() {
               onClearError={() => setLastError("")}
               onOpenNewSession={openNewSession}
               onComposingChange={setComposing}
-              onHistoryDock={undockSidebar}
+              onHistoryDock={openSessions}
               onRingReady={handleRingReady}
             />
             <div className="pane-resizer" data-resizer="right" onPointerDown={startResize("right")} />

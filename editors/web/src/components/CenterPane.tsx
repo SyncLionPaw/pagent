@@ -1,4 +1,4 @@
-import { Folder, HardDrive, Server } from "lucide-react";
+import { Folder, HardDrive, Menu, PanelRight, Server } from "lucide-react";
 import type { ContextUsageRing } from "@webview/context-usage";
 import { ChatView } from "../chat/ChatView";
 import type { RuntimeState, ThreadSummary, WireEvent } from "../api/types";
@@ -16,6 +16,9 @@ type Props = {
   projectFiles: string[];
   sandboxFiles: string[];
   sidebarDocked: boolean;
+  isMobile?: boolean;
+  onOpenSessions?: () => void;
+  onOpenWorkspace?: () => void;
   onPermit: (toolCallId: string, approved: boolean) => void;
   onSend: (text: string) => void;
   onCancel: () => void;
@@ -39,6 +42,9 @@ export function CenterPane({
   projectFiles,
   sandboxFiles,
   sidebarDocked,
+  isMobile = false,
+  onOpenSessions,
+  onOpenWorkspace,
   onPermit,
   onSend,
   onCancel,
@@ -56,29 +62,54 @@ export function CenterPane({
   return (
     <section className="pane pane-center">
       <div className="pane-topbar center-topbar">
+        {isMobile ? (
+          <button
+            className="mobile-nav-button"
+            type="button"
+            title="会话列表"
+            aria-label="会话列表"
+            onClick={onOpenSessions}
+          >
+            <Menu className="desktop-icon" aria-hidden="true" />
+          </button>
+        ) : null}
         <div className="center-title">{title}</div>
         <div className="center-header-side">
-          <button
-            className="center-pill center-pill-button"
-            type="button"
-            title={runtime.projectPath}
-            onClick={onOpenNewSession}
-          >
-            <span className="center-pill-icon" aria-hidden="true">
-              <Folder className="desktop-icon" />
-            </span>
-            <span>{projectLabel(runtime.projectPath)}</span>
-          </button>
-          <span className={`center-pill center-pill-status ${presence}`}>
-            <span className="center-pill-icon" aria-hidden="true">
-              {runtime.sandboxBackend === "local" ? (
-                <HardDrive className="desktop-icon" />
-              ) : (
-                <Server className="desktop-icon" />
-              )}
-            </span>
-            <span>{sandboxBackendLabel(runtime)}</span>
-          </span>
+          {isMobile ? (
+            <button
+              className="mobile-nav-button"
+              type="button"
+              title="项目与沙箱"
+              aria-label="项目与沙箱"
+              onClick={onOpenWorkspace}
+            >
+              <PanelRight className="desktop-icon" aria-hidden="true" />
+            </button>
+          ) : (
+            <>
+              <button
+                className="center-pill center-pill-button"
+                type="button"
+                title={runtime.projectPath}
+                onClick={onOpenNewSession}
+              >
+                <span className="center-pill-icon" aria-hidden="true">
+                  <Folder className="desktop-icon" />
+                </span>
+                <span>{projectLabel(runtime.projectPath)}</span>
+              </button>
+              <span className={`center-pill center-pill-status ${presence}`}>
+                <span className="center-pill-icon" aria-hidden="true">
+                  {runtime.sandboxBackend === "local" ? (
+                    <HardDrive className="desktop-icon" />
+                  ) : (
+                    <Server className="desktop-icon" />
+                  )}
+                </span>
+                <span>{sandboxBackendLabel(runtime)}</span>
+              </span>
+            </>
+          )}
         </div>
       </div>
       <ChatView

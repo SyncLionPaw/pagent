@@ -613,6 +613,37 @@ body {
   opacity: 0.85;
 }
 
+@media (max-width: 768px) {
+  .chat-log {
+    padding: 10px 12px;
+  }
+
+  .composer {
+    margin: 6px 10px calc(10px + env(safe-area-inset-bottom, 0px));
+    border-radius: 12px;
+  }
+
+  #prompt {
+    min-height: 44px;
+    padding: 11px 12px 8px;
+  }
+
+  .composer-actions {
+    min-height: 40px;
+    padding: 5px 8px;
+  }
+
+  .composer-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .slash-menu {
+    left: 6px;
+    right: 6px;
+  }
+}
+
 @media (max-width: 360px) {
   .chat-log {
     padding: 9px;

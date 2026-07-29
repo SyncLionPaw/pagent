@@ -4242,3 +4242,187 @@ html:has(.desktop-shell.macos) .sonner-toaster {
     flex-wrap: wrap;
     gap: 8px;
 }
+
+/* Mobile: single-column chat + slide-in drawers for sessions / workspace */
+@media (max-width: 768px) {
+    #app,
+    .desktop-root,
+    .desktop-shell {
+        height: 100dvh;
+        height: 100vh;
+    }
+
+    .desktop-shell.is-mobile {
+        grid-template-rows: minmax(0, 1fr);
+    }
+
+    .desktop-shell.is-mobile .desktop-titlebar {
+        display: none;
+    }
+
+    .desktop-workbench[data-mobile="true"] {
+        grid-template-columns: minmax(0, 1fr) !important;
+        transition: none;
+    }
+
+    .desktop-workbench[data-mobile="true"] .pane-resizer {
+        display: none;
+    }
+
+    .desktop-workbench[data-mobile="true"] .pane-left,
+    .desktop-workbench[data-mobile="true"] .pane-right {
+        display: none;
+    }
+
+    .desktop-workbench[data-mobile-drawer="left"] .pane-left,
+    .desktop-workbench[data-mobile-drawer="right"] .pane-right {
+        display: flex;
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        z-index: 120;
+        width: min(88vw, 320px);
+        max-width: 100%;
+        box-shadow: var(--shadow-2);
+        animation: mobileDrawerIn 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .desktop-workbench[data-mobile-drawer="left"] .pane-left {
+        left: 0;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .desktop-workbench[data-mobile-drawer="right"] .pane-right {
+        right: 0;
+        left: auto;
+        padding-top: env(safe-area-inset-top, 0px);
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .desktop-workbench[data-mobile-drawer="left"] .pane-left .pane-expanded,
+    .desktop-workbench[data-mobile-drawer="right"] .pane-right .pane-expanded {
+        opacity: 1;
+        pointer-events: auto;
+        transform: none;
+    }
+
+    .desktop-workbench[data-mobile-drawer="left"] .pane-left .pane-collapsed,
+    .desktop-workbench[data-mobile-drawer="right"] .pane-right .pane-collapsed {
+        display: none;
+    }
+
+    .mobile-drawer-backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 110;
+        border: 0;
+        padding: 0;
+        margin: 0;
+        background: rgba(0, 0, 0, 0.42);
+        backdrop-filter: blur(2px);
+        animation: mobileBackdropIn 180ms ease;
+    }
+
+    .center-topbar {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        align-items: center;
+        min-height: calc(48px + env(safe-area-inset-top, 0px));
+        height: auto;
+        padding: env(safe-area-inset-top, 0px) 10px 0;
+        gap: 8px;
+    }
+
+    .center-header-side {
+        justify-content: flex-end;
+    }
+
+    .mobile-nav-button {
+        display: inline-flex;
+        width: 40px;
+        height: 40px;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 10px;
+        background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .mobile-nav-button:active {
+        background: var(--accent-soft);
+        color: var(--text-primary);
+    }
+
+    .pane-center {
+        box-shadow: none;
+    }
+
+    .desktop-modal-card,
+    .new-session-modal-card,
+    .settings-modal-card,
+    .onboarding-modal-card,
+    .confirm-modal-card,
+    .shortcuts-modal-card {
+        width: min(100%, calc(100vw - 20px));
+        max-height: calc(
+            100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)
+        );
+    }
+
+    .new-session-backends {
+        grid-template-columns: 1fr;
+    }
+
+    .settings-entry {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+
+    .new-task-button,
+    .session-action,
+    .icon-button {
+        min-height: 40px;
+    }
+
+    .session-item {
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+}
+
+@keyframes mobileDrawerIn {
+    from {
+        opacity: 0;
+        transform: translateX(var(--mobile-drawer-from, -12px));
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.desktop-workbench[data-mobile-drawer="right"] .pane-right {
+    --mobile-drawer-from: 12px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .desktop-workbench[data-mobile-drawer="left"] .pane-left,
+    .desktop-workbench[data-mobile-drawer="right"] .pane-right,
+    .mobile-drawer-backdrop {
+        animation: none;
+    }
+}
+
+@keyframes mobileBackdropIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
