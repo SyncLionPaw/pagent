@@ -102,6 +102,10 @@ export default function App() {
       <div className="desktop-root">
         <div className="desktop-shell cloud-shell">
           <div className="cloud-login-shell">
+            <div className="cloud-login-brand" aria-hidden="true">
+              <div className="cloud-login-brand-mark">pagent</div>
+              <div className="cloud-login-brand-sub">cloud</div>
+            </div>
             <section className="cloud-auth-panel">
               <div className="cloud-panel-header">
                 <div className="cloud-panel-kicker">登录</div>

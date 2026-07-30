@@ -98,9 +98,52 @@ button {
 
 .cloud-login-shell {
   display: grid;
-  width: min(480px, calc(100vw - 32px));
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  align-items: center;
+  gap: 32px;
+  width: min(1120px, calc(100vw - 48px));
   margin: auto;
-  padding: 24px 16px;
+  padding: 24px;
+}
+
+.cloud-login-brand {
+  position: relative;
+  min-height: 520px;
+  border-radius: 24px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(21, 119, 249, 0.22), transparent 0 18%),
+    radial-gradient(circle at 62% 60%, rgba(255, 255, 255, 0.06), transparent 0 24%),
+    linear-gradient(180deg, rgba(32, 35, 40, 0.78), rgba(20, 21, 23, 0.42));
+}
+
+.cloud-login-brand::before {
+  content: "";
+  position: absolute;
+  inset: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+}
+
+.cloud-login-brand-mark {
+  position: absolute;
+  left: 40px;
+  bottom: 92px;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: clamp(64px, 10vw, 128px);
+  line-height: 0.9;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+}
+
+.cloud-login-brand-sub {
+  position: absolute;
+  left: 48px;
+  bottom: 48px;
+  color: var(--text-secondary);
+  font-size: 18px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
 }
 
 .cloud-auth-panel,
@@ -282,8 +325,25 @@ button {
 
 @media (max-width: 900px) {
   .cloud-login-shell {
+    grid-template-columns: minmax(0, 1fr);
     width: min(480px, calc(100vw - 16px));
     padding: 8px;
+  }
+
+  .cloud-login-brand {
+    min-height: 180px;
+  }
+
+  .cloud-login-brand-mark {
+    left: 24px;
+    bottom: 54px;
+    font-size: 56px;
+  }
+
+  .cloud-login-brand-sub {
+    left: 28px;
+    bottom: 24px;
+    font-size: 14px;
   }
 
   .cloud-app-shell {
