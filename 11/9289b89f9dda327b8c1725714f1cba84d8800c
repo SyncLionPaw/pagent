@@ -1,0 +1,126 @@
+editors/web/src/styles/chat.css
+  s_8c01b4b914571e::t_3bcb42d2031268 954-958,961-962,964,1001-1005,1010-1014,1025-1029,1376 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a6af53a64a3c444d34713ac","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[954,958]},{"Range":[961,962]},{"Single":964},{"Range":[1001,1005]},{"Range":[1010,1014]},{"Range":[1025,1029]},{"Single":1376}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "119289b89f9dda327b8c1725714f1cba84d8800c",
+  "prompts": {},
+  "sessions": {
+    "s_8c01b4b914571e": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a6af05364a3c444d3471076",
+        "model": "gpt-5.4__dev"
+      },
+      "human_author": "gongyulei <gongyulei@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {
+    "editors/web/src/styles/chat.css": [
+      {
+        "hash": "s_8c01b4b914571e::t_3bcb42d2031268",
+        "line_ranges": [
+          {
+            "Range": [
+              954,
+              958
+            ]
+          },
+          {
+            "Range": [
+              961,
+              962
+            ]
+          },
+          {
+            "Single": 964
+          },
+          {
+            "Range": [
+              1001,
+              1005
+            ]
+          },
+          {
+            "Range": [
+              1010,
+              1014
+            ]
+          },
+          {
+            "Range": [
+              1025,
+              1029
+            ]
+          },
+          {
+            "Single": 1376
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a6af53a64a3c444d34713ac",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  954,
+                  958
+                ]
+              },
+              {
+                "Range": [
+                  961,
+                  962
+                ]
+              },
+              {
+                "Single": 964
+              },
+              {
+                "Range": [
+                  1001,
+                  1005
+                ]
+              },
+              {
+                "Range": [
+                  1010,
+                  1014
+                ]
+              },
+              {
+                "Range": [
+                  1025,
+                  1029
+                ]
+              },
+              {
+                "Single": 1376
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_8c01b4b914571e": {
+      "tool": "trae",
+      "conversation_id": "6a6af05364a3c444d3471076",
+      "session_id": "6a6af05364a3c444d3471076",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_8c01b4b914571e::t_3bcb42d2031268": {
+      "tool": "trae",
+      "conversation_id": "6a6af05364a3c444d3471076",
+      "session_id": "6a6af05364a3c444d3471076",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
