@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import WebApp from "../../../editors/web/src/App";
 
 type User = {
@@ -10,6 +11,19 @@ type User = {
 const TOKEN_KEY = "pagent-cloud-token";
 const WEB_SERVER_URL_KEY = "pagent-web-server-url";
 const WEB_SERVER_TOKEN_KEY = "pagent-web-server-token";
+
+function moveLoginGlow(event: ReactPointerEvent<HTMLDivElement>) {
+  const rect = event.currentTarget.getBoundingClientRect();
+  const x = `${((event.clientX - rect.left) / rect.width) * 100}%`;
+  const y = `${((event.clientY - rect.top) / rect.height) * 100}%`;
+  event.currentTarget.style.setProperty("--cloud-hover-x", x);
+  event.currentTarget.style.setProperty("--cloud-hover-y", y);
+  event.currentTarget.style.setProperty("--cloud-hover-opacity", "1");
+}
+
+function resetLoginGlow(event: ReactPointerEvent<HTMLDivElement>) {
+  event.currentTarget.style.setProperty("--cloud-hover-opacity", "0");
+}
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -108,7 +122,12 @@ export default function App() {
       <div className="desktop-root">
         <div className="desktop-shell cloud-shell">
           <div className="cloud-login-shell">
-            <div className="cloud-login-brand" aria-hidden="true">
+            <div
+              className="cloud-login-brand"
+              aria-hidden="true"
+              onPointerMove={moveLoginGlow}
+              onPointerLeave={resetLoginGlow}
+            >
               <img className="cloud-login-brand-image" src="/cloud-logo.png" alt="" />
             </div>
             <section className="cloud-auth-panel">
