@@ -202,7 +202,24 @@ button {
   opacity: calc(var(--cloud-stage-hover-opacity) * 0.5);
   filter:
     blur(1px) drop-shadow(0 0 12px rgba(121, 232, 255, 0.08));
-  clip-path: circle(calc(var(--cloud-stage-hover-opacity) * 64px) at var(--cloud-stage-hover-x) var(--cloud-stage-hover-y));
+  -webkit-mask-image: radial-gradient(
+    circle at var(--cloud-stage-hover-x) var(--cloud-stage-hover-y),
+    rgba(0, 0, 0, 1) 0,
+    rgba(0, 0, 0, 0.98) 18px,
+    rgba(0, 0, 0, 0.78) 36px,
+    rgba(0, 0, 0, 0.34) 56px,
+    transparent 82px
+  );
+  mask-image: radial-gradient(
+    circle at var(--cloud-stage-hover-x) var(--cloud-stage-hover-y),
+    rgba(0, 0, 0, 1) 0,
+    rgba(0, 0, 0, 0.98) 18px,
+    rgba(0, 0, 0, 0.78) 36px,
+    rgba(0, 0, 0, 0.34) 56px,
+    transparent 82px
+  );
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   pointer-events: none;
 }
 
