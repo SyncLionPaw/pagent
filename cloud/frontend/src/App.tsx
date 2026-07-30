@@ -107,6 +107,15 @@ export default function App() {
     }
   }
 
+  function logout() {
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(WEB_SERVER_URL_KEY);
+    window.localStorage.removeItem(WEB_SERVER_TOKEN_KEY);
+    setToken("");
+    setUser(undefined);
+    setError("");
+  }
+
   if (checking) {
     return (
       <div className="desktop-root">
@@ -176,6 +185,9 @@ export default function App() {
 
   return (
     <div className="cloud-web-app" data-user-id={currentUser.id} data-user-name={currentUser.username}>
+      <button className="cloud-logout-button" type="button" onClick={logout}>
+        退出登录
+      </button>
       <WebApp />
     </div>
   );
