@@ -101,29 +101,7 @@ export default function App() {
     return (
       <div className="desktop-root">
         <div className="desktop-shell cloud-shell">
-          <div className="cloud-login-workbench">
-            <section className="cloud-hero">
-              <div className="cloud-hero-mark">Cloud</div>
-              <h1 className="cloud-hero-title">pagent Web Cloud</h1>
-              <p className="cloud-hero-copy">
-                这版是云端前后端分离形态。前端保持 React 风格，视觉尽量向现有
-                `editors/web` 靠拢。
-              </p>
-              <div className="cloud-hero-points">
-                <div className="cloud-point">
-                  <div className="cloud-point-label">当前阶段</div>
-                  <div className="cloud-point-value">登录墙</div>
-                </div>
-                <div className="cloud-point">
-                  <div className="cloud-point-label">鉴权方式</div>
-                  <div className="cloud-point-value">JWT Header</div>
-                </div>
-                <div className="cloud-point">
-                  <div className="cloud-point-label">后续主线</div>
-                  <div className="cloud-point-value">我的 threads</div>
-                </div>
-              </div>
-            </section>
+          <div className="cloud-login-shell">
             <section className="cloud-auth-panel">
               <div className="cloud-panel-header">
                 <div className="cloud-panel-kicker">登录</div>

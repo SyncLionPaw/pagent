@@ -96,16 +96,13 @@ button {
   color: var(--text-secondary);
 }
 
-.cloud-login-workbench {
+.cloud-login-shell {
   display: grid;
-  grid-template-columns: minmax(320px, 1.2fr) minmax(360px, 420px);
-  gap: 24px;
-  width: min(1120px, calc(100vw - 48px));
+  width: min(480px, calc(100vw - 32px));
   margin: auto;
-  padding: 24px;
+  padding: 24px 16px;
 }
 
-.cloud-hero,
 .cloud-auth-panel,
 .cloud-home-panel {
   border: 1px solid var(--border);
@@ -113,16 +110,6 @@ button {
   box-shadow: var(--shadow-border);
 }
 
-.cloud-hero {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 520px;
-  padding: 32px;
-  border-radius: 24px;
-}
-
-.cloud-hero-mark,
 .cloud-panel-kicker {
   color: var(--primary);
   letter-spacing: 0.08em;
@@ -130,23 +117,11 @@ button {
   font-size: 12px;
 }
 
-.cloud-hero-title,
 .cloud-app-title {
   margin: 12px 0 0;
   font-size: 32px;
   line-height: 1.15;
   font-weight: 700;
-}
-
-.cloud-hero-copy,
-.cloud-panel-copy {
-  color: var(--text-secondary);
-}
-
-.cloud-hero-points {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
 }
 
 .cloud-point {
@@ -172,7 +147,6 @@ button {
 }
 
 .cloud-auth-panel {
-  align-self: center;
   padding: 28px;
   border-radius: 20px;
 }
@@ -307,15 +281,9 @@ button {
 }
 
 @media (max-width: 900px) {
-  .cloud-login-workbench {
-    grid-template-columns: minmax(0, 1fr);
-    width: min(720px, calc(100vw - 24px));
-    padding: 12px;
-  }
-
-  .cloud-hero {
-    min-height: auto;
-    gap: 20px;
+  .cloud-login-shell {
+    width: min(480px, calc(100vw - 16px));
+    padding: 8px;
   }
 
   .cloud-app-shell {
