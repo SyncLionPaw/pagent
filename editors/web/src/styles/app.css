@@ -169,7 +169,8 @@ html[data-theme="light"] {
 }
 
 html,
-body {
+body,
+#root {
     height: 100%;
     margin: 0;
     overflow: hidden;
@@ -722,6 +723,7 @@ button {
     border-radius: 12px;
     background: var(--surface);
     box-shadow: var(--shadow-2), var(--shadow-border);
+    transform-origin: bottom left;
 }
 
 .user-menu-dropdown[hidden] {
@@ -874,6 +876,13 @@ button {
 
 .desktop-icon {
     display: block;
+}
+
+.lucide.desktop-icon {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    stroke-width: 1.8;
 }
 
 .icon-button:hover,

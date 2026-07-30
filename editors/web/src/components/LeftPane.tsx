@@ -15,7 +15,7 @@ import {
   Trash2,
   Wrench,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { AppInfo, Skill, ThreadSummary } from "../api/types";
 
 type Props = {
@@ -66,6 +66,39 @@ export function LeftPane({
   const initial = (appInfo.userName || "P").charAt(0).toUpperCase();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const chipRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+
+    const layoutMenu = () => {
+      const chip = chipRef.current;
+      const dropdown = dropdownRef.current;
+      if (!chip || !dropdown) {
+        return;
+      }
+
+      const rect = chip.getBoundingClientRect();
+      const width = Math.max(rect.width, 208);
+      dropdown.style.position = "fixed";
+      dropdown.style.left = `${Math.max(8, rect.left)}px`;
+      dropdown.style.width = `${width}px`;
+      dropdown.style.right = "auto";
+      dropdown.style.top = "auto";
+      dropdown.style.bottom = `${Math.max(8, window.innerHeight - rect.top + 8)}px`;
+    };
+
+    layoutMenu();
+    window.addEventListener("resize", layoutMenu);
+    window.addEventListener("scroll", layoutMenu, true);
+    return () => {
+      window.removeEventListener("resize", layoutMenu);
+      window.removeEventListener("scroll", layoutMenu, true);
+    };
+  }, [menuOpen]);
 
   useEffect(() => {
     if (!menuOpen) {
@@ -187,6 +220,7 @@ export function LeftPane({
               aria-haspopup="menu"
               aria-expanded={menuOpen}
               title="账户与设置"
+              ref={chipRef}
               onClick={() => setMenuOpen((open) => !open)}
             >
               <span className="user-avatar">{initial}</span>
@@ -195,7 +229,7 @@ export function LeftPane({
                 <ChevronDown className="desktop-icon" />
               </span>
             </button>
-            <div className="user-menu-dropdown" role="menu" hidden={!menuOpen}>
+            <div className="user-menu-dropdown" role="menu" hidden={!menuOpen} ref={dropdownRef}>
               <div className="user-menu-header">
                 <span className="user-avatar">{initial}</span>
                 <div className="user-menu-meta">

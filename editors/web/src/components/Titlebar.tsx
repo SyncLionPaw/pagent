@@ -1,4 +1,4 @@
-import { BookOpen, Keyboard, Settings } from "lucide-react";
+import { Keyboard, Settings } from "lucide-react";
 import { docsUrl } from "../lib/format";
 
 type Props = {
@@ -40,7 +40,7 @@ export function Titlebar({ theme, onToggleTheme, onOpenSettings, onOpenShortcuts
           title="打开文档"
           aria-label="打开文档"
         >
-          <BookOpen className="desktop-icon" aria-hidden="true" />
+          <i className="codicon codicon-github" aria-hidden="true" />
         </a>
         <button
           className="titlebar-action"
@@ -49,7 +49,7 @@ export function Titlebar({ theme, onToggleTheme, onOpenSettings, onOpenShortcuts
           aria-label="快捷键与心智模型"
           onClick={onOpenShortcuts}
         >
-          <Keyboard className="desktop-icon" aria-hidden="true" />
+          <Keyboard className="desktop-icon" size={16} strokeWidth={1.8} aria-hidden="true" />
         </button>
         <button
           className="titlebar-action title-settings-button"
@@ -58,7 +58,7 @@ export function Titlebar({ theme, onToggleTheme, onOpenSettings, onOpenShortcuts
           aria-label="设置"
           onClick={onOpenSettings}
         >
-          <Settings className="desktop-icon" aria-hidden="true" />
+          <Settings className="desktop-icon" size={16} strokeWidth={1.8} aria-hidden="true" />
         </button>
       </div>
     </div>
