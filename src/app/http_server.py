@@ -123,7 +123,7 @@ def build_app(config: ReplConfig):
     """构造 FastAPI 应用。进程级把事件出口切到 FanoutSink，命令核复用 wire。"""
     from contextlib import asynccontextmanager
 
-    from fastapi import FastAPI, Header, HTTPException, Query, Request
+    from fastapi import Body, FastAPI, Header, HTTPException, Query, Request
     from fastapi.middleware.cors import CORSMiddleware
     from fastapi.responses import FileResponse, StreamingResponse
     from fastapi.staticfiles import StaticFiles
@@ -236,6 +236,26 @@ def build_app(config: ReplConfig):
         require_auth(authorization)
         root = project_path or session.effective_project_path()
         return web_host.read_artifact(root, path)
+
+    @app.post("/api/artifacts/open")
+    async def api_artifact_open(
+        body: dict = Body(...),
+        authorization: str | None = Header(default=None),
+    ):
+        require_auth(authorization)
+        path = body.get("path")
+        if not isinstance(path, str) or not path.strip():
+            raise HTTPException(status_code=400, detail="path required")
+        project_path = body.get("projectPath")
+        root = (
+            project_path.strip()
+            if isinstance(project_path, str) and project_path.strip()
+            else session.effective_project_path()
+        )
+        ok = web_host.open_artifact(root, path.strip())
+        if not ok:
+            raise HTTPException(status_code=404, detail="artifact not found")
+        return {"ok": True}
 
     @app.get("/api/project-files")
     async def api_project_files(

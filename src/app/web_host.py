@@ -208,6 +208,27 @@ def read_artifact(project_path: str | None, file_path: str) -> dict:
     }
 
 
+def open_artifact(project_path: str | None, file_path: str) -> bool:
+    target = _resolve_artifact(project_path, file_path)
+    if target is None:
+        return False
+
+    if os.name == "posix" and shutil.which("open"):
+        subprocess.run(["open", "-R", str(target)], check=False)
+        return True
+
+    if os.name == "nt":
+        subprocess.run(["explorer", "/select,", str(target)], check=False)
+        return True
+
+    opener = shutil.which("xdg-open")
+    if opener:
+        subprocess.run([opener, str(target.parent)], check=False)
+        return True
+
+    return False
+
+
 def list_project_files(project_path: str | None) -> list[str]:
     root = resolve_project_path(project_path)
     if not root.is_dir():

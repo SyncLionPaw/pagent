@@ -749,6 +749,12 @@ export default function App() {
       .catch((error: unknown) => setLastError(toErrorMessage(error)));
   };
 
+  const openArtifact = (path: string) => {
+    void hostApi
+      .openArtifact(path, runtimeRef.current.projectPath)
+      .catch((error: unknown) => setLastError(toErrorMessage(error)));
+  };
+
   const leftHidden = !isMobile && sidebarDocked;
   const workbenchStyle = isMobile
     ? undefined
@@ -933,6 +939,7 @@ export default function App() {
                 }
               }}
               onRefreshSandbox={refreshSandbox}
+              onOpenArtifact={openArtifact}
               onPreviewArtifact={previewArtifact}
               onCloseArtifactPreview={() => setArtifactPreview(undefined)}
             />

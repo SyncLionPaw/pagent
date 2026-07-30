@@ -56,6 +56,7 @@ type Props = {
   onToggleCollapsed: () => void;
   onRefreshProject: () => void;
   onRefreshSandbox: () => void;
+  onOpenArtifact: (path: string) => void;
   onPreviewArtifact: (path: string) => void;
   onCloseArtifactPreview: () => void;
 };
@@ -76,6 +77,7 @@ export function RightPane({
   onToggleCollapsed,
   onRefreshProject,
   onRefreshSandbox,
+  onOpenArtifact,
   onPreviewArtifact,
   onCloseArtifactPreview,
 }: Props) {
@@ -189,12 +191,19 @@ export function RightPane({
                     <Empty copy="当前项目还没有产物。" />
                   ) : (
                     artifacts.map((artifact) => (
-                      <button
+                      <div
                         className="artifact-row"
                         key={artifact.path}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         title={`预览 ${artifact.name}`}
                         onClick={() => onPreviewArtifact(artifact.path)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            onPreviewArtifact(artifact.path);
+                          }
+                        }}
                       >
                         <span className="artifact-icon">
                           <ArtifactIcon name={artifact.name} />
@@ -205,18 +214,19 @@ export function RightPane({
                             {formatBytes(artifact.size)} · {new Date(artifact.mtimeMs).toLocaleString()}
                           </div>
                         </div>
-                        <span
+                        <button
                           className="artifact-open"
-                          title="复制路径"
-                          role="button"
+                          type="button"
+                          title={`在本机打开 ${artifact.name}`}
+                          aria-label={`在本机打开 ${artifact.name}`}
                           onClick={(event) => {
                             event.stopPropagation();
-                            void copyPath(artifact.path);
+                            onOpenArtifact(artifact.path);
                           }}
                         >
-                          <Copy className="desktop-icon" aria-hidden="true" />
-                        </span>
-                      </button>
+                          <FolderOpen className="desktop-icon" aria-hidden="true" />
+                        </button>
+                      </div>
                     ))
                   )}
                 </div>

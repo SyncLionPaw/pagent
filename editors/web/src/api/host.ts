@@ -66,6 +66,8 @@ export function createHostApi(baseUrl: string, token?: string) {
         path,
         project_path: projectPath,
       }),
+    openArtifact: (path: string, projectPath?: string) =>
+      apiPost<{ ok: boolean }>(baseUrl, "/api/artifacts/open", { path, projectPath }, token),
     listProjectFiles: (projectPath?: string) =>
       apiGet<string[]>(baseUrl, "/api/project-files", token, { project_path: projectPath }),
     listProjectTree: (projectPath?: string) =>
