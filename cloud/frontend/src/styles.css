@@ -87,7 +87,7 @@ button {
   height: 100%;
 }
 
-.cloud-web-app [data-cloud-hidden="logout-replaced"] {
+.cloud-web-app [data-cloud-hidden] {
   display: none;
 }
 
