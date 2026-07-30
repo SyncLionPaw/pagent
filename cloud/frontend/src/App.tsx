@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
+import { LogOut } from "lucide-react";
+import { createPortal } from "react-dom";
 import WebApp from "../../../editors/web/src/App";
 
 type User = {
@@ -66,6 +68,7 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(Boolean(token));
+  const [logoutMount, setLogoutMount] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -93,6 +96,26 @@ export default function App() {
   }, [token]);
 
   const loggedIn = useMemo(() => Boolean(user && token), [token, user]);
+
+  useEffect(() => {
+    if (!loggedIn) {
+      setLogoutMount(null);
+      return;
+    }
+    const mount = document.querySelector(".left-footer-actions");
+    const skillsButton = mount?.querySelector(".icon-button:first-child");
+    if (mount instanceof HTMLElement) {
+      setLogoutMount(mount);
+    }
+    if (skillsButton instanceof HTMLElement) {
+      skillsButton.dataset.cloudHidden = "logout-replaced";
+    }
+    return () => {
+      if (skillsButton instanceof HTMLElement) {
+        delete skillsButton.dataset.cloudHidden;
+      }
+    };
+  }, [loggedIn]);
 
   useEffect(() => {
     if (!token) {
@@ -226,10 +249,15 @@ export default function App() {
 
   return (
     <div className="cloud-web-app" data-user-id={currentUser.id} data-user-name={currentUser.username}>
-      <button className="cloud-logout-button" type="button" onClick={logout}>
-        退出登录
-      </button>
       <WebApp />
+      {logoutMount
+        ? createPortal(
+          <button className="icon-button cloud-logout-button" type="button" title="退出登录" onClick={logout}>
+            <LogOut className="desktop-icon" aria-hidden="true" />
+          </button>,
+          logoutMount,
+        )
+        : null}
     </div>
   );
 }

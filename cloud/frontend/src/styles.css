@@ -87,29 +87,12 @@ button {
   height: 100%;
 }
 
-.cloud-logout-button {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 20;
-  height: 30px;
-  padding: 0 10px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  color: var(--text-secondary);
-  backdrop-filter: blur(10px);
-  cursor: pointer;
-  transition:
-    color 120ms ease,
-    border-color 120ms ease,
-    background 120ms ease;
+.cloud-web-app [data-cloud-hidden="logout-replaced"] {
+  display: none;
 }
 
-.cloud-logout-button:hover {
-  color: var(--text-primary);
-  border-color: color-mix(in srgb, var(--primary) 38%, var(--border));
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
+.cloud-logout-button {
+  flex: none;
 }
 
 .cloud-shell {
