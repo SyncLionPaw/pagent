@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import WebApp from "../../../editors/web/src/App";
 
 type User = {
   id: string;
@@ -7,6 +8,8 @@ type User = {
 };
 
 const TOKEN_KEY = "pagent-cloud-token";
+const WEB_SERVER_URL_KEY = "pagent-web-server-url";
+const WEB_SERVER_TOKEN_KEY = "pagent-web-server-token";
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -61,6 +64,16 @@ export default function App() {
 
   const loggedIn = useMemo(() => Boolean(user && token), [token, user]);
 
+  useEffect(() => {
+    if (!token) {
+      window.localStorage.removeItem(WEB_SERVER_URL_KEY);
+      window.localStorage.removeItem(WEB_SERVER_TOKEN_KEY);
+      return;
+    }
+    window.localStorage.setItem(WEB_SERVER_URL_KEY, "");
+    window.localStorage.setItem(WEB_SERVER_TOKEN_KEY, token);
+  }, [token]);
+
   async function onSubmit(event: { preventDefault(): void }) {
     event.preventDefault();
     setSubmitting(true);
@@ -78,13 +91,6 @@ export default function App() {
     } finally {
       setSubmitting(false);
     }
-  }
-
-  function logout() {
-    localStorage.removeItem(TOKEN_KEY);
-    setToken("");
-    setUser(undefined);
-    setError("");
   }
 
   if (checking) {
@@ -150,36 +156,8 @@ export default function App() {
   const currentUser = user!;
 
   return (
-    <div className="desktop-root">
-      <div className="desktop-shell cloud-shell">
-        <div className="cloud-app-shell">
-          <header className="cloud-app-topbar">
-            <div>
-              <div className="cloud-panel-kicker">pagent cloud</div>
-              <div className="cloud-app-title">已进入云端版本</div>
-            </div>
-            <button className="cloud-secondary-button" type="button" onClick={logout}>
-              退出登录
-            </button>
-          </header>
-          <main className="cloud-home-panel">
-            <div className="cloud-home-title">你好，{currentUser.displayName}</div>
-            <div className="cloud-panel-copy">
-              登录墙已经接上。下一步继续补 thread 列表、创建 thread、消息流。
-            </div>
-            <div className="cloud-hero-points">
-              <div className="cloud-point">
-                <div className="cloud-point-label">user id</div>
-                <div className="cloud-point-value">{currentUser.id}</div>
-              </div>
-              <div className="cloud-point">
-                <div className="cloud-point-label">username</div>
-                <div className="cloud-point-value">{currentUser.username}</div>
-              </div>
-            </div>
-          </main>
-        </div>
-      </div>
+    <div className="cloud-web-app" data-user-id={currentUser.id} data-user-name={currentUser.username}>
+      <WebApp />
     </div>
   );
 }
