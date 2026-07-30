@@ -34,6 +34,7 @@ htmlcov/
 # type check / linters
 .mypy_cache/
 .ruff_cache/
+*.tsbuildinfo
 
 # env / secrets
 .env
