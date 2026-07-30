@@ -146,7 +146,7 @@ button {
 .cloud-login-brand {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  cursor: none;
   background:
     radial-gradient(circle at 28% 38%, rgba(21, 119, 249, 0.18), transparent 0 20%),
     radial-gradient(circle at 64% 48%, rgba(117, 238, 255, 0.08), transparent 0 18%),
@@ -176,6 +176,40 @@ button {
   opacity: 0.26;
   filter:
     blur(16px) drop-shadow(0 0 28px rgba(21, 119, 249, 0.18)) drop-shadow(0 0 72px rgba(97, 240, 255, 0.08));
+  pointer-events: none;
+}
+
+.cloud-login-brand-image-focus {
+  position: absolute;
+  left: 8%;
+  top: 50%;
+  width: min(56vw, 780px);
+  transform: translateY(-50%);
+  display: block;
+  object-fit: contain;
+  opacity: calc(0.14 + var(--cloud-hover-opacity) * 0.28);
+  filter:
+    blur(2px) drop-shadow(0 0 18px rgba(121, 232, 255, 0.12));
+  clip-path: circle(108px at var(--cloud-hover-x) var(--cloud-hover-y));
+  pointer-events: none;
+}
+
+.cloud-login-cursor {
+  position: absolute;
+  left: var(--cloud-hover-x);
+  top: var(--cloud-hover-y);
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(185, 255, 248, 0.95);
+  box-shadow:
+    0 0 0 6px rgba(121, 232, 255, 0.08),
+    0 0 24px rgba(121, 232, 255, 0.34);
+  transform: translate(-50%, -50%) scale(calc(0.72 + var(--cloud-hover-opacity) * 0.28));
+  opacity: var(--cloud-hover-opacity);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
   pointer-events: none;
 }
 
@@ -476,6 +510,14 @@ button {
   }
 
   .cloud-login-brand-image {
+    left: 50%;
+    top: auto;
+    bottom: 0;
+    width: min(78vw, 340px);
+    transform: translateX(-50%);
+  }
+
+  .cloud-login-brand-image-focus {
     left: 50%;
     top: auto;
     bottom: 0;
