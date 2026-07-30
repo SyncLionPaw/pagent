@@ -103,8 +103,7 @@ export default function App() {
         <div className="desktop-shell cloud-shell">
           <div className="cloud-login-shell">
             <div className="cloud-login-brand" aria-hidden="true">
-              <div className="cloud-login-brand-mark">pagent</div>
-              <div className="cloud-login-brand-sub">cloud</div>
+              <img className="cloud-login-brand-image" src="/cloud-logo.png" alt="" />
             </div>
             <section className="cloud-auth-panel">
               <div className="cloud-panel-header">

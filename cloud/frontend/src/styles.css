@@ -112,8 +112,8 @@ button {
   border-radius: 24px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 32% 28%, rgba(21, 119, 249, 0.22), transparent 0 18%),
-    radial-gradient(circle at 62% 60%, rgba(255, 255, 255, 0.06), transparent 0 24%),
+    radial-gradient(circle at 32% 28%, rgba(21, 119, 249, 0.18), transparent 0 18%),
+    radial-gradient(circle at 62% 60%, rgba(255, 255, 255, 0.04), transparent 0 24%),
     linear-gradient(180deg, rgba(32, 35, 40, 0.78), rgba(20, 21, 23, 0.42));
 }
 
@@ -125,25 +125,15 @@ button {
   border-radius: 20px;
 }
 
-.cloud-login-brand-mark {
+.cloud-login-brand-image {
   position: absolute;
-  left: 40px;
-  bottom: 92px;
-  color: rgba(255, 255, 255, 0.94);
-  font-size: clamp(64px, 10vw, 128px);
-  line-height: 0.9;
-  font-weight: 700;
-  letter-spacing: -0.05em;
-}
-
-.cloud-login-brand-sub {
-  position: absolute;
-  left: 48px;
-  bottom: 48px;
-  color: var(--text-secondary);
-  font-size: 18px;
-  letter-spacing: 0.32em;
-  text-transform: uppercase;
+  inset: 50%;
+  width: min(72%, 560px);
+  transform: translate(-50%, -50%);
+  display: block;
+  object-fit: contain;
+  filter:
+    drop-shadow(0 24px 40px rgba(0, 0, 0, 0.28)) drop-shadow(0 0 32px rgba(21, 119, 249, 0.08));
 }
 
 .cloud-auth-panel,
@@ -334,16 +324,8 @@ button {
     min-height: 180px;
   }
 
-  .cloud-login-brand-mark {
-    left: 24px;
-    bottom: 54px;
-    font-size: 56px;
-  }
-
-  .cloud-login-brand-sub {
-    left: 28px;
-    bottom: 24px;
-    font-size: 14px;
+  .cloud-login-brand-image {
+    width: min(58%, 260px);
   }
 
   .cloud-app-shell {
