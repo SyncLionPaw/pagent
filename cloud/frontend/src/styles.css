@@ -132,11 +132,11 @@ button {
 
 .cloud-login-brand-glow {
   position: absolute;
-  inset: -12%;
+  inset: -6%;
   background: radial-gradient(circle at var(--cloud-hover-x) var(--cloud-hover-y),
-      rgba(120, 255, 241, 0.32),
-      rgba(62, 162, 255, 0.14) 10%,
-      transparent 22%);
+      rgba(120, 255, 241, 0.24),
+      rgba(62, 162, 255, 0.1) 9%,
+      transparent 16%);
   opacity: var(--cloud-hover-opacity);
   transition: opacity 140ms ease;
   pointer-events: none;
@@ -150,9 +150,9 @@ button {
   transform: translateY(-50%);
   display: block;
   object-fit: contain;
-  opacity: 0.22;
+  opacity: 0.26;
   filter:
-    blur(26px) drop-shadow(0 0 48px rgba(21, 119, 249, 0.22)) drop-shadow(0 0 128px rgba(97, 240, 255, 0.12));
+    blur(16px) drop-shadow(0 0 28px rgba(21, 119, 249, 0.18)) drop-shadow(0 0 72px rgba(97, 240, 255, 0.08));
   pointer-events: none;
 }
 
