@@ -1,5 +1,5 @@
 -- Cloud backend initial schema
--- Stage 1: auth only
+-- Stage 1: jwt auth + per-user thread storage
 -- Target: PostgreSQL 15+
 
 create extension if not exists pgcrypto;
@@ -29,33 +29,67 @@ create table user_passwords (
 );
 
 
-create table user_oauth_accounts (
+create table threads (
     id uuid primary key default gen_random_uuid(),
-    user_id uuid not null references users(id) on delete cascade,
-    provider text not null,
-    provider_user_id text not null,
-    provider_email text,
-    profile jsonb not null default '{}'::jsonb,
+    owner_user_id uuid not null references users(id) on delete cascade,
+    title text not null default '',
+    status text not null default 'idle' check (status in ('idle', 'running', 'completed', 'error', 'archived')),
+    sandbox_backend text,
+    model text,
+    project_path text,
+    summary text,
+    message_count integer not null default 0 check (message_count >= 0),
+    started_at timestamptz,
+    last_message_at timestamptz,
+    archived_at timestamptz,
+    deleted_at timestamptz,
     created_at timestamptz not null default now(),
-    updated_at timestamptz not null default now(),
-    unique (provider, provider_user_id)
+    updated_at timestamptz not null default now()
 );
 
-create index user_oauth_accounts_user_id_idx on user_oauth_accounts (user_id);
+create index threads_owner_user_id_last_message_at_idx
+    on threads (owner_user_id, last_message_at desc nulls last, created_at desc);
+
+create index threads_owner_user_id_deleted_at_idx
+    on threads (owner_user_id, deleted_at);
 
 
-create table user_sessions (
+create table thread_messages (
     id uuid primary key default gen_random_uuid(),
-    user_id uuid not null references users(id) on delete cascade,
-    session_token_hash text not null unique,
-    refresh_token_hash text unique,
-    ip inet,
-    user_agent text,
-    expires_at timestamptz not null,
-    revoked_at timestamptz,
-    last_seen_at timestamptz not null default now(),
+    thread_id uuid not null references threads(id) on delete cascade,
+    owner_user_id uuid not null references users(id) on delete cascade,
+    seq integer not null check (seq >= 1),
+    role text not null check (role in ('system', 'user', 'assistant', 'tool')),
+    turn_id integer,
+    tool_call_id text,
+    content_text text,
+    content_json jsonb not null default '{}'::jsonb,
+    created_at timestamptz not null default now(),
+    unique (thread_id, seq)
+);
+
+create index thread_messages_thread_id_seq_idx
+    on thread_messages (thread_id, seq);
+
+create index thread_messages_owner_user_id_created_at_idx
+    on thread_messages (owner_user_id, created_at desc);
+
+
+create table thread_artifacts (
+    id uuid primary key default gen_random_uuid(),
+    thread_id uuid not null references threads(id) on delete cascade,
+    owner_user_id uuid not null references users(id) on delete cascade,
+    message_id uuid references thread_messages(id) on delete set null,
+    name text not null,
+    storage_key text not null unique,
+    content_type text,
+    size_bytes bigint not null default 0 check (size_bytes >= 0),
+    sha256 text,
     created_at timestamptz not null default now()
 );
 
-create index user_sessions_user_id_idx on user_sessions (user_id);
-create index user_sessions_expires_at_idx on user_sessions (expires_at);
+create index thread_artifacts_thread_id_created_at_idx
+    on thread_artifacts (thread_id, created_at desc);
+
+create index thread_artifacts_owner_user_id_created_at_idx
+    on thread_artifacts (owner_user_id, created_at desc);
