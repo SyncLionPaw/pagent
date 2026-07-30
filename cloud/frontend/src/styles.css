@@ -136,14 +136,11 @@ button {
   inset: 0;
   z-index: 1;
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-end;
-  width: min(1120px, calc(100vw - 48px));
+  width: 100%;
   min-height: 100%;
-  margin: 0 auto;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 24px;
+  padding: 0;
 }
 
 .cloud-login-brand {
@@ -226,8 +223,23 @@ button {
 }
 
 .cloud-auth-panel {
-  padding: 28px;
-  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: min(440px, 100vw);
+  height: 100%;
+  margin-left: auto;
+  padding: 40px 32px 32px;
+  border-top: 0;
+  border-right: 0;
+  border-bottom: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  backdrop-filter: blur(20px);
+  box-shadow:
+    -24px 0 64px rgba(0, 0, 0, 0.34),
+    -1px 0 0 rgba(255, 255, 255, 0.04) inset;
 }
 
 .cloud-panel-header {
@@ -361,9 +373,7 @@ button {
 
 @media (max-width: 900px) {
   .cloud-login-shell {
-    width: min(480px, calc(100vw - 16px));
     justify-content: stretch;
-    padding: 8px;
   }
 
   .cloud-login-brand {
@@ -376,6 +386,13 @@ button {
     bottom: 0;
     width: min(78vw, 340px);
     transform: translateX(-50%);
+  }
+
+  .cloud-auth-panel {
+    width: 100%;
+    padding: 24px 20px 20px;
+    border-left: 0;
+    backdrop-filter: blur(16px);
   }
 
   .cloud-app-shell {
