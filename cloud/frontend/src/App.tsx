@@ -104,15 +104,30 @@ export default function App() {
     }
     const mount = document.querySelector(".left-footer-actions");
     const skillsButton = mount?.querySelector(".icon-button:first-child");
+    const themeButtons = Array.from(
+      document.querySelectorAll(
+        '.left-footer-actions .icon-button[title="切换主题"], .collapsed-bottom .collapsed-icon[title="切换主题"]',
+      ),
+    );
     if (mount instanceof HTMLElement) {
       setLogoutMount(mount);
     }
     if (skillsButton instanceof HTMLElement) {
       skillsButton.dataset.cloudHidden = "logout-replaced";
     }
+    for (const button of themeButtons) {
+      if (button instanceof HTMLElement) {
+        button.dataset.cloudHidden = "theme-redundant";
+      }
+    }
     return () => {
       if (skillsButton instanceof HTMLElement) {
         delete skillsButton.dataset.cloudHidden;
+      }
+      for (const button of themeButtons) {
+        if (button instanceof HTMLElement) {
+          delete button.dataset.cloudHidden;
+        }
       }
     };
   }, [loggedIn]);
