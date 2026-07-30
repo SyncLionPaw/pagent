@@ -168,10 +168,9 @@ button {
 
 .cloud-login-brand-image {
   position: absolute;
-  left: 8%;
-  top: 50%;
-  width: min(56vw, 780px);
-  transform: translateY(-50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: block;
   object-fit: contain;
   opacity: 0.26;
@@ -180,18 +179,30 @@ button {
   pointer-events: none;
 }
 
-.cloud-login-brand-image-focus {
+.cloud-login-brand-stage {
   position: absolute;
   left: 8%;
   top: 50%;
   width: min(56vw, 780px);
+  aspect-ratio: 1280 / 1150;
   transform: translateY(-50%);
+  --cloud-stage-hover-x: 50%;
+  --cloud-stage-hover-y: 50%;
+  --cloud-stage-hover-opacity: 0;
+  pointer-events: none;
+}
+
+.cloud-login-brand-image-focus {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: block;
   object-fit: contain;
-  opacity: calc(var(--cloud-hover-opacity) * 0.34);
+  opacity: calc(var(--cloud-stage-hover-opacity) * 0.5);
   filter:
-    blur(2px) drop-shadow(0 0 18px rgba(121, 232, 255, 0.12));
-  clip-path: circle(calc(var(--cloud-hover-opacity) * 108px) at var(--cloud-hover-x) var(--cloud-hover-y));
+    blur(1px) drop-shadow(0 0 12px rgba(121, 232, 255, 0.08));
+  clip-path: circle(calc(var(--cloud-stage-hover-opacity) * 64px) at var(--cloud-stage-hover-x) var(--cloud-stage-hover-y));
   pointer-events: none;
 }
 
@@ -512,14 +523,12 @@ button {
   }
 
   .cloud-login-brand-image {
-    left: 50%;
-    top: auto;
-    bottom: 0;
-    width: min(78vw, 340px);
-    transform: translateX(-50%);
+    inset: 0;
+    width: 100%;
+    height: 100%;
   }
 
-  .cloud-login-brand-image-focus {
+  .cloud-login-brand-stage {
     left: 50%;
     top: auto;
     bottom: 0;

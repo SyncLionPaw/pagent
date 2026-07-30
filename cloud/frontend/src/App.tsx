@@ -13,16 +13,32 @@ const WEB_SERVER_URL_KEY = "pagent-web-server-url";
 const WEB_SERVER_TOKEN_KEY = "pagent-web-server-token";
 
 function moveLoginGlow(event: ReactPointerEvent<HTMLDivElement>) {
-  const rect = event.currentTarget.getBoundingClientRect();
+  const container = event.currentTarget;
+  const rect = container.getBoundingClientRect();
   const x = `${((event.clientX - rect.left) / rect.width) * 100}%`;
   const y = `${((event.clientY - rect.top) / rect.height) * 100}%`;
-  event.currentTarget.style.setProperty("--cloud-hover-x", x);
-  event.currentTarget.style.setProperty("--cloud-hover-y", y);
-  event.currentTarget.style.setProperty("--cloud-hover-opacity", "1");
+  container.style.setProperty("--cloud-hover-x", x);
+  container.style.setProperty("--cloud-hover-y", y);
+  container.style.setProperty("--cloud-hover-opacity", "1");
+
+  const stage = container.querySelector(".cloud-login-brand-stage");
+  if (stage instanceof HTMLElement) {
+    const stageRect = stage.getBoundingClientRect();
+    const stageX = `${((event.clientX - stageRect.left) / stageRect.width) * 100}%`;
+    const stageY = `${((event.clientY - stageRect.top) / stageRect.height) * 100}%`;
+    stage.style.setProperty("--cloud-stage-hover-x", stageX);
+    stage.style.setProperty("--cloud-stage-hover-y", stageY);
+    stage.style.setProperty("--cloud-stage-hover-opacity", "1");
+  }
 }
 
 function resetLoginGlow(event: ReactPointerEvent<HTMLDivElement>) {
-  event.currentTarget.style.setProperty("--cloud-hover-opacity", "0");
+  const container = event.currentTarget;
+  container.style.setProperty("--cloud-hover-opacity", "0");
+  const stage = container.querySelector(".cloud-login-brand-stage");
+  if (stage instanceof HTMLElement) {
+    stage.style.setProperty("--cloud-stage-hover-opacity", "0");
+  }
 }
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -137,8 +153,10 @@ export default function App() {
             onPointerLeave={resetLoginGlow}
           >
             <div className="cloud-login-brand-glow" />
-            <img className="cloud-login-brand-image" src="/cloud-logo.png" alt="" />
-            <img className="cloud-login-brand-image-focus" src="/cloud-logo.png" alt="" />
+            <div className="cloud-login-brand-stage">
+              <img className="cloud-login-brand-image" src="/cloud-logo.png" alt="" />
+              <img className="cloud-login-brand-image-focus" src="/cloud-logo.png" alt="" />
+            </div>
             <div className="cloud-login-cursor" />
           </div>
           <div className="cloud-login-shell">
