@@ -82,6 +82,10 @@ button {
   height: 100%;
 }
 
+.cloud-web-app {
+  height: 100%;
+}
+
 .cloud-shell {
   --cloud-hover-x: 50%;
   --cloud-hover-y: 50%;
