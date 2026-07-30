@@ -951,16 +951,17 @@ body {
 }
 
 .tool-card:has(.tool-permit) {
-  border-color: color-mix(in srgb, var(--vscode-inputValidation-warningBorder, #d29922) 58%, var(--vscode-panel-border));
+  border-color: color-mix(
+    in srgb,
+    var(--vscode-inputValidation-warningBorder, #d29922) 28%,
+    var(--vscode-panel-border)
+  );
   background:
-    radial-gradient(circle at top right,
-      color-mix(in srgb, var(--vscode-inputValidation-warningBorder, #d29922) 16%, transparent),
-      transparent 36%),
     linear-gradient(180deg,
-      color-mix(in srgb, var(--vscode-inputValidation-warningBackground, #332b00) 22%, transparent),
-      var(--vscode-editor-background) 58%);
+      color-mix(in srgb, var(--vscode-inputValidation-warningBorder, #d29922) 6%, var(--vscode-editor-background)),
+      var(--vscode-editor-background) 42%);
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--vscode-inputValidation-warningBorder, #d29922) 18%, transparent) inset,
+    0 1px 0 color-mix(in srgb, var(--vscode-inputValidation-warningBorder, #d29922) 10%, transparent) inset,
     0 14px 38px color-mix(in srgb, var(--vscode-editor-background) 58%, transparent);
 }
 
@@ -997,12 +998,20 @@ body {
   gap: 10px;
   margin-top: 8px;
   padding: 9px 0 2px;
-  border-top: 1px solid color-mix(in srgb, var(--vscode-inputValidation-warningBorder, #d29922) 28%, transparent);
+  border-top: 1px solid color-mix(
+    in srgb,
+    var(--vscode-inputValidation-warningBorder, #d29922) 16%,
+    var(--vscode-panel-border)
+  );
 }
 
 .tool-permit-icon {
   flex: none;
-  color: var(--vscode-inputValidation-warningBorder, #d29922);
+  color: color-mix(
+    in srgb,
+    var(--vscode-inputValidation-warningBorder, #d29922) 52%,
+    var(--vscode-descriptionForeground)
+  );
   font-size: 14px;
   user-select: none;
 }
@@ -1013,7 +1022,11 @@ body {
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 0.9em;
   line-height: 1.4;
-  color: var(--vscode-descriptionForeground);
+  color: color-mix(
+    in srgb,
+    var(--vscode-descriptionForeground) 88%,
+    var(--vscode-foreground)
+  );
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
