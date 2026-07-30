@@ -1,0 +1,3 @@
+# Ignore local compose secrets / runtime data
+.env
+*.local.env

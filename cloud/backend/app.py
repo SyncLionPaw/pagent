@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 from collections import defaultdict
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import Body, FastAPI, Header, HTTPException, Query, Request
@@ -10,17 +12,34 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from . import db, settings, storage
 from .auth import create_jwt, verify_jwt
 
-ADMIN_USERNAME = "admin"
-ADMIN_PASSWORD = "123"
+logger = logging.getLogger("cloud.backend")
+
 DEFAULT_PROJECT_PATH = "/cloud/demo"
 DEFAULT_IMAGE = "pagent:latest"
 
-app = FastAPI(title="pagent cloud backend")
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        result = db.bootstrap()
+        logger.info("database bootstrap: %s", result)
+    except Exception:
+        logger.exception("database bootstrap skipped / failed")
+    try:
+        storage.ensure_bucket()
+        logger.info("object storage bucket ready: %s", settings.S3_BUCKET)
+    except Exception:
+        logger.exception("object storage bootstrap skipped / failed")
+    yield
+
+
+app = FastAPI(title="pagent cloud backend", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5174", "http://localhost:5174"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -268,18 +287,38 @@ async def handle_command_for_user(
 
 
 @app.get("/api/health")
-def health() -> dict[str, bool]:
-    return {"ok": True}
+def health() -> dict[str, Any]:
+    db_status = db.ping()
+    storage_status = storage.ping()
+    ready = bool(db_status.get("ok") and storage_status.get("ok"))
+    return {
+        "ok": True,
+        "ready": ready,
+        "db": db_status,
+        "storage": storage_status,
+    }
+
+
+@app.get("/api/ready")
+def ready() -> dict[str, Any]:
+    payload = health()
+    if not payload["ready"]:
+        raise HTTPException(status_code=503, detail=payload)
+    return payload
 
 
 @app.post("/api/auth/login")
 def login(body: LoginRequest) -> dict[str, Any]:
-    if body.username != ADMIN_USERNAME or body.password != ADMIN_PASSWORD:
+    if (
+        not settings.DEMO_MODE
+        or body.username != settings.DEMO_USERNAME
+        or body.password != settings.DEMO_PASSWORD
+    ):
         raise HTTPException(status_code=401, detail="invalid username or password")
     user = {
-        "id": "user-admin",
-        "username": ADMIN_USERNAME,
-        "displayName": "admin",
+        "id": "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+        "username": settings.DEMO_USERNAME,
+        "displayName": settings.DEMO_USERNAME,
     }
     token = create_jwt(sub=user["id"], username=user["username"])
     return {"token": token, "user": user}
@@ -320,7 +359,7 @@ def runtime_state(authorization: str | None = Header(default=None)) -> dict[str,
 
 
 @app.get("/api/settings")
-def settings(authorization: str | None = Header(default=None)) -> dict[str, Any]:
+def get_settings(authorization: str | None = Header(default=None)) -> dict[str, Any]:
     read_current_user(authorization)
     return {
         "path": "/cloud/config/pagent.toml",

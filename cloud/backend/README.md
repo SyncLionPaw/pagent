@@ -1,20 +1,32 @@
 ## Backend
 
-这里放云端后端代码。
+FastAPI 云端 API。
 
-当前选型：FastAPI
+### 职责
 
-预期职责：
+- JWT 鉴权（环境变量 `CLOUD_JWT_SECRET`）
+- 用户 / thread 持久化（PostgreSQL）
+- Artifact 对象存储（S3 / MinIO）
+- Wire：`POST /command` + `GET /events`
 
-- 用户系统
-- 云端业务 API
-- 会话、权限、存储等服务端能力
+### 关键文件
 
-数据库初稿：
+| 文件 | 说明 |
+|------|------|
+| `settings.py` | 环境变量 |
+| `db.py` | Postgres 连接 / bootstrap |
+| `storage.py` | MinIO / S3 |
+| `db/schema.sql` | 表结构 |
+| `db/seed.sql` | 演示账号 |
+| `Dockerfile` | API 镜像 |
+| `requirements.txt` | 镜像依赖 |
 
-- [db/schema.md](file:///Users/bytedance/docs/pagent/cloud/backend/db/schema.md)
-- [db/schema.sql](file:///Users/bytedance/docs/pagent/cloud/backend/db/schema.sql)
+### 关键接口
 
-接口初稿：
+- `GET /api/health` — 进程存活 + db/storage 明细
+- `GET /api/ready` — 依赖就绪（compose healthcheck 用）
 
-- [api/threads.md](file:///Users/bytedance/docs/pagent/cloud/backend/api/threads.md)
+设计稿：
+
+- [db/schema.md](./db/schema.md)
+- [api/threads.md](./api/threads.md)

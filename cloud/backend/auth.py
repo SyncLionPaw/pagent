@@ -6,16 +6,16 @@ import hmac
 import json
 import time
 
+from . import settings
+
 JWT_ALG = "HS256"
-JWT_SECRET = "cloud-dev-secret"
-TOKEN_TTL_SECONDS = 24 * 60 * 60
 
 
-def _b64url_encode(data: bytes) -> str:
+def b64url_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
 
 
-def _b64url_decode(data: str) -> bytes:
+def b64url_decode(data: str) -> bytes:
     padding = "=" * (-len(data) % 4)
     return base64.urlsafe_b64decode(data + padding)
 
@@ -27,19 +27,19 @@ def create_jwt(*, sub: str, username: str) -> str:
         "sub": sub,
         "username": username,
         "iat": now,
-        "exp": now + TOKEN_TTL_SECONDS,
+        "exp": now + settings.JWT_TTL_SECONDS,
     }
-    header_b64 = _b64url_encode(
+    header_b64 = b64url_encode(
         json.dumps(header, separators=(",", ":")).encode("utf-8")
     )
-    payload_b64 = _b64url_encode(
+    payload_b64 = b64url_encode(
         json.dumps(payload, separators=(",", ":")).encode("utf-8")
     )
     signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
     signature = hmac.new(
-        JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256
+        settings.JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256
     ).digest()
-    return f"{header_b64}.{payload_b64}.{_b64url_encode(signature)}"
+    return f"{header_b64}.{payload_b64}.{b64url_encode(signature)}"
 
 
 def verify_jwt(token: str) -> dict:
@@ -49,12 +49,12 @@ def verify_jwt(token: str) -> dict:
         raise ValueError("invalid token format") from exc
     signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
     expected = hmac.new(
-        JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256
+        settings.JWT_SECRET.encode("utf-8"), signing_input, hashlib.sha256
     ).digest()
-    actual = _b64url_decode(signature_b64)
+    actual = b64url_decode(signature_b64)
     if not hmac.compare_digest(actual, expected):
         raise ValueError("invalid token signature")
-    payload = json.loads(_b64url_decode(payload_b64).decode("utf-8"))
+    payload = json.loads(b64url_decode(payload_b64).decode("utf-8"))
     exp = payload.get("exp")
     if not isinstance(exp, int) or exp < int(time.time()):
         raise ValueError("token expired")

@@ -1,6 +1,6 @@
 # pagent Cloud 计划书
 
-**状态**: 骨架已立，可演示登录与挂载 Web 工作台；尚未接入真实 agent / 持久化。  
+**状态**: 骨架 + Docker Compose（Postgres / MinIO / api / web）已就绪；尚未接入真实 agent，Thread API 尚未完全接线。  
 **对象**: 最新云端版本（`cloud/`）后续要做什么、按什么顺序做。  
 **配套**: [README.md](./README.md) · [backend/db/schema.md](./backend/db/schema.md) · [backend/api/threads.md](./backend/api/threads.md) · 本地 Web 基座见 [docs/web.md](../docs/web.md)
 
@@ -31,6 +31,7 @@ Cloud 不是再做一个 Desktop，也不是立刻做多租户 SaaS。
 - **工作台挂载**: 登录后直接渲染 `editors/web` App；token 写入 Web bridge 使用的 localStorage
 - **HTTP 皮**: `/events` SSE、`/command` stub、若干 `/api/*` 空实现（树、artifact、settings…）
 - **数据设计稿**: PostgreSQL schema（users / threads / messages / artifacts）+ Thread REST 草图
+- **Compose 基础设施**: `docker-compose.yml`（Postgres 初始化 schema/seed、MinIO bucket、API/Web 镜像、workspaces volume）
 - **本地基座（已合 main）**: Web Desktop 对标（PR #3）+ mobile 抽屉布局（PR #4）
 
 ### 明确缺口
