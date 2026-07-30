@@ -39,7 +39,9 @@ user_state_by_id: dict[str, dict[str, Any]] = {
         "threads": [],
     }
 }
-subscriber_queues_by_user: dict[str, list[asyncio.Queue[str | None]]] = defaultdict(list)
+subscriber_queues_by_user: dict[str, list[asyncio.Queue[str | None]]] = defaultdict(
+    list
+)
 
 
 def read_current_user(authorization: str | None) -> dict[str, str]:
@@ -162,7 +164,9 @@ async def event_stream(user_id: str):
             subscribers.remove(queue)
 
 
-async def handle_command_for_user(user: dict[str, str], command: dict[str, Any]) -> None:
+async def handle_command_for_user(
+    user: dict[str, str], command: dict[str, Any]
+) -> None:
     user_id = user["id"]
     state = state_for(user_id)
     cmd = str(command.get("cmd") or "")
@@ -247,7 +251,9 @@ async def handle_command_for_user(user: dict[str, str], command: dict[str, Any])
         await publish_event(
             user_id,
             "Error",
-            {"message": "cloud demo backend 还没接入真实 agent，只先把 web 工作台挂起来"},
+            {
+                "message": "cloud demo backend 还没接入真实 agent，只先把 web 工作台挂起来"
+            },
         )
         return
 
