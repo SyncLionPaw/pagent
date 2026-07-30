@@ -102,8 +102,8 @@ export default function App() {
       setLogoutMount(null);
       return;
     }
-    const mount = document.querySelector(".composer-actions-start");
-    const skillsButton = mount?.querySelector('.skills-button[title="Skills"]');
+    const mount = document.querySelector(".left-footer-actions");
+    const skillsButton = mount?.querySelector('.icon-button[title="Skills"]');
     const themeButtons = Array.from(
       document.querySelectorAll(
         '.left-footer-actions .icon-button[title="切换主题"], .collapsed-bottom .collapsed-icon[title="切换主题"]',
@@ -113,7 +113,7 @@ export default function App() {
       setLogoutMount(mount);
     }
     if (skillsButton instanceof HTMLElement) {
-      skillsButton.dataset.cloudHidden = "logout-replaced";
+      skillsButton.dataset.cloudHidden = "skills-redundant";
     }
     for (const button of themeButtons) {
       if (button instanceof HTMLElement) {
@@ -268,7 +268,7 @@ export default function App() {
       {logoutMount
         ? createPortal(
           <button
-            className="composer-btn skills-button cloud-logout-button"
+            className="icon-button cloud-logout-button"
             type="button"
             title="退出登录"
             aria-label="退出登录"
