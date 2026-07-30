@@ -30,6 +30,19 @@
 - 只放密码 hash
 - 如果后面只保留外部登录，这张表也能删
 
+演示种子见 [seed.sql](./seed.sql)（`admin@local` / 密码 `123`）。
+
+### Compose
+
+`cloud/docker-compose.yml` 会在 Postgres 首次启动时挂载：
+
+1. `01_schema.sql` ← 本文件
+2. `02_seed.sql` ← 演示账号
+
+API 容器若发现缺表，也会再跑一遍 bootstrap（方便非 initdb 场景）。
+
+对象存储：MinIO bucket 名默认 `pagent-artifacts`，对应 `thread_artifacts.storage_key`。
+
 `threads`
 
 - 云端会话主表

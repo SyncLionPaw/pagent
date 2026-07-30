@@ -1,0 +1,15 @@
+# Build context helpers (repo root when building cloud images)
+.git
+**/.venv
+**/node_modules
+**/__pycache__
+**/.pytest_cache
+**/dist
+**/coverage.xml
+docs/node_modules
+editors/desktop
+editors/vscode/node_modules
+editors/web/node_modules
+editors/web/dist
+cloud/frontend/node_modules
+cloud/frontend/dist

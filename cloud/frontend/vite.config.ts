@@ -22,6 +22,8 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    // cloudflared / other tunnels send Host: *.trycloudflare.com
+    allowedHosts: true,
     fs: {
       allow: [path.resolve(rootDir, "../..")],
     },

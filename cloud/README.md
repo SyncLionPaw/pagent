@@ -1,22 +1,53 @@
 ## Cloud
 
-这个目录专门放云端版本代码。
+云端版本：用户系统 + 前后端分离，与本地 `editors/*` / `src/app/*` 解耦。
 
-目标：
+选型：FastAPI · React（复用 `editors/web`）· PostgreSQL · MinIO（S3）
 
-- 有用户系统
-- 前后端分离
-- 与当前本地版 `editors/*`、`src/app/*` 解耦
+计划书 → [PLAN.md](./PLAN.md)
 
-当前选型：
+### 目录
 
-- 后端：FastAPI
-- 前端：React
-- 前端实现尽量和 `editors/web` 保持一致
+| 路径 | 作用 |
+|------|------|
+| `frontend/` | 登录壳 + Web 工作台 |
+| `backend/` | Cloud API |
+| `docker-compose.yml` | db + minio + api + web |
+| `.env.example` | 环境变量模板 |
 
-当前只建立骨架，不迁移现有代码。
+### 一键起全套（推荐）
 
-目录约定：
+在**仓库根目录**：
 
-- `frontend/`：云端前端
-- `backend/`：云端后端
+```bash
+cp cloud/.env.example cloud/.env
+docker compose -f cloud/docker-compose.yml --env-file cloud/.env up --build
+```
+
+然后打开：
+
+- Web：http://127.0.0.1:8080
+- API：http://127.0.0.1:8787/api/health
+- MinIO Console：http://127.0.0.1:9001 （`pagent` / `pagentminio`）
+- Postgres：`localhost:5432` （`pagent` / `pagent` / db=`pagent`）
+
+演示登录：`admin` / `123`（已写入 `backend/db/seed.sql`）
+
+### 组件说明
+
+- **PostgreSQL**：启动时执行 `schema.sql` + `seed.sql`；API 也会在缺表时 bootstrap
+- **MinIO**：`minio-init` 创建 bucket `pagent-artifacts`
+- **workspaces volume**：预留给 per-user / per-thread 工作区（`CLOUD_WORKSPACE_ROOT`）
+
+### 本地开发（不经过 compose）
+
+```bash
+# 终端 1 — 至少要有可连的 Postgres / MinIO，或接受 /api/ready=503
+uv run --with fastapi --with 'uvicorn[standard]' --with 'psycopg[binary]' --with boto3 --with argon2-cffi \
+  uvicorn cloud.backend.app:app --reload --port 8787
+
+# 终端 2
+cd cloud/frontend && npm install && npm run dev
+```
+
+打开 http://127.0.0.1:5174

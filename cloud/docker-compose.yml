@@ -1,0 +1,105 @@
+# pagent Cloud stack
+# from repo root:
+#   docker compose -f cloud/docker-compose.yml up --build
+#
+# services:
+#   web       — React SPA (nginx)        http://localhost:8080
+#   api       — FastAPI backend          http://localhost:8787
+#   db        — PostgreSQL 16
+#   minio     — S3-compatible object store  http://localhost:9000  console :9001
+#   minio-init — create bucket once
+
+name: pagent-cloud
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pagent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pagent}
+      POSTGRES_DB: ${POSTGRES_DB:-pagent}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./backend/db/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pagent} -d ${POSTGRES_DB:-pagent}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pagent}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pagentminio}
+    ports:
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pagent}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pagentminio}
+      S3_BUCKET: ${CLOUD_S3_BUCKET:-pagent-artifacts}
+    volumes:
+      - ./docker/minio-init.sh:/minio-init.sh:ro
+    entrypoint: ["/bin/sh", "/minio-init.sh"]
+    restart: "no"
+
+  api:
+    build:
+      context: ..
+      dockerfile: cloud/backend/Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      CLOUD_JWT_SECRET: ${CLOUD_JWT_SECRET:-cloud-dev-secret-change-me}
+      CLOUD_DATABASE_URL: postgresql://${POSTGRES_USER:-pagent}:${POSTGRES_PASSWORD:-pagent}@db:5432/${POSTGRES_DB:-pagent}
+      CLOUD_S3_ENDPOINT_URL: http://minio:9000
+      CLOUD_S3_ACCESS_KEY: ${MINIO_ROOT_USER:-pagent}
+      CLOUD_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-pagentminio}
+      CLOUD_S3_BUCKET: ${CLOUD_S3_BUCKET:-pagent-artifacts}
+      CLOUD_CORS_ORIGINS: ${CLOUD_CORS_ORIGINS:-http://127.0.0.1:8080,http://localhost:8080,http://127.0.0.1:5174,http://localhost:5174}
+      CLOUD_DEMO_MODE: ${CLOUD_DEMO_MODE:-1}
+      CLOUD_DEMO_USERNAME: ${CLOUD_DEMO_USERNAME:-admin}
+      CLOUD_DEMO_PASSWORD: ${CLOUD_DEMO_PASSWORD:-123}
+      CLOUD_WORKSPACE_ROOT: /var/pagent/workspaces
+    ports:
+      - "${API_PORT:-8787}:8787"
+    volumes:
+      - workspaces:/var/pagent/workspaces
+
+  web:
+    build:
+      context: ..
+      dockerfile: cloud/frontend/Dockerfile
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-8080}:80"
+
+volumes:
+  pgdata:
+  minio_data:
+  workspaces:
