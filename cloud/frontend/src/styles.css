@@ -187,10 +187,10 @@ button {
   transform: translateY(-50%);
   display: block;
   object-fit: contain;
-  opacity: calc(0.14 + var(--cloud-hover-opacity) * 0.28);
+  opacity: calc(var(--cloud-hover-opacity) * 0.34);
   filter:
     blur(2px) drop-shadow(0 0 18px rgba(121, 232, 255, 0.12));
-  clip-path: circle(108px at var(--cloud-hover-x) var(--cloud-hover-y));
+  clip-path: circle(calc(var(--cloud-hover-opacity) * 108px) at var(--cloud-hover-x) var(--cloud-hover-y));
   pointer-events: none;
 }
 
