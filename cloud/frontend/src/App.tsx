@@ -120,16 +120,16 @@ export default function App() {
   if (!loggedIn) {
     return (
       <div className="desktop-root">
-        <div className="desktop-shell cloud-shell">
+        <div
+          className="desktop-shell cloud-shell"
+          onPointerMove={moveLoginGlow}
+          onPointerLeave={resetLoginGlow}
+        >
+          <div className="cloud-login-brand" aria-hidden="true">
+            <div className="cloud-login-brand-glow" />
+            <img className="cloud-login-brand-image" src="/cloud-logo.png" alt="" />
+          </div>
           <div className="cloud-login-shell">
-            <div
-              className="cloud-login-brand"
-              aria-hidden="true"
-              onPointerMove={moveLoginGlow}
-              onPointerLeave={resetLoginGlow}
-            >
-              <img className="cloud-login-brand-image" src="/cloud-logo.png" alt="" />
-            </div>
             <section className="cloud-auth-panel">
               <div className="cloud-panel-header">
                 <div className="cloud-panel-kicker">登录</div>
