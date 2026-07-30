@@ -1,0 +1,72 @@
+cloud/frontend/src/styles.css
+  s_8c01b4b914571e::t_a6f6c128025033 85-88,359 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a6b251f64a3c444d3472157","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[85,88]},{"Single":359}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "fee869872af223e7d3a0c79ed5dc21bc630dcc32",
+  "prompts": {},
+  "sessions": {
+    "s_8c01b4b914571e": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a6af05364a3c444d3471076",
+        "model": "gpt-5.4__dev"
+      },
+      "human_author": "gongyulei <gongyulei@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {
+    "cloud/frontend/src/styles.css": [
+      {
+        "hash": "s_8c01b4b914571e::t_a6f6c128025033",
+        "line_ranges": [
+          {
+            "Range": [
+              85,
+              88
+            ]
+          },
+          {
+            "Single": 359
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a6b251f64a3c444d3472157",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  85,
+                  88
+                ]
+              },
+              {
+                "Single": 359
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_8c01b4b914571e": {
+      "tool": "trae",
+      "conversation_id": "6a6af05364a3c444d3471076",
+      "session_id": "6a6af05364a3c444d3471076",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_8c01b4b914571e::t_a6f6c128025033": {
+      "tool": "trae",
+      "conversation_id": "6a6af05364a3c444d3471076",
+      "session_id": "6a6af05364a3c444d3471076",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
