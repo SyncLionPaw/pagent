@@ -242,39 +242,103 @@ button {
     -1px 0 0 rgba(255, 255, 255, 0.04) inset;
 }
 
+.cloud-auth-inner {
+  display: grid;
+  gap: 18px;
+}
+
+.cloud-auth-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cloud-auth-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cloud-auth-mark-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #83fff0, #1577f9);
+  box-shadow: 0 0 16px rgba(117, 238, 255, 0.45);
+}
+
+.cloud-auth-status {
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+  color: #bed8ff;
+  font-size: 12px;
+}
+
 .cloud-panel-header {
   padding-bottom: 18px;
   border-bottom: 1px solid var(--hairline);
 }
 
 .cloud-panel-title {
-  margin-top: 8px;
-  font-size: 26px;
+  margin-top: 10px;
+  font-size: 30px;
   font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.cloud-panel-copy {
+  margin-top: 10px;
+  max-width: 26ch;
+  color: var(--text-secondary);
+}
+
+.cloud-auth-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cloud-auth-tag {
+  padding: 5px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  font-size: 12px;
 }
 
 .cloud-form {
   display: grid;
-  gap: 14px;
-  margin-top: 20px;
+  gap: 16px;
+  margin-top: 28px;
 }
 
 .cloud-field {
   display: grid;
-  gap: 8px;
+  gap: 9px;
 }
 
 .cloud-field-label {
   color: var(--text-secondary);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .cloud-input {
   width: 100%;
-  height: 40px;
-  padding: 0 12px;
+  height: 46px;
+  padding: 0 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--subtle);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--subtle) 88%, black 12%);
   color: var(--text-primary);
   outline: none;
   transition:
@@ -284,7 +348,7 @@ button {
 }
 
 .cloud-input:hover {
-  background: color-mix(in srgb, var(--subtle) 86%, white 14%);
+  background: color-mix(in srgb, var(--subtle) 82%, white 18%);
 }
 
 .cloud-input:focus {
@@ -292,17 +356,36 @@ button {
   box-shadow: 0 0 0 3px rgba(21, 119, 249, 0.18);
 }
 
-.cloud-demo-tip {
+.cloud-demo-card {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01)),
+    rgba(10, 12, 16, 0.24);
+}
+
+.cloud-demo-card-label {
   color: var(--text-tertiary);
-  font-size: 12px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cloud-demo-card-value {
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .cloud-primary-button,
 .cloud-secondary-button {
-  height: 38px;
+  height: 44px;
   padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 14px;
   cursor: pointer;
   transition:
     transform 120ms ease,
@@ -314,6 +397,7 @@ button {
   background: var(--primary);
   color: var(--on-primary);
   font-weight: 600;
+  box-shadow: 0 10px 28px rgba(21, 119, 249, 0.28);
 }
 
 .cloud-primary-button:hover:not(:disabled) {
@@ -338,9 +422,20 @@ button {
 .cloud-error-box {
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--danger) 34%, transparent);
-  border-radius: 10px;
+  border-radius: 14px;
   background: color-mix(in srgb, var(--danger) 10%, transparent);
   color: #ffb3b3;
+}
+
+.cloud-form-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.cloud-form-note {
+  color: var(--text-tertiary);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .cloud-app-shell {
@@ -393,6 +488,10 @@ button {
     padding: 24px 20px 20px;
     border-left: 0;
     backdrop-filter: blur(16px);
+  }
+
+  .cloud-panel-title {
+    font-size: 26px;
   }
 
   .cloud-app-shell {

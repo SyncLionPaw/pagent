@@ -140,11 +140,25 @@ export default function App() {
           </div>
           <div className="cloud-login-shell">
             <section className="cloud-auth-panel">
-              <div className="cloud-panel-header">
-                <div className="cloud-panel-kicker">登录</div>
-                <div className="cloud-panel-title">进入云端版本</div>
-                <div className="cloud-panel-copy">
-                  当前先用固定演示账户，打通最小登录链路。
+              <div className="cloud-auth-inner">
+                <div className="cloud-auth-topline">
+                  <div className="cloud-auth-mark">
+                    <span className="cloud-auth-mark-dot" />
+                    pagent cloud
+                  </div>
+                  <div className="cloud-auth-status">演示环境</div>
+                </div>
+                <div className="cloud-panel-header">
+                  <div className="cloud-panel-kicker">登录</div>
+                  <div className="cloud-panel-title">进入云端工作台</div>
+                  <div className="cloud-panel-copy">
+                    先用固定账户打通登录与用户隔离链路。后面再接真实用户体系。
+                  </div>
+                </div>
+                <div className="cloud-auth-tags" aria-label="登录说明">
+                  <span className="cloud-auth-tag">JWT Header</span>
+                  <span className="cloud-auth-tag">React 工作台</span>
+                  <span className="cloud-auth-tag">FastAPI 后端</span>
                 </div>
               </div>
               <form className="cloud-form" onSubmit={onSubmit}>
@@ -168,11 +182,17 @@ export default function App() {
                     placeholder="123"
                   />
                 </label>
-                <div className="cloud-demo-tip">演示账户：admin / 123</div>
+                <div className="cloud-demo-card">
+                  <div className="cloud-demo-card-label">演示账户</div>
+                  <div className="cloud-demo-card-value">admin / 123</div>
+                </div>
                 {error ? <div className="cloud-error-box">{error}</div> : null}
-                <button className="cloud-primary-button" type="submit" disabled={submitting}>
-                  {submitting ? "登录中..." : "登录"}
-                </button>
+                <div className="cloud-form-actions">
+                  <button className="cloud-primary-button" type="submit" disabled={submitting}>
+                    {submitting ? "登录中..." : "进入工作台"}
+                  </button>
+                  <div className="cloud-form-note">只用于当前演示，不会连接外部账户系统。</div>
+                </div>
               </form>
             </section>
           </div>
