@@ -1,32 +1,70 @@
 :root {
   color-scheme: dark;
+  --primary: #1577f9;
+  --on-primary: #0c0c0d;
+  --accent-soft: #6dbdff33;
+  --background: #141517;
+  --surface: #202328;
+  --subtle: #212225;
+  --text-primary: #eeeeee;
+  --text-secondary: #9599a6;
+  --text-tertiary: #666b75;
+  --border: #303135;
+  --border-soft: #242428;
+  --danger: #f65a5a;
+  --shadow-1:
+    0 0.5px 0 0 rgba(255, 255, 255, 0.06) inset,
+    0 4px 8px 0 rgba(0, 0, 0, 0.3);
+  --shadow-border:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 1px 2px -1px rgba(0, 0, 0, 0.4),
+    0 2px 4px 0 rgba(0, 0, 0, 0.25);
+  --hairline: rgba(255, 255, 255, 0.08);
   font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
+    "PingFang SC",
+    "Noto Sans SC",
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: #0b1020;
-  color: #edf2ff;
 }
 
 * {
   box-sizing: border-box;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--text-tertiary) 42%, transparent) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  min-height: 32px;
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text-tertiary) 34%, transparent) padding-box;
 }
 
 html,
 body,
 #root {
+  height: 100%;
   margin: 0;
-  min-height: 100%;
 }
 
 body {
-  background:
-    radial-gradient(circle at top, rgba(73, 93, 255, 0.18), transparent 32%),
-    linear-gradient(180deg, #0b1020 0%, #090d18 100%);
+  overflow: hidden;
+  background: var(--background);
+  color: var(--text-primary);
+  font: 13px/1.5 "PingFang SC", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button,
@@ -34,158 +72,254 @@ input {
   font: inherit;
 }
 
-.screen {
-  min-height: 100vh;
+button {
+  user-select: none;
 }
 
-.shell-center,
-.login-wall {
+.desktop-root,
+.desktop-shell,
+.cloud-shell {
+  height: 100%;
+}
+
+.cloud-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background:
+    radial-gradient(circle at top, rgba(21, 119, 249, 0.14), transparent 26%),
+    var(--background);
+}
+
+.cloud-loading {
   display: grid;
   place-items: center;
+  color: var(--text-secondary);
+}
+
+.cloud-login-workbench {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.2fr) minmax(360px, 420px);
+  gap: 24px;
+  width: min(1120px, calc(100vw - 48px));
+  margin: auto;
   padding: 24px;
 }
 
-.login-card,
-.content-card {
-  width: min(100%, 440px);
-  border: 1px solid rgba(146, 166, 255, 0.18);
-  border-radius: 20px;
-  background: rgba(11, 16, 32, 0.82);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
-  backdrop-filter: blur(18px);
+.cloud-hero,
+.cloud-auth-panel,
+.cloud-home-panel {
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow-border);
 }
 
-.login-card {
+.cloud-hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 520px;
   padding: 32px;
+  border-radius: 24px;
 }
 
-.eyebrow {
-  font-size: 12px;
-  letter-spacing: 0.12em;
+.cloud-hero-mark,
+.cloud-panel-kicker {
+  color: var(--primary);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #90a2ff;
+  font-size: 12px;
 }
 
-h1 {
-  margin: 12px 0 8px;
+.cloud-hero-title,
+.cloud-app-title {
+  margin: 12px 0 0;
   font-size: 32px;
+  line-height: 1.15;
+  font-weight: 700;
 }
 
-.muted {
-  color: #a7b2d6;
-  line-height: 1.6;
+.cloud-hero-copy,
+.cloud-panel-copy {
+  color: var(--text-secondary);
 }
 
-.login-form {
+.cloud-hero-points {
   display: grid;
-  gap: 16px;
-  margin-top: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
 }
 
-.login-form label {
+.cloud-point {
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--subtle) 82%, transparent);
+  box-shadow: var(--shadow-1);
+}
+
+.cloud-point-label {
+  color: var(--text-tertiary);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cloud-point-value {
+  margin-top: 6px;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cloud-auth-panel {
+  align-self: center;
+  padding: 28px;
+  border-radius: 20px;
+}
+
+.cloud-panel-header {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.cloud-panel-title {
+  margin-top: 8px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.cloud-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.cloud-field {
   display: grid;
   gap: 8px;
 }
 
-.login-form span {
-  font-size: 14px;
-  color: #c7d0f4;
+.cloud-field-label {
+  color: var(--text-secondary);
 }
 
-.login-form input {
+.cloud-input {
   width: 100%;
-  padding: 12px 14px;
-  border: 1px solid rgba(146, 166, 255, 0.18);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  color: inherit;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--subtle);
+  color: var(--text-primary);
   outline: none;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background 120ms ease;
 }
 
-.login-form input:focus {
-  border-color: #6f86ff;
-  box-shadow: 0 0 0 3px rgba(111, 134, 255, 0.18);
+.cloud-input:hover {
+  background: color-mix(in srgb, var(--subtle) 86%, white 14%);
 }
 
-.primary-button,
-.ghost-button {
-  border: 0;
-  border-radius: 12px;
-  padding: 12px 16px;
+.cloud-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(21, 119, 249, 0.18);
+}
+
+.cloud-demo-tip {
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.cloud-primary-button,
+.cloud-secondary-button {
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
   cursor: pointer;
+  transition:
+    transform 120ms ease,
+    background 120ms ease,
+    border-color 120ms ease;
 }
 
-.primary-button {
-  background: linear-gradient(135deg, #6d82ff 0%, #8b5cf6 100%);
-  color: white;
+.cloud-primary-button {
+  background: var(--primary);
+  color: var(--on-primary);
   font-weight: 600;
 }
 
-.primary-button:disabled {
-  opacity: 0.7;
+.cloud-primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.cloud-primary-button:disabled {
+  opacity: 0.72;
   cursor: default;
 }
 
-.ghost-button {
-  background: rgba(255, 255, 255, 0.06);
-  color: inherit;
+.cloud-secondary-button {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--text-primary);
 }
 
-.error-box {
+.cloud-secondary-button:hover {
+  background: color-mix(in srgb, var(--surface) 86%, white 14%);
+}
+
+.cloud-error-box {
   padding: 10px 12px;
-  border-radius: 12px;
-  background: rgba(255, 120, 120, 0.12);
-  color: #ffb4b4;
+  border: 1px solid color-mix(in srgb, var(--danger) 34%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  color: #ffb3b3;
 }
 
-.app-shell {
-  padding: 32px;
-}
-
-.topbar {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  margin: 0 auto 24px;
-  width: min(100%, 960px);
-}
-
-.content-card {
-  width: min(100%, 960px);
+.cloud-app-shell {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 20px;
+  width: min(1120px, calc(100vw - 48px));
   margin: 0 auto;
   padding: 24px;
 }
 
-.welcome-title {
+.cloud-app-topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+}
+
+.cloud-home-panel {
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.cloud-home-title {
+  margin-bottom: 8px;
   font-size: 24px;
   font-weight: 700;
-  margin-bottom: 8px;
 }
 
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-top: 24px;
-}
+@media (max-width: 900px) {
+  .cloud-login-workbench {
+    grid-template-columns: minmax(0, 1fr);
+    width: min(720px, calc(100vw - 24px));
+    padding: 12px;
+  }
 
-.info-item {
-  border: 1px solid rgba(146, 166, 255, 0.14);
-  border-radius: 16px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
-}
+  .cloud-hero {
+    min-height: auto;
+    gap: 20px;
+  }
 
-.info-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #8ea0d8;
-}
-
-.info-value {
-  margin-top: 8px;
-  font-size: 16px;
-  font-weight: 600;
+  .cloud-app-shell {
+    width: min(720px, calc(100vw - 24px));
+    padding: 12px;
+  }
 }
