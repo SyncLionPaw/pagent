@@ -12,3 +12,7 @@
 
 - [db/schema.md](file:///Users/bytedance/docs/pagent/cloud/backend/db/schema.md)
 - [db/schema.sql](file:///Users/bytedance/docs/pagent/cloud/backend/db/schema.sql)
+
+接口初稿：
+
+- [api/threads.md](file:///Users/bytedance/docs/pagent/cloud/backend/api/threads.md)
