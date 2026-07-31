@@ -291,14 +291,45 @@ button {
 
 .cloud-auth-inner {
   display: grid;
-  gap: 18px;
+  gap: 20px;
 }
 
-.cloud-auth-topline {
+.cloud-auth-headline {
+  display: grid;
+  gap: 14px;
+}
+
+.cloud-auth-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.cloud-auth-features {
   display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.cloud-feature-chip {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.cloud-feature-icon {
+  color: var(--primary);
+  flex-shrink: 0;
 }
 
 .cloud-auth-mark {

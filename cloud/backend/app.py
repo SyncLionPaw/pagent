@@ -14,6 +14,7 @@ from pydantic import BaseModel
 
 from . import db, settings, storage
 from .auth import create_jwt, verify_jwt
+from .runner import UserRunner
 
 logger = logging.getLogger("cloud.backend")
 
@@ -61,6 +62,7 @@ user_state_by_id: dict[str, dict[str, Any]] = {
 subscriber_queues_by_user: dict[str, list[asyncio.Queue[str | None]]] = defaultdict(
     list
 )
+user_runners: dict[str, UserRunner] = {}
 
 
 def read_current_user(authorization: str | None) -> dict[str, str]:
@@ -105,6 +107,11 @@ async def publish_event(user_id: str, method: str, params: dict[str, Any]) -> No
     message = wire_message(method, params)
     for queue in list(subscriber_queues_by_user[user_id]):
         await queue.put(message)
+
+
+async def publish_event_raw(user_id: str, wire_line: str) -> None:
+    for queue in list(subscriber_queues_by_user[user_id]):
+        await queue.put(wire_line)
 
 
 def thread_list_payload(user_id: str) -> dict[str, Any]:
@@ -266,17 +273,22 @@ async def handle_command_for_user(
 
     if cmd == "user":
         text = str(command.get("text") or "")
-        await publish_event(user_id, "RunBegin", {"user_input": text})
-        await publish_event(
-            user_id,
-            "Error",
-            {
-                "message": "cloud demo backend 还没接入真实 agent，只先把 web 工作台挂起来"
-            },
-        )
+        if not text.strip():
+            return
+
+        async def publish_wire(wire_line: str):
+            await publish_event_raw(user_id, wire_line)
+
+        if user_id not in user_runners:
+            user_runners[user_id] = UserRunner(user_id, publish_wire)
+
+        ur = user_runners[user_id]
+        await ur.run_turn(text)
         return
 
     if cmd in {"cancel", "permit", "deny", "set_provider"}:
+        if cmd == "cancel" and user_id in user_runners:
+            user_runners[user_id].cancel()
         return
 
     await publish_event(

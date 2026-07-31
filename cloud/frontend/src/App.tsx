@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { LogOut } from "lucide-react";
+import { LogOut, Box, FlaskConical, History } from "lucide-react";
 import { createPortal } from "react-dom";
 import WebApp from "../../../editors/web/src/App";
 
@@ -200,24 +200,26 @@ export default function App() {
           <div className="cloud-login-shell">
             <section className="cloud-auth-panel">
               <div className="cloud-auth-inner">
-                <div className="cloud-auth-topline">
+                <div className="cloud-auth-headline">
                   <div className="cloud-auth-mark">
                     <span className="cloud-auth-mark-dot" />
                     pagent cloud
                   </div>
-                  <div className="cloud-auth-status">演示环境</div>
+                  <h1 className="cloud-auth-title">登录工作台</h1>
                 </div>
-                <div className="cloud-panel-header">
-                  <div className="cloud-panel-kicker">登录</div>
-                  <div className="cloud-panel-title">进入云端工作台</div>
-                  <div className="cloud-panel-copy">
-                    先用固定账户打通登录与用户隔离链路。后面再接真实用户体系。
+                <div className="cloud-auth-features">
+                  <div className="cloud-feature-chip">
+                    <Box size={13} className="cloud-feature-icon" />
+                    <span className="cloud-feature-text">独立沙箱</span>
                   </div>
-                </div>
-                <div className="cloud-auth-tags" aria-label="登录说明">
-                  <span className="cloud-auth-tag">JWT Header</span>
-                  <span className="cloud-auth-tag">React 工作台</span>
-                  <span className="cloud-auth-tag">FastAPI 后端</span>
+                  <div className="cloud-feature-chip">
+                    <FlaskConical size={13} className="cloud-feature-icon" />
+                    <span className="cloud-feature-text">云端科研助手</span>
+                  </div>
+                  <div className="cloud-feature-chip">
+                    <History size={13} className="cloud-feature-icon" />
+                    <span className="cloud-feature-text">随时恢复进度</span>
+                  </div>
                 </div>
               </div>
               <form className="cloud-form" onSubmit={onSubmit}>
@@ -241,16 +243,11 @@ export default function App() {
                     placeholder="123"
                   />
                 </label>
-                <div className="cloud-demo-card">
-                  <div className="cloud-demo-card-label">演示账户</div>
-                  <div className="cloud-demo-card-value">admin / 123</div>
-                </div>
                 {error ? <div className="cloud-error-box">{error}</div> : null}
                 <div className="cloud-form-actions">
                   <button className="cloud-primary-button" type="submit" disabled={submitting}>
-                    {submitting ? "登录中..." : "进入工作台"}
+                    {submitting ? "登录中..." : "登录"}
                   </button>
-                  <div className="cloud-form-note">只用于当前演示，不会连接外部账户系统。</div>
                 </div>
               </form>
             </section>
