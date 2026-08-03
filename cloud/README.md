@@ -21,6 +21,7 @@
 
 ```bash
 cp cloud/.env.example cloud/.env
+# 在 cloud/.env 中填写 CLOUD_LLM_API_KEY
 docker compose -f cloud/docker-compose.yml --env-file cloud/.env up --build
 ```
 
@@ -37,12 +38,13 @@ docker compose -f cloud/docker-compose.yml --env-file cloud/.env up --build
 
 - **PostgreSQL**：启动时执行 `schema.sql` + `seed.sql`；API 也会在缺表时 bootstrap
 - **MinIO**：`minio-init` 创建 bucket `pagent-artifacts`
-- **workspaces volume**：预留给 per-user / per-thread 工作区（`CLOUD_WORKSPACE_ROOT`）
+- **runtime_data volume**：保存 per-thread 运行时目录（`CLOUD_RUNTIME_ROOT`）；长期对话数据由 PostgreSQL 管理
 
 ### 本地开发（不经过 compose）
 
 ```bash
 # 终端 1 — 至少要有可连的 Postgres / MinIO，或接受 /api/ready=503
+CLOUD_LLM_API_KEY=your-api-key \
 uv run --with fastapi --with 'uvicorn[standard]' --with 'psycopg[binary]' --with boto3 --with argon2-cffi \
   uvicorn cloud.backend.app:app --reload --port 8787
 

@@ -84,11 +84,14 @@ services:
       CLOUD_DEMO_MODE: ${CLOUD_DEMO_MODE:-1}
       CLOUD_DEMO_USERNAME: ${CLOUD_DEMO_USERNAME:-admin}
       CLOUD_DEMO_PASSWORD: ${CLOUD_DEMO_PASSWORD:-123}
-      CLOUD_WORKSPACE_ROOT: /var/pagent/workspaces
+      CLOUD_RUNTIME_ROOT: ${CLOUD_RUNTIME_ROOT:-/var/pagent/runtime}
+      CLOUD_LLM_API_KEY: ${CLOUD_LLM_API_KEY:-}
+      CLOUD_LLM_MODEL: ${CLOUD_LLM_MODEL:-deepseek-v4-flash}
+      CLOUD_LLM_BASE_URL: ${CLOUD_LLM_BASE_URL:-https://api.deepseek.com}
     ports:
       - "${API_PORT:-8787}:8787"
     volumes:
-      - workspaces:/var/pagent/workspaces
+      - runtime_data:${CLOUD_RUNTIME_ROOT:-/var/pagent/runtime}
 
   web:
     build:
@@ -102,4 +105,4 @@ services:
 volumes:
   pgdata:
   minio_data:
-  workspaces:
+  runtime_data:

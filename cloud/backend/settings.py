@@ -39,4 +39,8 @@ DEMO_MODE = env_bool("CLOUD_DEMO_MODE", True)
 DEMO_USERNAME = env("CLOUD_DEMO_USERNAME", "admin")
 DEMO_PASSWORD = env("CLOUD_DEMO_PASSWORD", "123")
 
-WORKSPACE_ROOT = env("CLOUD_WORKSPACE_ROOT", "/var/pagent/workspaces")
+RUNTIME_ROOT = env("CLOUD_RUNTIME_ROOT", "/var/pagent/runtime")
+
+LLM_API_KEY = env("CLOUD_LLM_API_KEY")
+LLM_MODEL = env("CLOUD_LLM_MODEL", "deepseek-v4-flash")
+LLM_BASE_URL = env("CLOUD_LLM_BASE_URL", "https://api.deepseek.com")

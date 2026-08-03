@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
-import os
+from datetime import UTC, datetime
 
 from pagentv4.adapters.acp import encode_event_line
-from pagentv4.runtime import Runner
 from pagentv4.core.provider import DeepSeek
+from pagentv4.runtime import Runner
+
+from . import settings
 
 logger = logging.getLogger("cloud.backend.runner")
 
@@ -16,28 +19,6 @@ EXTRA_SYSTEM = (
     "你是 pagent，一名严谨的工程师。回答保持简洁、直接、准确；不要输出表情符号；"
     "不要使用寒暄、口号或不必要的解释。"
 )
-
-
-def resolve_api_key() -> str | None:
-    key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
-    if key:
-        return key
-    # Fall back to ~/.pagent/pagent.toml
-    config_path = os.path.expanduser("~/.pagent/pagent.toml")
-    if os.path.isfile(config_path):
-        import tomllib
-
-        with open(config_path, "rb") as f:
-            data = tomllib.load(f)
-        provider = data.get("provider", {})
-        val = provider.get("api_key", "").strip()
-        if val:
-            return val
-    return None
-
-
-def resolve_model() -> str:
-    return os.environ.get("PAGENT_MODEL", "deepseek-v4-flash").strip()
 
 
 class UserRunner:
@@ -52,17 +33,18 @@ class UserRunner:
     async def ensure_runner(self) -> Runner:
         if self.runner is not None:
             return self.runner
-        api_key = resolve_api_key()
-        if not api_key:
-            raise RuntimeError("DEEPSEEK_API_KEY 未配置")
-        model = resolve_model()
-        provider = DeepSeek(model, apikey=api_key)
-        from datetime import datetime
-
-        thread_id = f"cloud-{self.user_id[:8]}-{datetime.now():%Y%m%d-%H%M%S}"
+        if not settings.LLM_API_KEY:
+            raise RuntimeError("CLOUD_LLM_API_KEY 未配置")
+        provider = DeepSeek(
+            settings.LLM_MODEL,
+            base_url=settings.LLM_BASE_URL,
+            apikey=settings.LLM_API_KEY,
+        )
+        thread_id = f"cloud-{self.user_id[:8]}-{datetime.now(UTC):%Y%m%d-%H%M%S}"
         self.runner = await Runner.create(
             thread_id,
             provider,
+            root=settings.RUNTIME_ROOT,
             extra_system=EXTRA_SYSTEM,
             max_turns=24,
         )
@@ -90,8 +72,6 @@ class UserRunner:
             await self.publish_fn_error(str(exc))
 
     async def publish_fn_error(self, message: str) -> None:
-        import json
-
         wire = json.dumps(
             {"jsonrpc": "2.0", "method": "Error", "params": {"message": message}},
             ensure_ascii=False,

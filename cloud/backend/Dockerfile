@@ -17,9 +17,13 @@ RUN apt-get update \
 COPY cloud/backend/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
+COPY pyproject.toml README.md /tmp/pagent/
+COPY src /tmp/pagent/src
+RUN pip install --no-cache-dir /tmp/pagent
+
 COPY cloud/backend /app/cloud/backend
 
-RUN mkdir -p /var/pagent/workspaces
+RUN mkdir -p /var/pagent/runtime
 
 EXPOSE 8787
 

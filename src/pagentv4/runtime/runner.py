@@ -231,6 +231,7 @@ class Runner(BaseRunner):
         thread_id: str,
         provider: ProviderProtocol,
         *,
+        root: str | Path | None = None,
         overrides: dict | None = None,
         extra_system: str = "",
         max_turns: int = 24,
@@ -239,7 +240,7 @@ class Runner(BaseRunner):
         tool_hooks: ToolHooks | None = None,
     ) -> Runner:
         """创建完整 Runner：打开 thread、sandbox、conversation 和 skills。"""
-        thread = Thread.open(thread_id, overrides=overrides)
+        thread = Thread.open(thread_id, root=root, overrides=overrides)
         run_state = RunState(phase="waking_sandbox")
         resources = await assemble_run_resources(
             thread,

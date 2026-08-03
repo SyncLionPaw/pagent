@@ -1,6 +1,6 @@
 # pagent Cloud 计划书
 
-**状态**: 骨架 + Docker Compose（Postgres / MinIO / api / web）已就绪；尚未接入真实 agent，Thread API 尚未完全接线。  
+**状态**: 登录、工作台、Docker Compose 和真实 Runner 已接通；Thread 持久化与云端沙箱尚未接线。
 **对象**: 最新云端版本（`cloud/`）后续要做什么、按什么顺序做。  
 **配套**: [README.md](./README.md) · [backend/db/schema.md](./backend/db/schema.md) · [backend/api/threads.md](./backend/api/threads.md) · 本地 Web 基座见 [docs/web.md](../docs/web.md)
 
@@ -8,16 +8,16 @@
 
 ## 1. 产品定位
 
-Cloud 不是再做一个 Desktop，也不是立刻做多租户 SaaS。
+Cloud 面向远程部署，为多个用户提供相互隔离的科研工作台。
 
 | 形态 | 说明 |
 |------|------|
 | **前端** | React 壳：登录墙 + 复用 `editors/web` 工作台（含已合入的 mobile 布局） |
 | **协议** | 与 Desktop / Web 同一套：`POST /command` + `GET /events`（SSE / Wire） |
 | **后端** | FastAPI：用户鉴权、thread 隔离、再把请求接到真实 Runner |
-| **部署演进** | 本机演示 → 自托管（LAN / Tailscale）→ 官方云；**先服务化，后多租户** |
+| **部署演进** | 单实例云端 → 多实例调度；本地启动仅用于开发与测试 |
 
-**一句话**: 浏览器薄客户端 → 远端 Python runtime；每用户自己的 thread，首版不做共享协作。
+**一句话**: 浏览器薄客户端连接远端 Python runtime；每个 thread 拥有独立的持久化记录与沙箱。
 
 ---
 
@@ -29,7 +29,7 @@ Cloud 不是再做一个 Desktop，也不是立刻做多租户 SaaS。
 - **鉴权演示**: 固定 `admin/123` → JWT（`Authorization: Bearer`）→ `/api/auth/me`
 - **登录 UI**: drawer 登录墙、登出挂到工作台 footer
 - **工作台挂载**: 登录后直接渲染 `editors/web` App；token 写入 Web bridge 使用的 localStorage
-- **HTTP 皮**: `/events` SSE、`/command` stub、若干 `/api/*` 空实现（树、artifact、settings…）
+- **Agent 通路**: `/events` SSE、`/command` 已接入 `pagentv4` Runner
 - **数据设计稿**: PostgreSQL schema（users / threads / messages / artifacts）+ Thread REST 草图
 - **Compose 基础设施**: `docker-compose.yml`（Postgres 初始化 schema/seed、MinIO bucket、API/Web 镜像、workspaces volume）
 - **本地基座（已合 main）**: Web Desktop 对标（PR #3）+ mobile 抽屉布局（PR #4）
@@ -38,14 +38,14 @@ Cloud 不是再做一个 Desktop，也不是立刻做多租户 SaaS。
 
 | 缺口 | 现状 |
 |------|------|
-| 真实 agent | `cmd: user` 只回 Error：尚未接入 Runner |
+| Runner 生命周期 | 当前按用户缓存在单个 API 进程中，尚未按 thread 调度 |
 | Thread 持久化 | 内存 dict；schema.sql 未接线 |
 | 注册 / 多用户 | 仅演示账号；无密码表读写 |
 | Sandbox | 假 status / 空 tree；无 per-user workspace |
 | Artifact / 项目树 | API 返回空或 404 |
 | 对象存储 | `thread_artifacts.storage_key` 有设计无实现 |
 | 生产密钥 | JWT secret 写死；无 refresh / 登出吊销 |
-| 与 `pagent --http` 关系 | Cloud 自建一套 stub，尚未复用本地 HTTP server 的 runner 路径 |
+| 多实例事件分发 | SSE 订阅只在单个 API 进程内，尚未接入 Redis / NATS |
 
 ---
 
@@ -54,7 +54,7 @@ Cloud 不是再做一个 Desktop，也不是立刻做多租户 SaaS。
 1. **UI 不重写**: Cloud 前端继续包 `editors/web`；云差异（登录、登出、多用户壳）放在 `cloud/frontend`。
 2. **协议不另起炉灶**: 命令与事件继续走 Wire；REST 只补「用户 / thread 元数据 / artifact 索引」这类宿主能力。
 3. **隔离写死在服务端**: JWT → `owner_user_id`；客户端永不传 owner；thread / message / artifact 查询一律带用户过滤（见 schema 约定）。
-4. **先单用户可跑通，再谈租户规模**: 早期可以是「一用户一 runner 进程/容器」；共享调度、配额、计费后置。
+4. **隔离从第一版生效**: Runner、thread、workspace 和 artifact 都以 `user_id + thread_id` 为边界；共享调度、配额、计费后置。
 5. **Runtime 稳了再加产品花活**: cancel / permit / 断线恢复优先于插件市场、会话树、计费面板。
 6. **不做的事（本阶段）**: 原生 iOS App、设备上跑 Python、thread 协作共享、MCP 宿主、计费。
 
@@ -64,7 +64,7 @@ Cloud 不是再做一个 Desktop，也不是立刻做多租户 SaaS。
 
 ### Phase 0 — 演示闭环（当前 → 马上）
 
-**目标**: 登录后能真的聊一轮，而不是 stub Error。
+**目标**: 登录后能够通过远端 Runner 完成一轮流式对话。
 
 | # | 事项 | 验收 |
 |---|------|------|
@@ -106,7 +106,7 @@ Cloud 不是再做一个 Desktop，也不是立刻做多租户 SaaS。
 
 ### Phase 3 — 可自托管的「云」
 
-**目标**: 别人能在自己的机器/VPS 上跑一整套 Cloud，而不是只有本机 demo。
+**目标**: 在服务器或集群中稳定部署完整 Cloud 服务。
 
 | # | 事项 | 验收 |
 |---|------|------|

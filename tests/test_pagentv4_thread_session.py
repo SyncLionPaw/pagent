@@ -21,3 +21,21 @@ async def test_runner_open_local(tmp_path, monkeypatch):
     )
     assert runner.messages.data == []
     await runner.close()
+
+
+@pytest.mark.asyncio
+async def test_runner_uses_explicit_thread_root(tmp_path):
+    root = tmp_path / "runtime"
+    runner = await Runner.create(
+        "cloud-thread",
+        DeepSeek("deepseek-v4-flash", apikey="test-key"),
+        root=root,
+        overrides={"backend": "local"},
+    )
+    try:
+        assert runner.thread.root == root / "cloud-thread"
+        assert runner.sandbox.workdir == str(
+            root / "cloud-thread" / "workspaces" / "main"
+        )
+    finally:
+        await runner.close()

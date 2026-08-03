@@ -8,6 +8,9 @@ FastAPI 云端 API。
 - 用户 / thread 持久化（PostgreSQL）
 - Artifact 对象存储（S3 / MinIO）
 - Wire：`POST /command` + `GET /events`
+- 模型服务配置（`CLOUD_LLM_API_KEY` / `CLOUD_LLM_MODEL` / `CLOUD_LLM_BASE_URL`）
+
+Cloud API 只读取部署环境中的配置，不读取宿主机的 `~/.pagent`。
 
 ### 关键文件
 
