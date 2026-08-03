@@ -47,6 +47,8 @@ const THEME_KEY = "pagent-web-theme";
 const SIDEBAR_PINNED_KEY = "pagent-web-sidebar-pinned";
 const LEFT_PANE_WIDTH_PX = 232;
 const LEFT_COLLAPSED_WIDTH_PX = 44;
+// 泊靠时保留的窄条宽度：不塌成 0，留一根可 hover / 点击唤回的 rail。
+const LEFT_RAIL_WIDTH_PX = 10;
 const RIGHT_PANE_WIDTH_PX = 352;
 const RIGHT_COLLAPSED_WIDTH_PX = 44;
 const LEFT_MIN_WIDTH_PX = 200;
@@ -122,7 +124,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(true);
   const [leftWidth, setLeftWidth] = useState(LEFT_PANE_WIDTH_PX);
   const [rightWidth, setRightWidth] = useState(RIGHT_PANE_WIDTH_PX);
   const [sidebarPinned, setSidebarPinned] = useState(
@@ -759,13 +761,13 @@ export default function App() {
   const workbenchStyle = isMobile
     ? undefined
     : ({
-        "--left-pane-width": leftHidden
-          ? "0px"
-          : `${leftCollapsed ? LEFT_COLLAPSED_WIDTH_PX : leftWidth}px`,
-        "--right-pane-width": `${rightCollapsed ? RIGHT_COLLAPSED_WIDTH_PX : rightWidth}px`,
-        "--left-gap": leftHidden || leftCollapsed ? "0px" : "8px",
-        "--right-gap": rightCollapsed ? "0px" : "8px",
-      } as CSSProperties);
+      "--left-pane-width": leftHidden
+        ? `${LEFT_RAIL_WIDTH_PX}px`
+        : `${leftCollapsed ? LEFT_COLLAPSED_WIDTH_PX : leftWidth}px`,
+      "--right-pane-width": `${rightCollapsed ? RIGHT_COLLAPSED_WIDTH_PX : rightWidth}px`,
+      "--left-gap": leftHidden || leftCollapsed ? "0px" : "8px",
+      "--right-gap": rightCollapsed ? "0px" : "8px",
+    } as CSSProperties);
 
   const startResize = (side: "left" | "right") => (event: ReactPointerEvent<HTMLDivElement>) => {
     if (isMobile) {
@@ -851,6 +853,7 @@ export default function App() {
               onToggleTheme={toggleTheme}
               onToggleCollapsed={() => setLeftCollapsed((collapsed) => !collapsed)}
               onTogglePin={togglePin}
+              onUndock={undockSidebar}
               onOpenLatest={() => {
                 const latest = sessions[0];
                 if (latest) {
@@ -1078,11 +1081,16 @@ function readThreadSummaries(raw: unknown): ThreadSummary[] {
     if (!id) {
       return [];
     }
+    // cloud 后端带 ISO 时间戳；desktop 只有 thread-YYYYMMDD-HHMMSS 格式的 id。
+    const isoTime =
+      readString(record, "last_message_at") ||
+      readString(record, "created_at");
+    const time = isoTime ? new Date(isoTime) : parseThreadTimestamp(id);
     return [
       {
         id,
         title: readString(record, "title") || "新建任务",
-        relativeTime: formatRelativeTime(parseThreadTimestamp(id)),
+        relativeTime: formatRelativeTime(time),
         projectPath: readString(record, "project_path") || readString(record, "projectPath"),
         sandboxBackend: readString(record, "backend") || readString(record, "sandboxBackend"),
       },

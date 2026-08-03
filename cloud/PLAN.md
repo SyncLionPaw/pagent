@@ -1,6 +1,6 @@
 # pagent Cloud 计划书
 
-**状态**: 登录、工作台、Docker Compose 和真实 Runner 已接通；Thread 持久化与云端沙箱尚未接线。
+**状态**: 登录、工作台、本地联调环境和真实 Runner 已接通；Thread 持久化与云端沙箱尚未接线。
 **对象**: 最新云端版本（`cloud/`）后续要做什么、按什么顺序做。  
 **配套**: [README.md](./README.md) · [backend/db/schema.md](./backend/db/schema.md) · [backend/api/threads.md](./backend/api/threads.md) · 本地 Web 基座见 [docs/web.md](../docs/web.md)
 
@@ -31,7 +31,7 @@ Cloud 面向远程部署，为多个用户提供相互隔离的科研工作台�
 - **工作台挂载**: 登录后直接渲染 `editors/web` App；token 写入 Web bridge 使用的 localStorage
 - **Agent 通路**: `/events` SSE、`/command` 已接入 `pagentv4` Runner
 - **数据设计稿**: PostgreSQL schema（users / threads / messages / artifacts）+ Thread REST 草图
-- **Compose 基础设施**: `docker-compose.yml`（Postgres 初始化 schema/seed、MinIO bucket、API/Web 镜像、workspaces volume）
+- **本地联调环境**: `docker-compose.yml` 只启动 PostgreSQL、Redis 和 MinIO
 - **本地基座（已合 main）**: Web Desktop 对标（PR #3）+ mobile 抽屉布局（PR #4）
 
 ### 明确缺口
@@ -97,23 +97,23 @@ Cloud 面向远程部署，为多个用户提供相互隔离的科研工作台�
 
 | # | 事项 | 验收 |
 |---|------|------|
-| 2.1 | Per-user / per-thread workspace（本地盘或容器 volume） | `project_path` 与 sandbox backend 可配置且隔离 |
-| 2.2 | Sandbox：先 `local`，再可选 container image | `sandbox_status` / `sandbox_tree` 有真数据 |
-| 2.3 | Artifact：落对象存储（或本地 blob）+ `thread_artifacts` 索引 | `/api/artifacts*` 可读可列 |
+| 2.1 | Sandbox worker 为每个 user / thread 创建独立 workspace | workspace 生命周期与 thread 绑定 |
+| 2.2 | 使用隔离容器执行代码和命令 | `sandbox_status` / `sandbox_tree` 有真数据 |
+| 2.3 | Artifact 落 S3 + `thread_artifacts` 索引 | `/api/artifacts*` 可读可列 |
 | 2.4 | `/api/project-tree` / `project-files` 读用户工作区 | 右侧工程树可用 |
 
 ---
 
-### Phase 3 — 可自托管的「云」
+### Phase 3 — 生产部署
 
 **目标**: 在服务器或集群中稳定部署完整 Cloud 服务。
 
 | # | 事项 | 验收 |
 |---|------|------|
-| 3.1 | Docker Compose：api + db + frontend（或单 origin 静态托管） | 文档一键部署 |
+| 3.1 | API / Web 生产镜像与平台部署清单 | 可连接托管 PostgreSQL、S3 和密钥服务 |
 | 3.2 | HTTPS / 反向代理说明；SSE 长连接与超时 | 手机浏览器可稳定用 |
 | 3.3 | Token TTL、可选 refresh；登出可废弃（短期可用版本号/黑名单） | 基本会话安全 |
-| 3.4 | 健康检查、结构化日志、基础限流 | 适合小团队自托管 |
+| 3.4 | 健康检查、结构化日志、基础限流 | 满足生产运行要求 |
 
 ---
 
@@ -156,7 +156,7 @@ pagent --http（单用户本机）    cloud/backend（JWT + 多用户隔离 + �
 4. **P1 resume / HistoryReplay** — 刷新不丢上下文  
 5. **P2 workspace + sandbox** — 真正能改文件、跑命令  
 6. **P2 artifacts** — 产物可下载  
-7. **P3 Compose 自托管** — 对外可部署  
+7. **P3 生产部署** — API / Web 镜像、托管依赖与平台部署清单
 
 每完成一档，更新本文件「现状盘点」与 `cloud/*/README.md`。
 
@@ -168,6 +168,6 @@ pagent --http（单用户本机）    cloud/backend（JWT + 多用户隔离 + �
 - [ ] 能创建 / 列出 / 恢复 / 删除自己的 thread，看不到他人数据  
 - [ ] 一轮带工具调用的对话可流式完成，支持取消与工具审批  
 - [ ] 工作区文件与 artifact 按 thread 隔离可见  
-- [ ] 可用 Compose（或等价方式）在干净机器上部署起来  
+- [ ] 可通过目标云平台的部署清单发布，并接入托管 PostgreSQL、S3 与密钥服务
 
-未满足前，对外口径保持：**Cloud 演示 / 预览**，不是正式多租户服务。
+未满足前，对外口径保持：**Cloud 演示 / 预览**。

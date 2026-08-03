@@ -34,6 +34,7 @@ type Props = {
   onToggleTheme: () => void;
   onToggleCollapsed: () => void;
   onTogglePin: () => void;
+  onUndock: () => void;
   onOpenLatest: () => void;
   onOpenSettings: () => void;
   onOpenDocsQr: () => void;
@@ -57,6 +58,7 @@ export function LeftPane({
   onToggleTheme,
   onToggleCollapsed,
   onTogglePin,
+  onUndock,
   onOpenLatest,
   onOpenSettings,
   onOpenDocsQr,
@@ -130,6 +132,14 @@ export function LeftPane({
 
   return (
     <aside className="pane pane-left" data-left-pane>
+      <button
+        type="button"
+        className="pane-left-rail"
+        aria-label="展开会话侧栏"
+        onMouseEnter={onUndock}
+        onFocus={onUndock}
+        onClick={onUndock}
+      />
       <div className="pane-expanded">
         <div className="pane-topbar">
           <button className="new-task-button" type="button" onClick={onNewSession}>
@@ -141,7 +151,7 @@ export function LeftPane({
           {sessions.length === 0 ? (
             <div className="session-empty">
               <div className="session-empty-title">还没有历史会话</div>
-              <div className="session-empty-copy">点击上方新建任务开始第一条对话。</div>
+              <div className="session-empty-copy">新建任务，开始你的第一次对话。</div>
             </div>
           ) : (
             sessions.map((session) => {

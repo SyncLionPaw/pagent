@@ -32,9 +32,9 @@
 
 演示种子见 [seed.sql](./seed.sql)（`admin@local` / 密码 `123`）。
 
-### Compose
+### 本地联调
 
-`cloud/docker-compose.yml` 会在 Postgres 首次启动时挂载：
+`cloud/docker-compose.yml` 在本地 PostgreSQL 首次启动时挂载：
 
 1. `01_schema.sql` ← 本文件
 2. `02_seed.sql` ← 演示账号

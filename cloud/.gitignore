@@ -1,3 +1,6 @@
 # Ignore local compose secrets / runtime data
 .env
 *.local.env
+
+# 运行时目录：沙箱脚手架 thread.toml / workspaces 等，非源码，不入库
+runtime/

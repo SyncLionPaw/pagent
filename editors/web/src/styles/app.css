@@ -87,6 +87,10 @@ html[data-theme="light"] {
         0 0.5px 0 rgba(255, 255, 255, 0.72) inset,
         0 18px 44px rgba(93, 113, 121, 0.2),
         var(--shadow-border);
+    --message-assistant-foreground: #6b7480;
+    --message-assistant-background: #f8fafc;
+    --thinking-foreground: #9aa3ad;
+    --thinking-background: #f7f8fa;
 }
 
 :root {
@@ -128,6 +132,10 @@ html[data-theme="light"] {
     --vscode-charts-green: var(--success);
     --vscode-testing-iconPassed: var(--success);
     --vscode-errorForeground: var(--danger);
+    --message-assistant-foreground: var(--vscode-editor-foreground);
+    --message-assistant-background: var(--vscode-editor-background);
+    --thinking-foreground: var(--vscode-descriptionForeground);
+    --thinking-background: var(--vscode-textBlockQuote-background);
     --vscode-testing-iconFailed: var(--danger);
     --vscode-disabledForeground: var(--text-tertiary);
 }
@@ -407,7 +415,8 @@ button {
     transform: translateX(0);
 }
 
-.desktop-workbench[data-sidebar-docked="true"] .pane-left,
+/* 泊靠态：整条不塌成 0，留一根 rail。隐藏展开内容与左侧 resizer，rail 可点/hover 唤回。 */
+.desktop-workbench[data-sidebar-docked="true"] .pane-left .pane-expanded,
 .desktop-workbench[data-sidebar-docked="true"] [data-resizer="left"] {
     opacity: 0;
     pointer-events: none;
@@ -415,6 +424,49 @@ button {
 
 .desktop-workbench[data-sidebar-docked="true"] .pane-center {
     box-shadow: 1px 0 0 0 var(--hairline);
+}
+
+/* rail：默认不显示；泊靠时占满 pane-left 全高，作为可见且可 hover/点击唤回的窄条。 */
+.pane-left-rail {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    padding: 0;
+    border: 0;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    cursor: e-resize;
+    transition: background 160ms ease;
+}
+
+.desktop-workbench[data-sidebar-docked="true"] .pane-left-rail {
+    display: block;
+    pointer-events: auto;
+}
+
+/* 竖向抓手：居中一根短竖条，暗示这里可点开。 */
+.desktop-workbench[data-sidebar-docked="true"] .pane-left-rail::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 28px;
+    transform: translate(-50%, -50%);
+    border-radius: 2px;
+    background: var(--text-tertiary);
+    transition: background 160ms ease;
+}
+
+.desktop-workbench[data-sidebar-docked="true"] .pane-left-rail:hover,
+.desktop-workbench[data-sidebar-docked="true"] .pane-left-rail:focus-visible {
+    background: var(--accent-soft);
+}
+
+.desktop-workbench[data-sidebar-docked="true"] .pane-left-rail:hover::after,
+.desktop-workbench[data-sidebar-docked="true"] .pane-left-rail:focus-visible::after {
+    background: var(--primary);
 }
 
 

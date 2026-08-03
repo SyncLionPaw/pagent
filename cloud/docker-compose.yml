@@ -1,45 +1,78 @@
-# pagent Cloud stack
-# from repo root:
-#   docker compose -f cloud/docker-compose.yml up --build
-#
-# services:
-#   web       — React SPA (nginx)        http://localhost:8080
-#   api       — FastAPI backend          http://localhost:8787
-#   db        — PostgreSQL 16
-#   minio     — S3-compatible object store  http://localhost:9000  console :9001
-#   minio-init — create bucket once
+# pagent Cloud 本地开发依赖
+# 这里只启动第三方基础服务，前端和后端由开发者在宿主机中分别启动。
+# 生产环境使用云平台托管的数据库、缓存、对象存储、密钥和网络。
 
-name: pagent-cloud
+name: pagent-cloud-dev
 
 services:
-  db:
+  # PostgreSQL：保存用户、thread、消息和 artifact 索引。
+  postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-pagent}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pagent}
       POSTGRES_DB: ${POSTGRES_DB:-pagent}
     ports:
+      # 宿主机端口可通过 POSTGRES_PORT 调整。
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # 数据库数据在容器重启后保留。
+      - postgres_data:/var/lib/postgresql/data
+      # 仅在数据卷首次初始化时执行建表和演示数据脚本。
       - ./backend/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
       - ./backend/db/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pagent} -d ${POSTGRES_DB:-pagent}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-pagent} -d ${POSTGRES_DB:-pagent}",
+        ]
       interval: 5s
       timeout: 5s
       retries: 20
 
+  # Redis：用于缓存、分布式锁和多实例事件分发。
+  # 复用本地已存在的 redis:7.2 镜像，避免重复下载。
+  redis:
+    image: redis:7.2
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-pagentredis}
+    command:
+      - /bin/sh
+      - -c
+      - exec redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"
+    ports:
+      # 宿主机端口可通过 REDIS_PORT 调整。
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      # AOF 文件和 Redis 数据在容器重启后保留。
+      - redis_data:/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'redis-cli -a "$$REDIS_PASSWORD" ping 2>/dev/null | grep PONG',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # MinIO：提供与 S3 兼容的 artifact 对象存储。
   minio:
     image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pagent}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pagentminio}
     ports:
+      # 9000 是 S3 API，9001 是管理控制台。
       - "${MINIO_API_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
     volumes:
+      # 对象数据在容器重启后保留。
       - minio_data:/data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/ready"]
@@ -47,62 +80,7 @@ services:
       timeout: 5s
       retries: 20
 
-  minio-init:
-    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
-    depends_on:
-      minio:
-        condition: service_healthy
-    environment:
-      MINIO_ENDPOINT: http://minio:9000
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-pagent}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-pagentminio}
-      S3_BUCKET: ${CLOUD_S3_BUCKET:-pagent-artifacts}
-    volumes:
-      - ./docker/minio-init.sh:/minio-init.sh:ro
-    entrypoint: ["/bin/sh", "/minio-init.sh"]
-    restart: "no"
-
-  api:
-    build:
-      context: ..
-      dockerfile: cloud/backend/Dockerfile
-    depends_on:
-      db:
-        condition: service_healthy
-      minio:
-        condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
-    environment:
-      CLOUD_JWT_SECRET: ${CLOUD_JWT_SECRET:-cloud-dev-secret-change-me}
-      CLOUD_DATABASE_URL: postgresql://${POSTGRES_USER:-pagent}:${POSTGRES_PASSWORD:-pagent}@db:5432/${POSTGRES_DB:-pagent}
-      CLOUD_S3_ENDPOINT_URL: http://minio:9000
-      CLOUD_S3_ACCESS_KEY: ${MINIO_ROOT_USER:-pagent}
-      CLOUD_S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-pagentminio}
-      CLOUD_S3_BUCKET: ${CLOUD_S3_BUCKET:-pagent-artifacts}
-      CLOUD_CORS_ORIGINS: ${CLOUD_CORS_ORIGINS:-http://127.0.0.1:8080,http://localhost:8080,http://127.0.0.1:5174,http://localhost:5174}
-      CLOUD_DEMO_MODE: ${CLOUD_DEMO_MODE:-1}
-      CLOUD_DEMO_USERNAME: ${CLOUD_DEMO_USERNAME:-admin}
-      CLOUD_DEMO_PASSWORD: ${CLOUD_DEMO_PASSWORD:-123}
-      CLOUD_RUNTIME_ROOT: ${CLOUD_RUNTIME_ROOT:-/var/pagent/runtime}
-      CLOUD_LLM_API_KEY: ${CLOUD_LLM_API_KEY:-}
-      CLOUD_LLM_MODEL: ${CLOUD_LLM_MODEL:-deepseek-v4-flash}
-      CLOUD_LLM_BASE_URL: ${CLOUD_LLM_BASE_URL:-https://api.deepseek.com}
-    ports:
-      - "${API_PORT:-8787}:8787"
-    volumes:
-      - runtime_data:${CLOUD_RUNTIME_ROOT:-/var/pagent/runtime}
-
-  web:
-    build:
-      context: ..
-      dockerfile: cloud/frontend/Dockerfile
-    depends_on:
-      - api
-    ports:
-      - "${WEB_PORT:-8080}:80"
-
 volumes:
-  pgdata:
+  postgres_data:
+  redis_data:
   minio_data:
-  runtime_data:
