@@ -1,5 +1,32 @@
 # Cloud 本地开发
 
+## 一键启动
+
+在仓库根目录执行：
+
+```bash
+./cloud/dev.sh
+```
+
+它会依次拉起基础服务（PostgreSQL / Redis / MinIO）、后端（uvicorn :8787）和前端（vite :5174），并在结束时（Ctrl+C）一并停掉后端和前端。首次运行会自动从 `.env.example` 生成 `cloud/.env`，填入 `CLOUD_LLM_API_KEY` 后重跑即可。
+
+打开 `http://127.0.0.1:5174`，演示登录账号为 `admin` / `123`。
+
+子命令：
+
+```bash
+./cloud/dev.sh deps      # 只起基础服务
+./cloud/dev.sh backend   # 只起后端（在仓库根运行，避免 ModuleNotFoundError）
+./cloud/dev.sh frontend  # 只起前端
+./cloud/dev.sh down      # 停基础服务，保留数据卷
+```
+
+后端必须在**仓库根**运行。在 `cloud/` 目录里跑 `uvicorn cloud.backend.app:app` 会报 `ModuleNotFoundError: No module named 'cloud'`，因为 `cloud` 包的父目录（仓库根）才在 `sys.path` 上。
+
+---
+
+## 手动分步启动
+
 `docker-compose.yml` 只启动本地开发依赖：
 
 | 服务 | 用途 | 默认地址 |
