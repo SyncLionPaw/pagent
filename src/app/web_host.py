@@ -100,7 +100,7 @@ def app_info() -> dict:
     home = Path.home()
     return {
         "name": "pagent Web",
-        "version": "0.7.20",
+        "version": "0.7.21",
         "platform": os.name,
         "userName": home.name or "user",
     }

@@ -40,7 +40,9 @@ DEMO_MODE = env_bool("CLOUD_DEMO_MODE", True)
 DEMO_USERNAME = env("CLOUD_DEMO_USERNAME", "admin")
 DEMO_PASSWORD = env("CLOUD_DEMO_PASSWORD", "123")
 
-RUNTIME_ROOT = env("CLOUD_RUNTIME_ROOT", str(Path(__file__).resolve().parent.parent / "runtime"))
+RUNTIME_ROOT = env(
+    "CLOUD_RUNTIME_ROOT", str(Path(__file__).resolve().parent.parent / "runtime")
+)
 
 LLM_API_KEY = env("CLOUD_LLM_API_KEY")
 LLM_MODEL = env("CLOUD_LLM_MODEL", "deepseek-v4-flash")

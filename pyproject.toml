@@ -1,51 +1,51 @@
 [project]
-name = "pagent"
-version = "0.7.20"
-description = "Async Python agent library and terminal REPL (OpenAI-compatible Chat Completions + sandbox)."
-readme = "README.md"
-license = "MIT"
 authors = [
-    { name = "gongyulei", email = "gongyulei@stu.xmu.edu.cn" },
-]
-requires-python = ">=3.11"
-keywords = [
-    "agent",
-    "llm",
-    "openai",
-    "asyncio",
-    "sandbox",
-    "tools",
-    "repl",
+  {name = "gongyulei", email = "gongyulei@stu.xmu.edu.cn"},
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Topic :: Scientific/Engineering :: Artificial Intelligence",
-    "Typing :: Typed",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+  "Typing :: Typed",
 ]
 dependencies = [
-    "asyncssh>=2.24.0",
-    "ddgs>=7",
-    "docstring-parser>=0.18.0",
-    "openai>=2.31.0",
-    "prompt-toolkit>=3.0.52",
-    "pyyaml>=6.0.3",
-    "tiktoken>=0.7.0",
+  "asyncssh>=2.24.0",
+  "ddgs>=7",
+  "docstring-parser>=0.18.0",
+  "openai>=2.31.0",
+  "prompt-toolkit>=3.0.52",
+  "pyyaml>=6.0.3",
+  "tiktoken>=0.7.0",
 ]
+description = "Async Python agent library and terminal REPL (OpenAI-compatible Chat Completions + sandbox)."
+keywords = [
+  "agent",
+  "llm",
+  "openai",
+  "asyncio",
+  "sandbox",
+  "tools",
+  "repl",
+]
+license = "MIT"
+name = "pagent"
+readme = "README.md"
+requires-python = ">=3.11"
+version = "0.7.21"
 
 [project.urls]
-Homepage = "https://github.com/SyncLionPaw/pagent"
 Documentation = "https://synclionpaw.github.io/pagent/"
+Homepage = "https://github.com/SyncLionPaw/pagent"
 
 [project.optional-dependencies]
-tokens = ["transformers>=4.40"]
-ssh = ["asyncssh>=2.14"]
 server = ["fastapi>=0.115", "uvicorn>=0.30"]
+ssh = ["asyncssh>=2.14"]
+tokens = ["transformers>=4.40"]
 
 [project.scripts]
 pagent = "app.repl:main"
@@ -53,48 +53,46 @@ pagent-openai = "pagentv4.trace.openai_export:main"
 pagent-trace = "pagentv4.trace.view:main"
 
 [build-system]
-requires = ["uv_build>=0.8.20,<0.9.0"]
 build-backend = "uv_build"
+requires = ["uv_build>=0.8.20,<0.9.0"]
 
 [tool.uv.build-backend]
 module-name = ["pagent", "pagentv4", "app"]
 
 [dependency-groups]
-dev = [
-    "asyncssh>=2.14",
-    "coverage[toml]>=7.15.0",
-    "fastapi>=0.115",
-    "pre-commit>=4",
-    "pytest>=8",
-    "pytest-asyncio>=0.24",
-    "pytest-cov>=7.1.0",
-    "ruff>=0.9",
-    "uvicorn>=0.30",
-]
 cloud = [
-    "argon2-cffi>=23.1",
-    "boto3>=1.35",
-    "psycopg[binary]>=3.2",
+  "argon2-cffi>=23.1",
+  "boto3>=1.35",
+  "psycopg[binary]>=3.2",
+]
+dev = [
+  "asyncssh>=2.14",
+  "coverage[toml]>=7.15.0",
+  "fastapi>=0.115",
+  "pre-commit>=4",
+  "pytest>=8",
+  "pytest-asyncio>=0.24",
+  "pytest-cov>=7.1.0",
+  "ruff>=0.9",
+  "uvicorn>=0.30",
 ]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 
 [tool.coverage.run]
 # 只统计业务代码，排除测试、示例、文档
-source = ["src"]
-branch = true                  # 分支覆盖（if/else 两条腿都算），比行覆盖更严格
+branch = true # 分支覆盖（if/else 两条腿都算），比行覆盖更严格
 omit = [
-    "*/tests/*",
-    "*/examples/*",
-    "*/docs/*",
-    "*/__main__.py",
-    # 故意的非法语法 demo，无法被 import
-    "src/pagentv4/core/hacked_agent.py",
-    # 需要真实环境（docker / ssh / ACP server）才能测，纯单测覆盖不到
-    "src/pagentv4/sandbox/backends/container.py",
-    "src/pagentv4/sandbox/backends/ssh.py",
-    "src/pagentv4/adapters/acp.py",
+  "*/tests/*",
+  "*/examples/*",
+  "*/docs/*",
+  "*/__main__.py", # 故意的非法语法 demo，无法被 import
+  "src/pagentv4/core/hacked_agent.py", # 需要真实环境（docker / ssh / ACP server）才能测，纯单测覆盖不到
+  "src/pagentv4/sandbox/backends/container.py",
+  "src/pagentv4/sandbox/backends/ssh.py",
+  "src/pagentv4/adapters/acp.py",
 ]
+source = ["src"]
 
 [tool.coverage.report]
 # 终端报告里按行列出未覆盖的代码行
@@ -102,17 +100,17 @@ show_missing = true
 skip_covered = false
 # 排除琐碎的、不算真正逻辑的行
 exclude_lines = [
-    "pragma: no cover",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-    "@(abc\\.)?abstractmethod",
+  "pragma: no cover",
+  "raise NotImplementedError",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+  "@(abc\\.)?abstractmethod",
 ]
 
 [tool.ruff]
-target-version = "py311"
+extend-exclude = ["src/pagentv4/core/hacked_agent.py"] # intentional invalid syntax demo
 src = ["src"]
-extend-exclude = ["src/pagentv4/core/hacked_agent.py"]  # intentional invalid syntax demo
+target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F", "I"]
