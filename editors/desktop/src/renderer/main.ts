@@ -45,6 +45,7 @@ import type {
 } from "../shared/protocol";
 import { renderIcon, renderWechatIcon, type DesktopIconName } from "./icons";
 import { paintDocsQr } from "./docs-qr";
+import { providerIconForModel } from "./provider-icons";
 import { mountToaster, toast } from "./toast";
 
 const INPUT_MAX_HEIGHT_PX = 160;
@@ -85,6 +86,10 @@ function escapeHtml(text: string): string {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+function renderModelProviderIcon(model: string): string {
+  return providerIconForModel(model) ?? renderIcon("brain-circuit");
 }
 
 function readStringField(params: Record<string, unknown>, key: string): string {
@@ -1016,12 +1021,29 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             </div>
           </div>
           <div class="chat-log" data-chat-log></div>
+          <nav
+            class="message-shortcuts"
+            data-message-shortcuts
+            aria-label="消息快速导航"
+            hidden
+          ></nav>
+          <div class="message-shortcut-preview" data-message-shortcut-preview hidden></div>
           <div class="composer-dock">
             <div class="mention-popup" data-mention-popup hidden></div>
             <div class="composer composer-floating">
               <textarea id="prompt" placeholder="给 pagent 下达任务，输入 @ 引用文件"></textarea>
               <div class="composer-actions">
                 <div class="composer-actions-start">
+                  <span
+                    class="composer-model"
+                    data-composer-model
+                    title="当前模型：${escapeHtml(runtime.model)}"
+                  >
+                    <span class="composer-model-icon" data-composer-model-icon aria-hidden="true">
+                      ${renderModelProviderIcon(runtime.model)}
+                    </span>
+                    <span class="composer-model-name" data-composer-model-name>${escapeHtml(runtime.model)}</span>
+                  </span>
                   <button
                     type="button"
                     class="composer-btn skills-button"
@@ -1588,7 +1610,14 @@ async function start(): Promise<void> {
   const artifactPreview = findRequired<HTMLElement>("[data-artifact-preview]");
   const artifactCount = findRequired<HTMLElement>("[data-artifact-count]");
   const chatLog = findRequired<HTMLElement>("[data-chat-log]");
+  const messageShortcuts = findRequired<HTMLElement>("[data-message-shortcuts]");
+  const messageShortcutPreview = findRequired<HTMLElement>(
+    "[data-message-shortcut-preview]",
+  );
   const promptInput = findRequired<HTMLTextAreaElement>("#prompt");
+  const composerModel = findRequired<HTMLElement>("[data-composer-model]");
+  const composerModelIcon = findRequired<HTMLElement>("[data-composer-model-icon]");
+  const composerModelName = findRequired<HTMLElement>("[data-composer-model-name]");
   const mentionPopup = findRequired<HTMLElement>("[data-mention-popup]");
   const sendMessageButton = findRequired<HTMLButtonElement>("[data-send-message]");
   const composerHint = findRequired<HTMLElement>("[data-composer-hint]");
@@ -1701,9 +1730,113 @@ async function start(): Promise<void> {
       }
       void window.desktop.denyToolCall(toolCallId);
     },
-    { collapseMessages: true },
+    {
+      collapseMessages: true,
+      stackActivities: true,
+      activityIcon: () => {
+        const icon = document.createElement("span");
+        icon.innerHTML = renderIcon("workflow");
+        return icon;
+      },
+      onArtifactOpen: (path) => {
+        void openArtifactFromChat(path);
+      },
+    },
   );
   const contextUsageRing = new ContextUsageRing(contextUsageMount);
+  let shortcutMessages: HTMLElement[] = [];
+  let shortcutFrame = 0;
+
+  function syncMessageShortcutActive(): void {
+    shortcutFrame = 0;
+    if (shortcutMessages.length === 0) {
+      return;
+    }
+    const viewport = chatLog.getBoundingClientRect();
+    const targetY = viewport.top + viewport.height * 0.42;
+    let activeIndex = 0;
+    let activeDistance = Number.POSITIVE_INFINITY;
+    shortcutMessages.forEach((message, index) => {
+      const rect = message.getBoundingClientRect();
+      const distance = Math.abs(rect.top + rect.height / 2 - targetY);
+      if (distance < activeDistance) {
+        activeDistance = distance;
+        activeIndex = index;
+      }
+    });
+    messageShortcuts
+      .querySelectorAll<HTMLButtonElement>("[data-message-shortcut]")
+      .forEach((button, index) => {
+        const active = index === activeIndex;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-current", active ? "true" : "false");
+      });
+  }
+
+  function scheduleMessageShortcutSync(): void {
+    messageShortcutPreview.hidden = true;
+    if (shortcutFrame) {
+      return;
+    }
+    shortcutFrame = requestAnimationFrame(syncMessageShortcutActive);
+  }
+
+  function showMessageShortcutPreview(button: HTMLButtonElement, text: string): void {
+    const rect = button.getBoundingClientRect();
+    messageShortcutPreview.textContent = text;
+    messageShortcutPreview.style.left = `${rect.left - 8}px`;
+    messageShortcutPreview.style.top = `${rect.top + rect.height / 2}px`;
+    messageShortcutPreview.hidden = false;
+  }
+
+  function refreshMessageShortcuts(): void {
+    messageShortcutPreview.hidden = true;
+    shortcutMessages = Array.from(
+      chatLog.querySelectorAll<HTMLElement>(
+        ":scope > .chat-row.user, :scope > .chat-row.assistant:not(.pending)",
+      ),
+    );
+    messageShortcuts.hidden = shortcutMessages.length < 2;
+    messageShortcuts.replaceChildren(
+      ...shortcutMessages.map((message, index) => {
+        const user = message.classList.contains("user");
+        const preview =
+          summarize(
+            message.querySelector<HTMLElement>(".bubble-body")?.textContent ?? "",
+            36,
+          ) || (user ? "用户消息" : "AI 消息");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `message-shortcut ${user ? "user" : "assistant"}`;
+        button.dataset.messageShortcut = String(index);
+        const label = `${user ? "你" : "pagent"}：${preview}`;
+        button.setAttribute("aria-label", label);
+        button.addEventListener("pointerenter", () => {
+          showMessageShortcutPreview(button, label);
+        });
+        button.addEventListener("pointerleave", () => {
+          messageShortcutPreview.hidden = true;
+        });
+        button.addEventListener("focus", () => {
+          showMessageShortcutPreview(button, label);
+        });
+        button.addEventListener("blur", () => {
+          messageShortcutPreview.hidden = true;
+        });
+        button.addEventListener("click", () => {
+          messageShortcutPreview.hidden = true;
+          message.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+        return button;
+      }),
+    );
+    scheduleMessageShortcutSync();
+  }
+
+  const messageShortcutObserver = new MutationObserver(refreshMessageShortcuts);
+  messageShortcutObserver.observe(chatLog, { childList: true });
+  chatLog.addEventListener("scroll", scheduleMessageShortcutSync, { passive: true });
+  refreshMessageShortcuts();
 
   function applyTheme(): void {
     document.documentElement.dataset.theme = uiState.theme;
@@ -1731,11 +1864,11 @@ async function start(): Promise<void> {
     );
     workbench.style.setProperty(
       "--left-gap",
-      leftHidden || uiState.leftCollapsed ? "0px" : "8px",
+      leftHidden || uiState.leftCollapsed ? "0px" : "6px",
     );
     workbench.style.setProperty(
       "--right-gap",
-      uiState.rightCollapsed ? "0px" : "8px",
+      uiState.rightCollapsed ? "0px" : "6px",
     );
     historyDockButton.hidden = !uiState.sidebarDocked;
   }
@@ -2618,6 +2751,16 @@ async function start(): Promise<void> {
     artifactPreview.innerHTML = renderArtifactPreview(preview);
   }
 
+  async function openArtifactFromChat(filePath: string): Promise<void> {
+    uiState.activeTab = "project";
+    uiState.projectPane = "artifacts";
+    uiState.rightCollapsed = false;
+    applyWorkbenchChrome();
+    applyRightTab();
+    await refreshArtifacts();
+    await showArtifactPreview(filePath);
+  }
+
   function applyProjectPane(): void {
     const pane = uiState.projectPane;
     projectHost.dataset.projectPane = pane;
@@ -2794,6 +2937,9 @@ async function start(): Promise<void> {
 
   function applyRuntimeState(state: RuntimeState): void {
     uiState.runtime = state;
+    composerModelIcon.innerHTML = renderModelProviderIcon(state.model);
+    composerModelName.textContent = state.model;
+    composerModel.title = `当前模型：${state.model}`;
     if (state.status === "error") {
       uiState.activityState = "error";
     } else if (uiState.activityState === "error" && !state.lastError) {
@@ -3919,6 +4065,10 @@ async function start(): Promise<void> {
   window.addEventListener("beforeunload", () => {
     disposeAgentEvents();
     disposeRuntimeState();
+    messageShortcutObserver.disconnect();
+    if (shortcutFrame) {
+      cancelAnimationFrame(shortcutFrame);
+    }
     window.clearInterval(sandboxStatusTimer);
     window.removeEventListener("resize", applyLeftSplitRatio);
   });

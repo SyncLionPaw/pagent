@@ -43,6 +43,10 @@ import type {
   ThreadSummary,
   WireEvent,
 } from "../shared/protocol";
+import {
+  DEFAULT_MODEL,
+  providerFieldFromToml,
+} from "../shared/provider-config";
 import { parseWireLine } from "../shared/wire";
 import {
   completeOnboarding,
@@ -319,6 +323,33 @@ function settingsFilePath(): string {
   return path.join(userPagentHome(), "pagent.toml");
 }
 
+function modelFromToml(filePath: string, section?: string): string {
+  if (!existsSync(filePath)) {
+    return "";
+  }
+  const text = readFileSync(filePath, "utf8");
+  if (!section) {
+    return providerFieldFromToml(text, "model");
+  }
+  const sectionBody = text
+    .split(new RegExp(`^\\s*\\[${section}\\]\\s*$`, "m"))[1]
+    ?.split(/^\s*\[[^\]]+\]\s*$/m)[0];
+  return sectionBody ? providerFieldFromToml(sectionBody, "model") : "";
+}
+
+function currentModel(): string {
+  if (currentThreadId) {
+    const threadModel = modelFromToml(
+      path.join(threadsDirectory(), currentThreadId, "thread.toml"),
+      "agent",
+    );
+    if (threadModel) {
+      return threadModel;
+    }
+  }
+  return modelFromToml(settingsFilePath()) || DEFAULT_MODEL;
+}
+
 function threadsDirectory(): string {
   return path.join(userPagentHome(), "threads");
 }
@@ -377,6 +408,7 @@ function runtimeState(): RuntimeState {
         : undefined,
     sandboxAlive:
       sandboxStatus.thread_id === currentThreadId ? sandboxStatus.alive : undefined,
+    model: currentModel(),
     yoloMode,
     bridgeActive: bridge !== undefined,
     transport: activeTransport,

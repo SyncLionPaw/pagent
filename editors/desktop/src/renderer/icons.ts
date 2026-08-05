@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowUp,
   Box,
+  BrainCircuit,
   ChevronDown,
   ChevronRight,
   CircleAlert,
@@ -36,6 +37,7 @@ import {
   Settings,
   Square,
   Trash2,
+  Workflow,
   Wrench,
   X,
   Zap,
@@ -48,6 +50,7 @@ type DesktopIconName =
   | "arrow-left"
   | "arrow-up"
   | "box"
+  | "brain-circuit"
   | "chevron-down"
   | "chevron-right"
   | "circle-alert"
@@ -81,6 +84,7 @@ type DesktopIconName =
   | "settings"
   | "square"
   | "trash-2"
+  | "workflow"
   | "wrench"
   | "x"
   | "zap";
@@ -90,6 +94,7 @@ const iconRegistry: Record<DesktopIconName, IconNode> = {
   "arrow-left": ArrowLeft,
   "arrow-up": ArrowUp,
   box: Box,
+  "brain-circuit": BrainCircuit,
   "chevron-down": ChevronDown,
   "chevron-right": ChevronRight,
   "circle-alert": CircleAlert,
@@ -123,6 +128,7 @@ const iconRegistry: Record<DesktopIconName, IconNode> = {
   settings: Settings,
   square: Square,
   "trash-2": Trash2,
+  workflow: Workflow,
   wrench: Wrench,
   x: X,
   zap: Zap,

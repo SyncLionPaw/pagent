@@ -86,6 +86,9 @@ const rendererOptions = {
   alias: {
     marked: path.join(root, "node_modules/marked/lib/marked.esm.js"),
   },
+  loader: {
+    ".svg": "text",
+  },
   sourcemap: true,
   logLevel: "info",
   plugins: [ignoreVendorSourceMaps],

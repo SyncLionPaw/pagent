@@ -45,6 +45,9 @@ const MESSAGE_COLLAPSED_HEIGHT_PX = 240;
 
 type ChatRendererOptions = {
   collapseMessages?: boolean;
+  stackActivities?: boolean;
+  activityIcon?: () => HTMLElement;
+  onArtifactOpen?: (path: string) => void;
 };
 
 export class ChatRenderer {
@@ -76,10 +79,20 @@ export class ChatRenderer {
   private historyTransitionTimer: ReturnType<typeof setTimeout> | undefined;
   // tool_call_id → 该工具卡片的结果区元素，供 ToolResult 回填配对。
   private toolCards = new Map<string, HTMLElement>();
+  private toolCalls = new Map<string, { name: string }>();
+  private pendingArtifacts: string[] = [];
   // tool_call_id → 该工具卡片的审批区元素，供决定落定后禁用按钮 / 撤下。
   private permitPrompts = new Map<string, HTMLElement>();
   // sub conversation id → desktop 实验用的子 agent 面板。
   private subagentPanels = new Map<string, SubagentPanel>();
+  // 当前主回复前的 thinking / tool / subagent 统一收进一个可折叠过程堆栈。
+  private activityStack: HTMLDetailsElement | undefined;
+  private activityContent: HTMLElement | undefined;
+  private activityMeta: HTMLElement | undefined;
+  private activityCount = 0;
+  private activityToolCount = 0;
+  private activityThinkingCount = 0;
+  private assistantTurnLabeled = false;
 
   // onPermit 由入口注入：用户点“批准/拒绝”时回传决定给宿主（视图层不碰 vscode API）。
   constructor(
@@ -92,6 +105,9 @@ export class ChatRenderer {
 
   /** 追加一条用户气泡，并立刻挂出“思考中”占位（发出即有反馈）。 */
   addUser(text: string): void {
+    this.flushArtifacts();
+    this.finishActivityStack();
+    this.assistantTurnLabeled = false;
     this.hideEmptyState();
     const body = this.appendBubble("user");
     body.textContent = text;
@@ -131,8 +147,17 @@ export class ChatRenderer {
     this.root.classList.remove("is-loading");
     this.root.classList.remove("history-entering");
     this.toolCards.clear();
+    this.toolCalls.clear();
+    this.pendingArtifacts = [];
     this.permitPrompts.clear();
     this.subagentPanels.clear();
+    this.activityStack = undefined;
+    this.activityContent = undefined;
+    this.activityMeta = undefined;
+    this.activityCount = 0;
+    this.activityToolCount = 0;
+    this.activityThinkingCount = 0;
+    this.assistantTurnLabeled = false;
     this.root.replaceChildren();
     this.showEmptyState();
   }
@@ -147,6 +172,7 @@ export class ChatRenderer {
     }
     if (method === "TextDelta") {
       this.removePlaceholder();
+      this.collapseActivityStack();
       this.enqueueAssistantText(readString(params, "text"));
       return;
     }
@@ -193,7 +219,9 @@ export class ChatRenderer {
       return;
     }
     if (method === "Error") {
+      this.finishActivityStack();
       this.showError(readString(params, "message") || "未知错误");
+      this.flushArtifacts();
       return;
     }
     if (method === "RunEnd") {
@@ -203,10 +231,12 @@ export class ChatRenderer {
         stopReason === "cancelled" ? "已取消" : "未完成";
       this.settlePendingToolCards(pendingToolMessage, false);
       this.finishAssistant();
+      this.finishActivityStack();
       const message = stopReasonNotice(readString(params, "stop_reason"));
       if (message) {
         this.showNotice(message);
       }
+      this.flushArtifacts();
       return;
     }
   }
@@ -299,6 +329,7 @@ export class ChatRenderer {
       }
     }
     this.settlePendingToolCards("已中断", false);
+    this.flushArtifacts();
     if (raw.length === 0) {
       this.showEmptyState();
     }
@@ -312,6 +343,13 @@ export class ChatRenderer {
   private replayText(role: string, text: string): void {
     if (role !== "user" && role !== "assistant") {
       return;
+    }
+    if (role === "user") {
+      this.flushArtifacts();
+    }
+    this.finishActivityStack();
+    if (role === "user") {
+      this.assistantTurnLabeled = false;
     }
     const body = this.appendBubble(role);
     if (role === "assistant") {
@@ -515,11 +553,96 @@ export class ChatRenderer {
     this.markdownShouldStick = false;
   }
 
+  private activityHost(kind: "thinking" | "tool" | "subagent"): HTMLElement {
+    if (!this.options.stackActivities) {
+      return this.root;
+    }
+    if (!this.activityStack || !this.activityContent || !this.activityMeta) {
+      if (!this.assistantTurnLabeled) {
+        const turnLabel = makeRoleLabel("assistant");
+        turnLabel.classList.add("activity-turn-label");
+        this.root.appendChild(turnLabel);
+        this.assistantTurnLabeled = true;
+      }
+      const stack = document.createElement("details");
+      stack.className = "activity-stack";
+      stack.open = true;
+
+      const summary = document.createElement("summary");
+      summary.className = "activity-stack-summary";
+      const icon = this.options.activityIcon?.() ?? document.createElement("i");
+      if (!this.options.activityIcon) {
+        icon.classList.add("codicon", "codicon-run-all");
+      }
+      icon.classList.add("activity-stack-icon");
+      const label = document.createElement("span");
+      label.className = "activity-stack-label";
+      label.textContent = "执行过程";
+      const meta = document.createElement("span");
+      meta.className = "activity-stack-meta";
+      summary.append(icon, label, meta);
+
+      const content = document.createElement("div");
+      content.className = "activity-stack-content";
+      stack.append(summary, content);
+      this.root.appendChild(stack);
+      this.activityStack = stack;
+      this.activityContent = content;
+      this.activityMeta = meta;
+    }
+
+    this.activityCount += 1;
+    if (kind === "tool") {
+      this.activityToolCount += 1;
+    } else if (kind === "thinking") {
+      this.activityThinkingCount += 1;
+    }
+    this.updateActivityMeta();
+    return this.activityContent;
+  }
+
+  private updateActivityMeta(): void {
+    if (!this.activityMeta) {
+      return;
+    }
+    const parts = [`${this.activityCount} 项`];
+    if (this.activityToolCount) {
+      parts.push(`${this.activityToolCount} 工具`);
+    }
+    if (this.activityThinkingCount) {
+      parts.push(`${this.activityThinkingCount} 思考`);
+    }
+    this.activityMeta.textContent = parts.join(" · ");
+    this.activityStack?.classList.toggle(
+      "has-multiple",
+      this.activityCount > 1,
+    );
+  }
+
+  private collapseActivityStack(): void {
+    if (this.activityStack) {
+      this.activityStack.open = false;
+    }
+  }
+
+  private finishActivityStack(): void {
+    this.collapseActivityStack();
+    this.activityStack = undefined;
+    this.activityContent = undefined;
+    this.activityMeta = undefined;
+    this.activityCount = 0;
+    this.activityToolCount = 0;
+    this.activityThinkingCount = 0;
+  }
+
   /** 新建一张工具卡片（折叠，默认展开）：标题工具名，展开区显示参数，末尾留结果占位。 */
   private addToolCard(id: string, name: string, args: string): void {
     this.sealAssistantBubble();
     this.hideEmptyState();
-    this.appendToolCard(this.root, this.toolCards, id, name, args);
+    if (id) {
+      this.toolCalls.set(id, { name });
+    }
+    this.appendToolCard(this.activityHost("tool"), this.toolCards, id, name, args);
   }
 
   private appendToolCard(
@@ -577,7 +700,81 @@ export class ChatRenderer {
 
   /** 按 tool_call_id 回填结果，更新卡片配色与状态标签。找不到卡片则忽略。 */
   private fillToolResult(id: string, content: string, ok: boolean): void {
+    this.captureDeliveredArtifact(id, content, ok);
     this.resolveToolCard(this.toolCards, id, content, ok);
+  }
+
+  private captureDeliveredArtifact(id: string, content: string, ok: boolean): void {
+    const call = this.toolCalls.get(id);
+    this.toolCalls.delete(id);
+    if (ok && call?.name === "copy_to_host") {
+      const prefix = "delivered file to user at ";
+      const path = content.startsWith(prefix) ? content.slice(prefix.length).trim() : "";
+      if (path && !this.pendingArtifacts.includes(path)) {
+        this.pendingArtifacts.push(path);
+      }
+    }
+  }
+
+  private flushArtifacts(): void {
+    if (this.pendingArtifacts.length === 0) {
+      return;
+    }
+    const paths = this.pendingArtifacts;
+    this.pendingArtifacts = [];
+    if (!this.options.onArtifactOpen) {
+      return;
+    }
+    const group = document.createElement("section");
+    group.className = "delivered-artifacts";
+
+    const heading = document.createElement("div");
+    heading.className = "delivered-artifacts-heading";
+    const headingIcon = document.createElement("i");
+    headingIcon.className = "codicon codicon-package";
+    const headingLabel = document.createElement("span");
+    headingLabel.textContent = "Artifacts";
+    const count = document.createElement("span");
+    count.className = "delivered-artifacts-count";
+    count.textContent = String(paths.length);
+    heading.append(headingIcon, headingLabel, count);
+
+    const cards = document.createElement("div");
+    cards.className = "delivered-artifact-cards";
+    paths.forEach((path) => {
+      const name = path.split(/[\\/]/).filter(Boolean).pop() ?? path;
+      const visual = deliveredArtifactVisual(name);
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "delivered-artifact-card";
+      card.title = `在右侧打开 ${path}`;
+
+      const icon = document.createElement("i");
+      icon.className = `codicon ${visual.icon} delivered-artifact-icon`;
+      icon.dataset.kind = visual.kind;
+      icon.dataset.extension = visual.extension;
+      const copy = document.createElement("span");
+      copy.className = "delivered-artifact-copy";
+      const title = document.createElement("span");
+      title.className = "delivered-artifact-name";
+      title.textContent = name;
+      const meta = document.createElement("span");
+      meta.className = "delivered-artifact-meta";
+      meta.textContent = "已交付";
+      copy.append(title, meta);
+      const arrow = document.createElement("i");
+      arrow.className = "codicon codicon-chevron-right delivered-artifact-arrow";
+      card.append(icon, copy, arrow);
+      card.addEventListener("click", () => this.options.onArtifactOpen?.(path));
+      cards.appendChild(card);
+    });
+    group.append(heading, cards);
+
+    const stick = this.isNearBottom();
+    this.root.appendChild(group);
+    if (stick) {
+      this.forceScrollToBottom();
+    }
   }
 
   private resolveToolCard(
@@ -640,10 +837,19 @@ export class ChatRenderer {
     }
     if (method === "ToolCallBegin") {
       panel.preview.textContent = "工具";
+      const id = readString(inner, "tool_call_id");
+      if (id) {
+        this.toolCalls.set(id, { name: readString(inner, "name") });
+      }
       return;
     }
     if (method === "ToolResult") {
       panel.preview.textContent = "工具";
+      this.captureDeliveredArtifact(
+        readString(inner, "tool_call_id"),
+        readString(inner, "content"),
+        inner.ok !== false,
+      );
       return;
     }
     if (method === "RunEnd") {
@@ -686,7 +892,7 @@ export class ChatRenderer {
     status.append(icon);
     row.append(leadIcon, label, preview, status);
     const stick = this.isNearBottom();
-    this.root.appendChild(row);
+    this.activityHost("subagent").appendChild(row);
     if (stick) {
       this.forceScrollToBottom();
     }
@@ -742,6 +948,9 @@ export class ChatRenderer {
     }
     const details = slot.closest(".tool-card");
     if (details instanceof HTMLDetailsElement) {
+      if (this.activityStack?.contains(details)) {
+        this.activityStack.open = true;
+      }
       details.open = true; // 展开卡片，让审批按钮直接可见。
       const status = details.querySelector(".tool-status");
       if (status) {
@@ -863,7 +1072,7 @@ export class ChatRenderer {
     details.appendChild(summary);
     details.appendChild(body);
     const stick = this.isNearBottom();
-    this.root.appendChild(details);
+    this.activityHost("thinking").appendChild(details);
     this.reasoningPanel = details;
     this.reasoningPreview = preview;
     if (stick) {
@@ -878,7 +1087,12 @@ export class ChatRenderer {
     row.className = `chat-row ${role}`;
     const msg = document.createElement("div");
     msg.className = `msg ${role}`;
-    msg.appendChild(makeRoleLabel(role));
+    if (role === "user" || !this.assistantTurnLabeled) {
+      msg.appendChild(makeRoleLabel(role));
+    }
+    if (role === "assistant") {
+      this.assistantTurnLabeled = true;
+    }
     const bubble = document.createElement("div");
     bubble.className = `bubble ${role}`;
     const body = document.createElement("div");
@@ -1085,6 +1299,43 @@ function summarizeLine(text: string): string {
     return oneLine;
   }
   return oneLine.slice(0, PREVIEW_MAX_CHARS) + "…";
+}
+
+function deliveredArtifactVisual(name: string): {
+  kind: string;
+  icon: string;
+  extension: string;
+} {
+  const match = /\.([^.]+)$/.exec(name);
+  const extension = (match?.[1] ?? "FILE").slice(0, 4).toUpperCase();
+  if (/\.(html?|css|jsx?|tsx?|py|sh|go|rs|java|c|cpp|sql)$/i.test(name)) {
+    return { kind: "code", icon: "codicon-file-code", extension };
+  }
+  if (/\.json$/i.test(name)) {
+    return { kind: "data", icon: "codicon-json", extension };
+  }
+  if (/\.(ya?ml|toml|xml)$/i.test(name)) {
+    return { kind: "data", icon: "codicon-symbol-structure", extension };
+  }
+  if (/\.pdf$/i.test(name)) {
+    return { kind: "document", icon: "codicon-file-pdf", extension };
+  }
+  if (/\.(md|mdx)$/i.test(name)) {
+    return { kind: "document", icon: "codicon-markdown", extension };
+  }
+  if (/\.(txt|log|docx?|rtf|odt|epub|pptx?)$/i.test(name)) {
+    return { kind: "document", icon: "codicon-file-text", extension };
+  }
+  if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(name)) {
+    return { kind: "image", icon: "codicon-file-media", extension };
+  }
+  if (/\.(csv|tsv|xlsx?|ods)$/i.test(name)) {
+    return { kind: "sheet", icon: "codicon-table", extension };
+  }
+  if (/\.(zip|tar|gz|7z|rar)$/i.test(name)) {
+    return { kind: "archive", icon: "codicon-file-zip", extension };
+  }
+  return { kind: "file", icon: "codicon-file", extension };
 }
 
 /** 生成气泡上方的角色小标签。 */
