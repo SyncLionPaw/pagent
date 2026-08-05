@@ -64,6 +64,11 @@ export type Skill = {
     path: string;
 };
 
+export type ToolSummary = {
+    name: string;
+    description: string;
+};
+
 export type AppSettings = {
     path: string;
     exists: boolean;

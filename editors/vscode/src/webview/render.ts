@@ -41,6 +41,11 @@ type SubagentPanel = {
 const STICK_THRESHOLD_PX = 80;
 // Markdown 增量渲染节流间隔（ms）：降低 marked + DOMPurify 高频重跑造成的布局抖动。
 const MARKDOWN_RENDER_INTERVAL_MS = 48;
+const MESSAGE_COLLAPSED_HEIGHT_PX = 240;
+
+type ChatRendererOptions = {
+  collapseMessages?: boolean;
+};
 
 export class ChatRenderer {
   // 当前正在累积的 assistant 气泡正文元素；一轮结束后清空。
@@ -80,6 +85,7 @@ export class ChatRenderer {
   constructor(
     private readonly root: HTMLElement,
     private readonly onPermit?: (toolCallId: string, approved: boolean) => void,
+    private readonly options: ChatRendererOptions = {},
   ) {
     this.showEmptyState();
   }
@@ -89,6 +95,7 @@ export class ChatRenderer {
     this.hideEmptyState();
     const body = this.appendBubble("user");
     body.textContent = text;
+    this.applyMessageCollapse(body);
     this.forceScrollToBottom();
     this.showPlaceholder();
   }
@@ -312,6 +319,7 @@ export class ChatRenderer {
     } else {
       body.textContent = text;
     }
+    this.applyMessageCollapse(body);
   }
 
   /** 回放一段思考内容到折叠面板（历史默认折叠，折叠行显示摘要预览）。 */
@@ -410,6 +418,9 @@ export class ChatRenderer {
       this.paintAssistant();
     }
     this.flushMarkdownRender();
+    if (this.assistantBody) {
+      this.applyMessageCollapse(this.assistantBody);
+    }
     this.collapseThinkingPanel();
     this.assistantBody = undefined;
     this.assistantText = "";
@@ -440,6 +451,9 @@ export class ChatRenderer {
       this.paintAssistant();
     }
     this.flushMarkdownRender();
+    if (this.assistantBody) {
+      this.applyMessageCollapse(this.assistantBody);
+    }
     this.assistantBody = undefined;
     this.assistantText = "";
     this.resetMarkdownState();
@@ -874,6 +888,33 @@ export class ChatRenderer {
     row.appendChild(msg);
     this.root.appendChild(row);
     return body;
+  }
+
+  private applyMessageCollapse(body: HTMLElement): void {
+    if (!this.options.collapseMessages) {
+      return;
+    }
+    requestAnimationFrame(() => {
+      if (!body.isConnected || body.scrollHeight <= MESSAGE_COLLAPSED_HEIGHT_PX) {
+        return;
+      }
+      const bubble = body.parentElement;
+      if (!bubble || bubble.querySelector(":scope > .message-toggle")) {
+        return;
+      }
+      bubble.classList.add("message-collapsible", "is-collapsed");
+      const toggle = document.createElement("button");
+      toggle.className = "message-toggle";
+      toggle.type = "button";
+      toggle.textContent = "展开";
+      toggle.setAttribute("aria-expanded", "false");
+      toggle.addEventListener("click", () => {
+        const collapsed = bubble.classList.toggle("is-collapsed");
+        toggle.textContent = collapsed ? "展开" : "收起";
+        toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      });
+      bubble.appendChild(toggle);
+    });
   }
 
   /** 错误气泡：左侧 assistant 位，但用 error 样式与角色标签 error。 */

@@ -437,6 +437,34 @@ def emit_skills(runner) -> None:
     emit_line(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
+def emit_capabilities(runner) -> None:
+    """下发当前会话实际启用的 skills 与 tools。"""
+    skills = runner.skills.list() if runner else []
+    tools = runner.agent.tools if runner else []
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "Capabilities",
+        "params": {
+            "skills": [
+                {
+                    "name": skill.name,
+                    "description": skill.description,
+                    "path": str(skill.root),
+                }
+                for skill in skills
+            ],
+            "tools": [
+                {
+                    "name": tool.name,
+                    "description": tool.description,
+                }
+                for tool in tools
+            ],
+        },
+    }
+    emit_line(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
 async def emit_sandbox_status(runner) -> None:
     """下发当前 sandbox 的类型与存活状态，供宿主顶部状态栏展示。"""
     if runner is None:
@@ -1050,6 +1078,10 @@ async def handle_command(command: dict, runner, config: ReplConfig, state: dict)
 
     if cmd == "skills":
         emit_skills(runner)
+        return runner
+
+    if cmd == "capabilities":
+        emit_capabilities(runner)
         return runner
 
     if cmd == "resume":

@@ -795,40 +795,247 @@ button {
 }
 
 
-.skills-panel {
+.left-split {
+    --left-history-size: calc(50% - 4px);
+    display: grid;
+    grid-template-rows: minmax(0, var(--left-history-size)) 9px minmax(0, 1fr);
     flex: 1;
-    overflow: auto;
+    min-height: 0;
+    overflow: hidden;
 }
 
-.skills-list {
-    padding: 4px 0;
+.left-split-pane {
+    min-height: 0;
+    overflow: hidden;
 }
 
-.skill-item {
+.history-section {
     display: flex;
     flex-direction: column;
-    padding: 8px 12px;
-    gap: 2px;
-    cursor: default;
-    user-select: none;
 }
 
-.skill-item:hover {
+.left-split-handle {
+    position: relative;
+    z-index: 2;
+    min-height: 9px;
+    cursor: row-resize;
+    touch-action: none;
+}
+
+.left-split-handle::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    left: 8px;
+    height: 1px;
+    background: var(--hairline);
+    transition: background-color 120ms ease;
+}
+
+.left-split-handle::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    width: 28px;
+    height: 5px;
+    border-radius: 999px;
+    background: var(--border);
+    transform: translateX(-50%);
+    transition: background-color 120ms ease;
+}
+
+.left-split-handle:hover::after,
+.left-split-handle:focus-visible::after,
+.left-split-handle.is-dragging::after {
+    background: var(--primary);
+}
+
+.capability-section {
+    display: flex;
+    flex-direction: column;
+    padding: 0 8px 10px;
+}
+
+.capability-label {
+    padding-right: 8px;
+    padding-left: 8px;
+}
+
+.capability-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.capability-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    height: 38px;
+    padding: 0 9px;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--surface) 42%, transparent);
+    color: var(--text-secondary);
+    cursor: pointer;
+    text-align: left;
+    transition:
+        border-color 120ms ease,
+        background 120ms ease,
+        color 120ms ease;
+}
+
+.capability-card:hover {
+    border-color: color-mix(in srgb, var(--primary) 36%, var(--border));
     background: color-mix(in srgb, var(--primary) 8%, transparent);
-}
-
-.skill-name {
-    font-size: 13px;
-    font-weight: 500;
     color: var(--text-primary);
 }
 
-.skill-desc {
-    font-size: 12px;
+.capability-card.active {
+    border-color: color-mix(in srgb, var(--primary) 58%, transparent);
+    background: var(--accent-soft);
+    color: var(--text-primary);
+}
+
+.capability-card-icon {
+    display: inline-flex;
     color: var(--text-tertiary);
+}
+
+.capability-card.active .capability-card-icon {
+    color: var(--primary);
+}
+
+.capability-card-icon .desktop-icon {
+    width: 14px;
+    height: 14px;
+}
+
+.capability-card-name {
+    min-width: 0;
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 500;
+    text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.capability-card-value {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.capability-detail {
+    flex: 1;
+    min-height: 0;
+    margin-top: 8px;
+    border: 1px solid var(--border-soft);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--surface) 34%, transparent);
+    overflow-y: auto;
+}
+
+.capability-item {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    padding: 7px 9px;
+}
+
+.capability-item+.capability-item {
+    border-top: 1px solid var(--hairline);
+}
+
+.capability-item-name {
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.capability-item-desc {
+    overflow: hidden;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.capability-empty {
+    padding: 12px 9px;
+    color: var(--text-tertiary);
+    font-size: 12px;
+    text-align: center;
+}
+
+.capability-runtime {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px 10px;
+    padding: 9px;
+    font-size: 11px;
+}
+
+.capability-runtime span {
+    color: var(--text-tertiary);
+}
+
+.capability-runtime strong {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.desktop-root .bubble.message-collapsible {
+    position: relative;
+    padding-bottom: 36px;
+}
+
+.desktop-root .bubble.message-collapsible.is-collapsed>.bubble-body {
+    max-height: 240px;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, #000 0, #000 82%, transparent 100%);
+}
+
+.desktop-root .message-toggle {
+    position: absolute;
+    right: 8px;
+    bottom: 6px;
+    height: 24px;
+    padding: 0 9px;
+    border: 0;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--text-tertiary) 14%, transparent);
+    color: inherit;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.desktop-root .message-toggle:hover {
+    background: color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.desktop-root .bubble.user .message-toggle {
+    background: color-mix(in srgb, var(--on-primary) 16%, transparent);
+}
+
+.desktop-root .bubble.user .message-toggle:hover {
+    background: color-mix(in srgb, var(--on-primary) 26%, transparent);
 }
 
 .left-footer-actions,
@@ -2213,6 +2420,7 @@ button {
 }
 
 @keyframes mental-link-glow {
+
     0%,
     100% {
         opacity: 0.55;
@@ -2244,6 +2452,7 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
     .mental-model.is-playing .mental-node,
     .mental-model.is-playing .mental-nested,
     .mental-model.is-playing .mental-bridge,

@@ -40,6 +40,7 @@ import type {
   Skill,
   ThreadMeta,
   ThreadSummary,
+  ToolSummary,
   WireEvent,
 } from "../shared/protocol";
 import { renderIcon, renderWechatIcon, type DesktopIconName } from "./icons";
@@ -51,6 +52,9 @@ const LEFT_PANE_WIDTH_PX = 232;
 const LEFT_COLLAPSED_WIDTH_PX = 44;
 const RIGHT_PANE_WIDTH_PX = 352;
 const RIGHT_COLLAPSED_WIDTH_PX = 44;
+const LEFT_SPLIT_RATIO_KEY = "pagent-desktop-left-split-ratio";
+const LEFT_SPLIT_MIN_RATIO = 0.2;
+const LEFT_SPLIT_MAX_RATIO = 0.8;
 
 type ThemeMode = "dark" | "light";
 type PanelTab = "project" | "sandbox" | "terminal";
@@ -58,6 +62,7 @@ type ProjectPane = "files" | "artifacts";
 type ActivityState = "running" | "sleeping" | "error";
 type ResourceKind = "cpu" | "memory" | "disk";
 type TerminalEntryKind = "command" | "stdout" | "stderr" | "status";
+type CapabilityKind = "skills" | "tools" | "sandbox" | "artifacts";
 
 type TerminalEntry = {
   kind: TerminalEntryKind;
@@ -179,6 +184,14 @@ function readStoredTheme(): ThemeMode {
 
 function readStoredSidebarPinned(): boolean {
   return window.localStorage.getItem("pagent-desktop-sidebar-pinned") === "1";
+}
+
+function readStoredLeftSplitRatio(): number {
+  const value = Number(window.localStorage.getItem(LEFT_SPLIT_RATIO_KEY));
+  if (!Number.isFinite(value)) {
+    return 0.5;
+  }
+  return Math.min(LEFT_SPLIT_MAX_RATIO, Math.max(LEFT_SPLIT_MIN_RATIO, value));
 }
 
 function projectLabel(runtime: RuntimeState): string {
@@ -864,10 +877,45 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             <div class="pane-topbar">
               <button class="new-task-button" type="button" data-new-task>新建任务</button>
             </div>
-            <div class="pane-section-label" data-section-label>会话历史</div>
-            <div class="session-list" data-session-list></div>
-            <div class="skills-panel" data-skills-panel hidden>
-              <div class="skills-list" data-skills-list></div>
+            <div class="left-split" data-left-split>
+              <section class="left-split-pane history-section">
+                <div class="pane-section-label">会话历史</div>
+                <div class="session-list" data-session-list></div>
+              </section>
+              <div
+                class="left-split-handle"
+                data-left-split-handle
+                role="separator"
+                aria-label="调整会话历史与能力区域高度"
+                aria-orientation="horizontal"
+                tabindex="0"
+              ></div>
+              <section class="left-split-pane capability-section" data-capability-section>
+                <div class="pane-section-label capability-label">能力</div>
+                <div class="capability-grid">
+                  <button class="capability-card" type="button" data-capability="skills">
+                    <span class="capability-card-icon">${renderIcon("plug")}</span>
+                    <span class="capability-card-name">Skills</span>
+                    <span class="capability-card-value" data-capability-value="skills">0</span>
+                  </button>
+                  <button class="capability-card" type="button" data-capability="tools">
+                    <span class="capability-card-icon">${renderIcon("wrench")}</span>
+                    <span class="capability-card-name">Tools</span>
+                    <span class="capability-card-value" data-capability-value="tools">0</span>
+                  </button>
+                  <button class="capability-card" type="button" data-capability="sandbox">
+                    <span class="capability-card-icon">${renderIcon("cpu")}</span>
+                    <span class="capability-card-name">Sandbox</span>
+                    <span class="capability-card-value" data-capability-value="sandbox">未启动</span>
+                  </button>
+                  <button class="capability-card" type="button" data-capability="artifacts">
+                    <span class="capability-card-icon">${renderIcon("box")}</span>
+                    <span class="capability-card-name">Artifacts</span>
+                    <span class="capability-card-value" data-capability-value="artifacts">0</span>
+                  </button>
+                </div>
+                <div class="capability-detail" data-capability-detail hidden></div>
+              </section>
             </div>
             <div class="left-footer">
               <div class="user-menu" data-user-menu>
@@ -1527,10 +1575,11 @@ async function start(): Promise<void> {
   mountToaster();
 
   const workbench = findRequired<HTMLElement>("[data-workbench]");
+  const leftSplit = findRequired<HTMLElement>("[data-left-split]");
+  const leftSplitHandle = findRequired<HTMLElement>("[data-left-split-handle]");
   const sessionList = findRequired<HTMLElement>("[data-session-list]");
-  const sectionLabel = findRequired<HTMLElement>("[data-section-label]");
-  const skillsPanel = findRequired<HTMLElement>("[data-skills-panel]");
-  const skillsList = findRequired<HTMLElement>("[data-skills-list]");
+  const capabilitySection = findRequired<HTMLElement>("[data-capability-section]");
+  const capabilityDetail = findRequired<HTMLElement>("[data-capability-detail]");
   const fileTree = findRequired<HTMLElement>("[data-file-tree]");
   const projectTree = findRequired<HTMLElement>("[data-project-tree]");
   const terminalPanel = findRequired<HTMLElement>("[data-terminal-panel]");
@@ -1606,6 +1655,7 @@ async function start(): Promise<void> {
     sidebarDocked: false,
     sidebarPinned: readStoredSidebarPinned(),
     leftWidth: LEFT_PANE_WIDTH_PX,
+    leftSplitRatio: readStoredLeftSplitRatio(),
     rightWidth: RIGHT_PANE_WIDTH_PX,
     activityState: "sleeping" as ActivityState,
     terminalEntries: [] as TerminalEntry[],
@@ -1624,6 +1674,8 @@ async function start(): Promise<void> {
     artifacts: [] as ArtifactSummary[],
     sessions: [] as ThreadSummary[],
     skills: [] as Skill[],
+    tools: [] as ToolSummary[],
+    activeCapability: undefined as CapabilityKind | undefined,
     runtime: initialRuntime,
   };
   const historyDockButton = findRequired<HTMLButtonElement>("[data-history-dock]");
@@ -1640,13 +1692,17 @@ async function start(): Promise<void> {
 
   renderArtifactList();
 
-  const chatRenderer = new ChatRenderer(chatLog, (toolCallId, approved) => {
-    if (approved) {
-      void window.desktop.permitToolCall(toolCallId);
-      return;
-    }
-    void window.desktop.denyToolCall(toolCallId);
-  });
+  const chatRenderer = new ChatRenderer(
+    chatLog,
+    (toolCallId, approved) => {
+      if (approved) {
+        void window.desktop.permitToolCall(toolCallId);
+        return;
+      }
+      void window.desktop.denyToolCall(toolCallId);
+    },
+    { collapseMessages: true },
+  );
   const contextUsageRing = new ContextUsageRing(contextUsageMount);
 
   function applyTheme(): void {
@@ -1682,6 +1738,22 @@ async function start(): Promise<void> {
       uiState.rightCollapsed ? "0px" : "8px",
     );
     historyDockButton.hidden = !uiState.sidebarDocked;
+  }
+
+  function applyLeftSplitRatio(): void {
+    const availableHeight = Math.max(0, leftSplit.clientHeight - leftSplitHandle.offsetHeight);
+    if (availableHeight === 0) {
+      return;
+    }
+    const ratio = Math.min(
+      LEFT_SPLIT_MAX_RATIO,
+      Math.max(LEFT_SPLIT_MIN_RATIO, uiState.leftSplitRatio),
+    );
+    uiState.leftSplitRatio = ratio;
+    leftSplit.style.setProperty("--left-history-size", `${availableHeight * ratio}px`);
+    leftSplitHandle.setAttribute("aria-valuemin", String(LEFT_SPLIT_MIN_RATIO * 100));
+    leftSplitHandle.setAttribute("aria-valuemax", String(LEFT_SPLIT_MAX_RATIO * 100));
+    leftSplitHandle.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
   }
 
   function applyPinState(): void {
@@ -2346,38 +2418,103 @@ async function start(): Promise<void> {
     applyHeader();
   }
 
-  function renderSkillList(): void {
-    if (uiState.skills.length === 0) {
-      skillsList.innerHTML = `
-        <div class="session-empty">
-          <div class="session-empty-title">暂无 Skills</div>
-          <div class="session-empty-copy">在 ~/.pagent/skills/ 目录下放置技能即可。</div>
-        </div>
-      `;
-      return;
+  function renderCapabilityItems(
+    items: Array<{ name: string; description: string; title?: string }>,
+    empty: string,
+  ): string {
+    if (items.length === 0) {
+      return `<div class="capability-empty">${escapeHtml(empty)}</div>`;
     }
-    skillsList.innerHTML = uiState.skills
+    return items
       .map(
-        (skill) => `
-          <div class="skill-item" title="${escapeHtml(skill.path)}">
-            <span class="skill-name">${escapeHtml(skill.name)}</span>
-            <span class="skill-desc">${escapeHtml(skill.description)}</span>
+        (item) => `
+          <div class="capability-item"${item.title ? ` title="${escapeHtml(item.title)}"` : ""}>
+            <span class="capability-item-name">${escapeHtml(item.name)}</span>
+            <span class="capability-item-desc">${escapeHtml(item.description)}</span>
           </div>
         `,
       )
       .join("");
   }
 
-  function toggleSkillsPanel(show: boolean): void {
-    if (show) {
-      sessionList.hidden = true;
-      skillsPanel.hidden = false;
-      sectionLabel.textContent = "Skills";
-      void window.desktop.sendWireCommand({ cmd: "skills" });
+  function renderCapabilities(): void {
+    const backend =
+      uiState.sandboxStatus.backend || uiState.runtime.sandboxBackend || "";
+    const values: Record<CapabilityKind, string> = {
+      skills: String(uiState.skills.length),
+      tools: String(uiState.tools.length),
+      sandbox: backend || "未启动",
+      artifacts: String(uiState.artifacts.length),
+    };
+    (Object.keys(values) as CapabilityKind[]).forEach((kind) => {
+      const value = capabilitySection.querySelector<HTMLElement>(
+        `[data-capability-value="${kind}"]`,
+      );
+      if (value) {
+        value.textContent = values[kind];
+      }
+    });
+    capabilitySection
+      .querySelectorAll<HTMLButtonElement>("[data-capability]")
+      .forEach((button) => {
+        const active = button.dataset.capability === uiState.activeCapability;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+
+    capabilityDetail.hidden = !uiState.activeCapability;
+    if (!uiState.activeCapability) {
+      capabilityDetail.innerHTML = "";
+      return;
+    }
+    if (uiState.activeCapability === "skills") {
+      capabilityDetail.innerHTML = renderCapabilityItems(
+        uiState.skills.map((skill) => ({
+          name: skill.name,
+          description: skill.description,
+          title: skill.path,
+        })),
+        "当前会话没有加载 Skill",
+      );
+      return;
+    }
+    if (uiState.activeCapability === "tools") {
+      capabilityDetail.innerHTML = renderCapabilityItems(
+        uiState.tools,
+        "当前会话没有启用 Tool",
+      );
+      return;
+    }
+    if (uiState.activeCapability === "artifacts") {
+      capabilityDetail.innerHTML = renderCapabilityItems(
+        uiState.artifacts.map((artifact) => ({
+          name: artifact.name,
+          description: formatBytes(artifact.size),
+          title: artifact.path,
+        })),
+        "当前项目没有产物",
+      );
+      return;
+    }
+    capabilityDetail.innerHTML = `
+      <div class="capability-runtime">
+        <span>类型</span><strong>${escapeHtml(backend || "未启动")}</strong>
+        <span>状态</span><strong>${uiState.sandboxStatus.alive ? "运行中" : "未运行"}</strong>
+        <span>目录</span><strong title="${escapeHtml(uiState.sandboxStatus.workdir)}">${escapeHtml(uiState.sandboxStatus.workdir || "—")}</strong>
+      </div>
+    `;
+  }
+
+  function toggleCapability(kind: CapabilityKind): void {
+    uiState.activeCapability =
+      uiState.activeCapability === kind ? undefined : kind;
+    renderCapabilities();
+    if (kind === "skills" || kind === "tools") {
+      void window.desktop.sendWireCommand({ cmd: "capabilities" });
+    } else if (kind === "sandbox") {
+      void refreshSandboxStatus();
     } else {
-      sessionList.hidden = false;
-      skillsPanel.hidden = true;
-      sectionLabel.textContent = "会话历史";
+      void refreshArtifacts();
     }
   }
 
@@ -2445,6 +2582,7 @@ async function start(): Promise<void> {
     uiState.terminalEntries = [];
     renderTree();
     renderTerminal();
+    renderCapabilities();
   }
 
   function renderArtifactList(): void {
@@ -2453,6 +2591,7 @@ async function start(): Promise<void> {
       artifactRootPath(uiState.runtime),
     );
     artifactCount.textContent = String(uiState.artifacts.length);
+    renderCapabilities();
     if (artifactPreviewPath && !uiState.artifacts.some((item) => item.path === artifactPreviewPath)) {
       closeArtifactPreview();
     }
@@ -2596,6 +2735,7 @@ async function start(): Promise<void> {
     };
     applyHeader();
     renderTree();
+    renderCapabilities();
   }
 
   async function ensureSandboxPanelLoaded(): Promise<void> {
@@ -2663,6 +2803,7 @@ async function start(): Promise<void> {
     applyHeader();
     applyActivityState();
     applyYoloButton();
+    renderCapabilities();
   }
 
   async function cancelRun(): Promise<void> {
@@ -2743,6 +2884,56 @@ async function start(): Promise<void> {
     });
   }
 
+  function bindLeftSplitResizer(): void {
+    const updateFromPointer = (clientY: number) => {
+      const rect = leftSplit.getBoundingClientRect();
+      const availableHeight = Math.max(1, rect.height - leftSplitHandle.offsetHeight);
+      uiState.leftSplitRatio = Math.min(
+        LEFT_SPLIT_MAX_RATIO,
+        Math.max(LEFT_SPLIT_MIN_RATIO, (clientY - rect.top) / availableHeight),
+      );
+      applyLeftSplitRatio();
+    };
+
+    leftSplitHandle.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      leftSplitHandle.setPointerCapture(event.pointerId);
+      leftSplitHandle.classList.add("is-dragging");
+
+      const onMove = (moveEvent: PointerEvent) => {
+        updateFromPointer(moveEvent.clientY);
+      };
+      const onUp = () => {
+        window.localStorage.setItem(
+          LEFT_SPLIT_RATIO_KEY,
+          String(uiState.leftSplitRatio),
+        );
+        leftSplitHandle.classList.remove("is-dragging");
+        leftSplitHandle.removeEventListener("pointermove", onMove);
+        leftSplitHandle.removeEventListener("pointerup", onUp);
+        leftSplitHandle.removeEventListener("pointercancel", onUp);
+      };
+
+      leftSplitHandle.addEventListener("pointermove", onMove);
+      leftSplitHandle.addEventListener("pointerup", onUp);
+      leftSplitHandle.addEventListener("pointercancel", onUp);
+    });
+
+    leftSplitHandle.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowUp" && event.key !== "ArrowDown") {
+        return;
+      }
+      event.preventDefault();
+      const delta = event.key === "ArrowUp" ? -0.02 : 0.02;
+      uiState.leftSplitRatio += delta;
+      applyLeftSplitRatio();
+      window.localStorage.setItem(
+        LEFT_SPLIT_RATIO_KEY,
+        String(uiState.leftSplitRatio),
+      );
+    });
+  }
+
   function syncWireEvent(event: WireEvent): void {
     const subagent = unwrapSubagentEvent(event);
     if (subagent) {
@@ -2798,6 +2989,7 @@ async function start(): Promise<void> {
       uiState.activityState = "sleeping";
       void refreshSessions();
       void refreshArtifacts();
+      void window.desktop.sendWireCommand({ cmd: "capabilities" });
     } else if (event.method === "HistoryReplay") {
       const threadId = String(event.params.thread_id ?? "");
       // 空 thread_id 通常是 reset/resume 失败后的占位回放，等后续 Error 定态。
@@ -2807,6 +2999,7 @@ async function start(): Promise<void> {
       }
       void refreshSessions();
       void refreshArtifacts();
+      void window.desktop.sendWireCommand({ cmd: "capabilities" });
     } else if (event.method === "Error") {
       uiState.activityState = "error";
       const message = String(event.params.message ?? "").trim();
@@ -2823,7 +3016,12 @@ async function start(): Promise<void> {
 
     if (event.method === "Skills") {
       uiState.skills = (event.params.skills as Skill[] | undefined) ?? [];
-      renderSkillList();
+      renderCapabilities();
+    }
+    if (event.method === "Capabilities") {
+      uiState.skills = (event.params.skills as Skill[] | undefined) ?? [];
+      uiState.tools = (event.params.tools as ToolSummary[] | undefined) ?? [];
+      renderCapabilities();
     }
 
     if (event.method === "ToolCallBegin") {
@@ -3053,7 +3251,17 @@ async function start(): Promise<void> {
   });
 
   skillsButton.addEventListener("click", () => {
-    toggleSkillsPanel(sessionList.hidden === false);
+    syncComposerDock(true);
+    toggleCapability("skills");
+  });
+  capabilitySection.addEventListener("click", (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
+      "[data-capability]",
+    );
+    if (!button || !capabilitySection.contains(button)) {
+      return;
+    }
+    toggleCapability(button.dataset.capability as CapabilityKind);
   });
 
   yoloButton.addEventListener("click", () => {
@@ -3662,6 +3870,8 @@ async function start(): Promise<void> {
 
   bindResizer("left");
   bindResizer("right");
+  bindLeftSplitResizer();
+  window.addEventListener("resize", applyLeftSplitRatio);
 
   const disposeAgentEvents = window.desktop.onAgentEvent((message) => {
     if (message.type === "wireEvent") {
@@ -3710,11 +3920,13 @@ async function start(): Promise<void> {
     disposeAgentEvents();
     disposeRuntimeState();
     window.clearInterval(sandboxStatusTimer);
+    window.removeEventListener("resize", applyLeftSplitRatio);
   });
 
   applyTheme();
   applyPinState();
   applyWorkbenchChrome();
+  applyLeftSplitRatio();
   renderTerminal();
   applyRightTab();
   applyRuntimeState(initialRuntime);
