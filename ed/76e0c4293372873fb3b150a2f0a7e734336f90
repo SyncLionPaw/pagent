@@ -1,0 +1,66 @@
+.github/workflows/publish.yml
+  s_8c01b4b914571e::t_300529837cc2e3 129-142 gitai:{"mixed_line_ranges":[],"operations":[{"operation_id":"6a7489501b2c7f23301c2ec6","tool_type":"agent","tool_id":"apply_patch","line_ranges":[{"Range":[129,142]}]}]}
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ed76e0c4293372873fb3b150a2f0a7e734336f90",
+  "prompts": {},
+  "sessions": {
+    "s_8c01b4b914571e": {
+      "agent_id": {
+        "tool": "trae",
+        "id": "6a6af05364a3c444d3471076",
+        "model": "gpt-5.6-sol__dev"
+      },
+      "human_author": "gongyulei <gongyulei@bytedance.com>"
+    }
+  },
+  "attestation_metadata": {
+    ".github/workflows/publish.yml": [
+      {
+        "hash": "s_8c01b4b914571e::t_300529837cc2e3",
+        "line_ranges": [
+          {
+            "Range": [
+              129,
+              142
+            ]
+          }
+        ],
+        "mixed_line_ranges": [],
+        "operations": [
+          {
+            "operation_id": "6a7489501b2c7f23301c2ec6",
+            "tool_type": "agent",
+            "tool_id": "apply_patch",
+            "line_ranges": [
+              {
+                "Range": [
+                  129,
+                  142
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "remote_transcripts": {
+    "s_8c01b4b914571e": {
+      "tool": "trae",
+      "conversation_id": "6a6af05364a3c444d3471076",
+      "session_id": "6a6af05364a3c444d3471076",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    },
+    "s_8c01b4b914571e::t_300529837cc2e3": {
+      "tool": "trae",
+      "conversation_id": "6a6af05364a3c444d3471076",
+      "session_id": "6a6af05364a3c444d3471076",
+      "status": "remote_only",
+      "message": "Remote transcript resolution is not implemented yet for TRAE prompts."
+    }
+  }
+}
