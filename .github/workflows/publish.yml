@@ -126,7 +126,7 @@ jobs:
 
       - name: Install Desktop deps
         working-directory: editors/desktop
-        run: npm ci
+        run: npm ci --ignore-scripts
 
       - name: Type check Desktop
         working-directory: editors/desktop
