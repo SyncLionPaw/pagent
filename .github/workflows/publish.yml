@@ -5,14 +5,34 @@
 name: Publish Release Assets
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - "v*"
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          ./scripts/release-notes.sh "$version" > release-notes.md
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md
+
   publish:
+    needs: release
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -61,6 +81,7 @@ jobs:
         uses: pypa/gh-action-pypi-publish@release/v1
 
   desktop:
+    needs: release
     strategy:
       fail-fast: false
       matrix:
