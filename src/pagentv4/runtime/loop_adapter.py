@@ -23,7 +23,13 @@ from collections.abc import AsyncGenerator
 from inspect import isawaitable
 
 from ..core.agent import Agent
-from ..core.events import ToolCallBegin, ToolResult
+from ..core.events import (
+    ToolCallArgsDelta,
+    ToolCallBegin,
+    ToolCallClaimBegin,
+    ToolCallClaimEnd,
+    ToolResult,
+)
 from ..core.message import Message, Messages, ToolCall
 from ..core.tool import FunctionTool, ToolOutput
 from .frame import RunFrame
@@ -37,6 +43,8 @@ from .helper import (
 )
 from .loop_core import run_event_loop
 from .run_state import RunState
+
+CLAIM_EVENTS = (ToolCallClaimBegin, ToolCallArgsDelta, ToolCallClaimEnd)
 
 
 class LoopAdapter:
@@ -159,9 +167,13 @@ class LoopAdapter:
         turn_id: int,
         **run_kwargs,
     ) -> AsyncGenerator:
-        async for message in self.agent.generate_messages(self.messages, **run_kwargs):
-            append_message(self.messages, message, turn_id=turn_id)
-            event = message_to_event(message)
+        async for item in self.agent.generate_messages(self.messages, **run_kwargs):
+            # Claim streaming is UI feedback only — do not persist drafts.
+            if isinstance(item, CLAIM_EVENTS):
+                yield item
+                continue
+            append_message(self.messages, item, turn_id=turn_id)
+            event = message_to_event(item)
             if event is not None:
                 yield event
 

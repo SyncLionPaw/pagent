@@ -44,6 +44,30 @@ class ReasoningDelta:
 
 
 @dataclass(frozen=True, slots=True)
+class ToolCallClaimBegin:
+    """Model started claiming a tool call (name/id appeared while streaming)."""
+
+    tool_call_id: str
+    name: str
+    index: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class ToolCallArgsDelta:
+    """Incremental tool-call argument fill while the claim is still open."""
+
+    tool_call_id: str
+    arguments_delta: str
+
+
+@dataclass(frozen=True, slots=True)
+class ToolCallClaimEnd:
+    """Argument fill for one claimed tool call is complete (stream closed that claim)."""
+
+    tool_call_id: str
+
+
+@dataclass(frozen=True, slots=True)
 class ToolCallBegin:
     tool_call_id: str
     name: str
@@ -65,6 +89,9 @@ Event: TypeAlias = (
     | TextDelta
     | ReasoningDelta
     | TurnResult
+    | ToolCallClaimBegin
+    | ToolCallArgsDelta
+    | ToolCallClaimEnd
     | ToolCallBegin
     | ToolResult
     | TurnEnd
