@@ -18,6 +18,34 @@
 
 ---
 
+## 0.7.23 — 2026-08-06
+
+修复 Desktop / VS Code 发版时 `npm ci` 拉取内网 registry 失败。
+
+### Highlights
+
+- **Desktop install**：`package-lock.json` 中 `@lobehub/icons-static-svg` 的 `resolved` 从不可达的 `bnpm.byted.org` 改回 `registry.npmjs.org`
+- **VS Code install**：`@vscode/codicons` 的 `resolved` 从 `npmmirror` 改回公网 npm
+- **防回归**：`editors/desktop/.npmrc` 锁定 `registry=https://registry.npmjs.org/`
+
+### Install
+
+```bash
+uv tool install --force pagent
+```
+
+- VS Code：`pagent-vscode-0.7.23.vsix`
+- 桌面端：
+  - macOS Apple Silicon：`pagent-Desktop-0.7.23-mac-arm64.zip`
+  - Windows x64：`pagent-Desktop-0.7.23-win-x64.zip`
+  - Linux x64：`pagent-Desktop-0.7.23-linux-x64.tar.gz`
+
+### Links
+
+- Compare: https://github.com/SyncLionPaw/pagent/compare/v0.7.22...v0.7.23
+
+---
+
 ## 0.7.22 — 2026-08-06
 
 Desktop 消息体验、产物交付、插件市场预览和会话管理更新，并加入原生 iOS 初版。
