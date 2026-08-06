@@ -85,9 +85,14 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          skip-existing: true
 
   desktop:
     needs: release
+    env:
+      npm_config_electron_mirror: https://github.com/electron/electron/releases/download/
+      npm_config_electron_custom_dir: v{{ version }}
     strategy:
       fail-fast: false
       matrix:
