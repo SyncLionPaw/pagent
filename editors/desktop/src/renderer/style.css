@@ -1264,11 +1264,9 @@ input:focus-visible {
 
 .desktop-root .delivered-artifact-icon {
     --artifact-accent: #64748b;
-    --artifact-pattern: radial-gradient(
-        circle at 2px 2px,
-        color-mix(in srgb, var(--artifact-accent) 25%, transparent) 1px,
-        transparent 1.2px
-    );
+    --artifact-pattern: radial-gradient(circle at 2px 2px,
+            color-mix(in srgb, var(--artifact-accent) 25%, transparent) 1px,
+            transparent 1.2px);
     position: relative;
     display: inline-grid;
     width: 34px;
@@ -1278,11 +1276,9 @@ input:focus-visible {
     overflow: hidden;
     border-radius: var(--radius-sm);
     border: 1px solid color-mix(in srgb, var(--artifact-accent) 22%, transparent);
-    background-color: color-mix(
-        in srgb,
-        var(--artifact-accent) 10%,
-        var(--surface-raised)
-    );
+    background-color: color-mix(in srgb,
+            var(--artifact-accent) 10%,
+            var(--surface-raised));
     background-image: var(--artifact-pattern);
     background-size: 6px 6px;
     box-shadow: inset 0 0 0 1px color-mix(in srgb, white 16%, transparent);
@@ -1319,48 +1315,38 @@ input:focus-visible {
 
 .desktop-root .delivered-artifact-icon[data-kind="code"] {
     --artifact-accent: #6366f1;
-    --artifact-pattern: repeating-linear-gradient(
-        135deg,
-        transparent 0 4px,
-        color-mix(in srgb, var(--artifact-accent) 16%, transparent) 4px 5px
-    );
+    --artifact-pattern: repeating-linear-gradient(135deg,
+            transparent 0 4px,
+            color-mix(in srgb, var(--artifact-accent) 16%, transparent) 4px 5px);
     background-size: auto;
 }
 
 .desktop-root .delivered-artifact-icon[data-kind="data"] {
     --artifact-accent: #0891b2;
-    --artifact-pattern: radial-gradient(
-        circle at 2px 2px,
-        color-mix(in srgb, var(--artifact-accent) 28%, transparent) 1px,
-        transparent 1.2px
-    );
+    --artifact-pattern: radial-gradient(circle at 2px 2px,
+            color-mix(in srgb, var(--artifact-accent) 28%, transparent) 1px,
+            transparent 1.2px);
 }
 
 .desktop-root .delivered-artifact-icon[data-kind="document"] {
     --artifact-accent: #2563eb;
-    --artifact-pattern: repeating-linear-gradient(
-        0deg,
-        transparent 0 5px,
-        color-mix(in srgb, var(--artifact-accent) 15%, transparent) 5px 6px
-    );
+    --artifact-pattern: repeating-linear-gradient(0deg,
+            transparent 0 5px,
+            color-mix(in srgb, var(--artifact-accent) 15%, transparent) 5px 6px);
     background-size: auto;
 }
 
 .desktop-root .delivered-artifact-icon[data-kind="image"] {
     --artifact-accent: #db2777;
     --artifact-pattern:
-        linear-gradient(
-            45deg,
+        linear-gradient(45deg,
             color-mix(in srgb, var(--artifact-accent) 12%, transparent) 25%,
             transparent 25% 75%,
-            color-mix(in srgb, var(--artifact-accent) 12%, transparent) 75%
-        ),
-        linear-gradient(
-            45deg,
+            color-mix(in srgb, var(--artifact-accent) 12%, transparent) 75%),
+        linear-gradient(45deg,
             color-mix(in srgb, var(--artifact-accent) 12%, transparent) 25%,
             transparent 25% 75%,
-            color-mix(in srgb, var(--artifact-accent) 12%, transparent) 75%
-        );
+            color-mix(in srgb, var(--artifact-accent) 12%, transparent) 75%);
     background-position:
         0 0,
         4px 4px;
@@ -1370,25 +1356,19 @@ input:focus-visible {
 .desktop-root .delivered-artifact-icon[data-kind="sheet"] {
     --artifact-accent: #059669;
     --artifact-pattern:
-        linear-gradient(
+        linear-gradient(color-mix(in srgb, var(--artifact-accent) 16%, transparent) 1px,
+            transparent 1px),
+        linear-gradient(90deg,
             color-mix(in srgb, var(--artifact-accent) 16%, transparent) 1px,
-            transparent 1px
-        ),
-        linear-gradient(
-            90deg,
-            color-mix(in srgb, var(--artifact-accent) 16%, transparent) 1px,
-            transparent 1px
-        );
+            transparent 1px);
     background-size: 6px 6px;
 }
 
 .desktop-root .delivered-artifact-icon[data-kind="archive"] {
     --artifact-accent: #d97706;
-    --artifact-pattern: repeating-linear-gradient(
-        90deg,
-        transparent 0 5px,
-        color-mix(in srgb, var(--artifact-accent) 17%, transparent) 5px 7px
-    );
+    --artifact-pattern: repeating-linear-gradient(90deg,
+            transparent 0 5px,
+            color-mix(in srgb, var(--artifact-accent) 17%, transparent) 5px 7px);
     background-size: auto;
 }
 
@@ -3920,14 +3900,17 @@ input:focus-visible {
 
 .artifact-name {
     color: var(--text-primary);
+    font-size: 12px;
     font-weight: 560;
+    line-height: 1.35;
     user-select: none;
 }
 
 .artifact-meta {
-    margin-top: 3px;
+    margin-top: 2px;
     color: var(--text-tertiary);
-    font-size: 11px;
+    font-size: 10px;
+    line-height: 1.35;
     user-select: none;
 }
 
@@ -3938,7 +3921,15 @@ input:focus-visible {
     height: 28px;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    box-shadow: none;
+}
+
+.artifact-open:hover {
+    background: color-mix(in srgb, var(--text-tertiary) 10%, transparent);
+    box-shadow: none;
 }
 
 .project-host.preview-open>.project-host-header,
@@ -4188,60 +4179,11 @@ html[data-theme="light"] .artifact-preview-code .hljs-function .hljs-title {
     min-height: 36px;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 10px;
     border-top: 1px solid var(--hairline);
     background: var(--surface-inset);
     padding: 0 8px 0 10px;
-}
-
-.resource-strip {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    min-width: 0;
-}
-
-.resource-strip.hidden {
-    display: none;
-}
-
-.resource-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-width: 0;
-}
-
-.resource-icon {
-    color: var(--text-tertiary);
-    font-size: 12px;
-    user-select: none;
-}
-
-.resource-track {
-    flex: 1;
-    min-width: 0;
-    height: 3px;
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--text-tertiary) 18%, transparent);
-    overflow: hidden;
-}
-
-.resource-track span {
-    display: block;
-    height: 100%;
-    border-radius: inherit;
-    background: color-mix(in srgb, var(--primary) 70%, var(--text-secondary));
-}
-
-.resource-value {
-    color: var(--text-tertiary);
-    font-size: 9px;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-    user-select: none;
 }
 
 .collapse-right-button {
@@ -4858,29 +4800,38 @@ html:has(.desktop-shell.macos) .sonner-toaster {
 
 /* —— 设置页：环境自检（诊断，非向导）—— */
 .settings-modal-card {
-    width: min(560px, calc(100vw - 48px));
+    width: min(860px, calc(100vw - 48px));
+    max-height: min(760px, calc(100vh - 96px));
+}
+
+.settings-modal-card .desktop-modal-body {
+    padding: 22px 24px 26px;
 }
 
 .settings-section-gap {
-    height: 20px;
+    height: 24px;
 }
 
 .health-panel {
     display: grid;
-    gap: 14px;
+    gap: 18px;
+    padding: 18px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--surface-inset) 72%, transparent);
 }
 
 .health-head {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
 }
 
 .health-title {
     color: var(--text-primary);
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 15px;
+    font-weight: 650;
 }
 
 .health-summary {
@@ -4896,62 +4847,100 @@ html:has(.desktop-shell.macos) .sonner-toaster {
     color: #fbbf24;
 }
 
-.health-list {
+.health-stepper {
     display: grid;
-    gap: 0;
-    border-radius: 8px;
-    overflow: hidden;
-    background: var(--subtle);
+    grid-template-columns: repeat(5, minmax(116px, 1fr));
+    min-width: 0;
+    overflow-x: auto;
+    padding: 4px 0 2px;
+    scrollbar-width: thin;
 }
 
-.health-row {
-    display: grid;
-    grid-template-columns: 10px minmax(88px, auto) 1fr;
+.health-step {
+    min-width: 0;
+}
+
+.health-step-track {
+    position: relative;
+    display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border-top: 1px solid var(--hairline);
 }
 
-.health-row:first-child {
-    border-top: 0;
+.health-step-track::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    margin-inline: 8px;
+    background: var(--border);
 }
 
-.health-light {
-    width: 8px;
-    height: 8px;
+.health-step:last-child .health-step-track::after {
+    display: none;
+}
+
+.health-step-marker {
+    display: inline-grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    flex: none;
+    border: 1px solid var(--border);
     border-radius: 50%;
-    background: var(--text-tertiary);
+    background: var(--surface-raised);
+    color: var(--text-tertiary);
+    font-size: 10px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
 }
 
-.health-row.is-ok .health-light {
-    background: #4ade80;
-    box-shadow: 0 0 6px color-mix(in srgb, #4ade80 45%, transparent);
+.health-step.is-ok .health-step-marker {
+    border-color: color-mix(in srgb, var(--success) 64%, var(--border));
+    background: color-mix(in srgb, var(--success) 12%, var(--surface-raised));
+    color: var(--success);
 }
 
-.health-row.is-fail .health-light {
-    background: #f87171;
-    box-shadow: 0 0 6px color-mix(in srgb, #f87171 40%, transparent);
+.health-step.is-ok .health-step-track::after {
+    background: color-mix(in srgb, var(--success) 42%, var(--border));
 }
 
-.health-row.is-optional .health-light {
-    background: #94a3b8;
+.health-step.is-fail .health-step-marker {
+    border-color: color-mix(in srgb, var(--danger) 64%, var(--border));
+    background: color-mix(in srgb, var(--danger) 11%, var(--surface-raised));
+    color: var(--danger);
+}
+
+.health-step-copy {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 6px;
+    padding: 8px 14px 0 0;
 }
 
 .health-name {
+    min-width: 0;
     color: var(--text-primary);
     font-size: 12px;
     font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.health-step-kind {
+    color: var(--text-tertiary);
+    font-size: 9px;
+    line-height: 16px;
+    text-transform: uppercase;
 }
 
 .health-detail {
+    grid-column: 1 / -1;
     min-width: 0;
     color: var(--text-tertiary);
     font: 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    text-align: right;
 }
 
 .health-section-label {
@@ -4965,10 +4954,10 @@ html:has(.desktop-shell.macos) .sonner-toaster {
 
 .health-disk-table {
     display: grid;
-    gap: 0;
     border-radius: 8px;
     overflow: hidden;
-    background: var(--subtle);
+    border: 1px solid var(--border-soft);
+    background: var(--surface-raised);
 }
 
 .health-disk-row {
@@ -5008,4 +4997,18 @@ html:has(.desktop-shell.macos) .sonner-toaster {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+
+.settings-overview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 720px) {
+    .settings-modal-card .desktop-modal-body {
+        padding-inline: 16px;
+    }
+
+    .settings-overview {
+        grid-template-columns: 1fr;
+    }
 }

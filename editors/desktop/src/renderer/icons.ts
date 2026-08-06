@@ -36,6 +36,7 @@ import {
   Server,
   Settings,
   Square,
+  Store,
   Trash2,
   Workflow,
   Wrench,
@@ -83,6 +84,7 @@ type DesktopIconName =
   | "server"
   | "settings"
   | "square"
+  | "store"
   | "trash-2"
   | "workflow"
   | "wrench"
@@ -127,6 +129,7 @@ const iconRegistry: Record<DesktopIconName, IconNode> = {
   server: Server,
   settings: Settings,
   square: Square,
+  store: Store,
   "trash-2": Trash2,
   workflow: Workflow,
   wrench: Wrench,

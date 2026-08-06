@@ -24,7 +24,17 @@ const ignoreVendorSourceMaps = {
 
 function copyRendererAssets() {
   fs.mkdirSync(dist, { recursive: true });
-  for (const file of ["index.html", "style.css"]) {
+  for (const file of [
+    "index.html",
+    "style.css",
+    "highlight.css",
+    "artifacts.css",
+    "shortcuts.css",
+    "panels.css",
+    "messages.css",
+    "starters.css",
+    "marketplace.css",
+  ]) {
     fs.copyFileSync(
       path.join(root, "src", "renderer", file),
       path.join(dist, file),

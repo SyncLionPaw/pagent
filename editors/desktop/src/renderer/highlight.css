@@ -1,0 +1,79 @@
+.desktop-root .markdown-body .hljs-comment,
+.desktop-root .markdown-body .hljs-quote {
+    color: var(--text-tertiary);
+    font-style: italic;
+}
+
+.desktop-root .markdown-body .hljs-keyword,
+.desktop-root .markdown-body .hljs-selector-tag,
+.desktop-root .markdown-body .hljs-literal,
+.desktop-root .markdown-body .hljs-section,
+.desktop-root .markdown-body .hljs-doctag,
+.desktop-root .markdown-body .hljs-type,
+.desktop-root .markdown-body .hljs-name,
+.desktop-root .markdown-body .hljs-strong {
+    color: #c586c0;
+}
+
+.desktop-root .markdown-body .hljs-string,
+.desktop-root .markdown-body .hljs-title,
+.desktop-root .markdown-body .hljs-meta .hljs-string,
+.desktop-root .markdown-body .hljs-regexp,
+.desktop-root .markdown-body .hljs-addition {
+    color: #6a9955;
+}
+
+.desktop-root .markdown-body .hljs-number,
+.desktop-root .markdown-body .hljs-symbol,
+.desktop-root .markdown-body .hljs-bullet,
+.desktop-root .markdown-body .hljs-link,
+.desktop-root .markdown-body .hljs-deletion {
+    color: #b5cea8;
+}
+
+.desktop-root .markdown-body .hljs-attr,
+.desktop-root .markdown-body .hljs-attribute,
+.desktop-root .markdown-body .hljs-variable,
+.desktop-root .markdown-body .hljs-template-variable,
+.desktop-root .markdown-body .hljs-selector-attr,
+.desktop-root .markdown-body .hljs-selector-class,
+.desktop-root .markdown-body .hljs-selector-id {
+    color: #9cdcfe;
+}
+
+.desktop-root .markdown-body .hljs-built_in,
+.desktop-root .markdown-body .hljs-class .hljs-title,
+.desktop-root .markdown-body .hljs-function .hljs-title,
+.desktop-root .markdown-body .hljs-meta {
+    color: #dcdcaa;
+}
+
+html[data-theme="light"] .desktop-root .markdown-body .hljs-keyword,
+html[data-theme="light"] .desktop-root .markdown-body .hljs-selector-tag,
+html[data-theme="light"] .desktop-root .markdown-body .hljs-literal,
+html[data-theme="light"] .desktop-root .markdown-body .hljs-section,
+html[data-theme="light"] .desktop-root .markdown-body .hljs-name {
+    color: #af00db;
+}
+
+html[data-theme="light"] .desktop-root .markdown-body .hljs-string,
+html[data-theme="light"] .desktop-root .markdown-body .hljs-title {
+    color: #0a7d3c;
+}
+
+html[data-theme="light"] .desktop-root .markdown-body .hljs-number,
+html[data-theme="light"] .desktop-root .markdown-body .hljs-symbol,
+html[data-theme="light"] .desktop-root .markdown-body .hljs-bullet {
+    color: #098658;
+}
+
+html[data-theme="light"] .desktop-root .markdown-body .hljs-attr,
+html[data-theme="light"] .desktop-root .markdown-body .hljs-attribute,
+html[data-theme="light"] .desktop-root .markdown-body .hljs-variable {
+    color: #0451a5;
+}
+
+html[data-theme="light"] .desktop-root .markdown-body .hljs-built_in,
+html[data-theme="light"] .desktop-root .markdown-body .hljs-function .hljs-title {
+    color: #795e26;
+}

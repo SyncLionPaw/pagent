@@ -1,0 +1,92 @@
+.desktop-root .delivered-artifact-card {
+    --artifact-accent: #64748b;
+    --artifact-background:
+        radial-gradient(
+            circle at 88% 12%,
+            color-mix(in srgb, var(--artifact-accent) 14%, transparent),
+            transparent 44%
+        ),
+        radial-gradient(
+            circle at 72% 120%,
+            color-mix(in srgb, var(--artifact-accent) 8%, transparent),
+            transparent 48%
+        );
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    gap: 8px;
+    padding: 9px 11px;
+    border-color: color-mix(
+        in srgb,
+        var(--artifact-accent) 20%,
+        var(--border-soft)
+    );
+    background-color: color-mix(
+        in srgb,
+        var(--artifact-accent) 6%,
+        var(--surface-raised)
+    );
+    background-image: var(--artifact-background);
+    transition:
+        border-color 160ms ease,
+        background-color 160ms ease;
+}
+
+.desktop-root .delivered-artifact-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.desktop-root .delivered-artifact-card::before {
+    position: absolute;
+    top: 50%;
+    right: 34px;
+    z-index: 0;
+    color: color-mix(in srgb, var(--artifact-accent) 13%, transparent);
+    content: attr(data-extension);
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 26px;
+    font-weight: 760;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    transform: translateY(-50%);
+}
+
+.desktop-root .delivered-artifact-card:hover {
+    border-color: color-mix(
+        in srgb,
+        var(--artifact-accent) 28%,
+        var(--border)
+    );
+    background-color: color-mix(
+        in srgb,
+        var(--artifact-accent) 7%,
+        var(--surface-raised)
+    );
+    background-image: var(--artifact-background);
+    transform: none;
+}
+
+.desktop-root .delivered-artifact-card[data-kind="code"] {
+    --artifact-accent: #6366f1;
+}
+
+.desktop-root .delivered-artifact-card[data-kind="data"] {
+    --artifact-accent: #0891b2;
+}
+
+.desktop-root .delivered-artifact-card[data-kind="document"] {
+    --artifact-accent: #2563eb;
+}
+
+.desktop-root .delivered-artifact-card[data-kind="image"] {
+    --artifact-accent: #db2777;
+}
+
+.desktop-root .delivered-artifact-card[data-kind="sheet"] {
+    --artifact-accent: #059669;
+}
+
+.desktop-root .delivered-artifact-card[data-kind="archive"] {
+    --artifact-accent: #d97706;
+}

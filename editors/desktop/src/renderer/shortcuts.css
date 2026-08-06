@@ -1,0 +1,15 @@
+.desktop-root .message-shortcuts {
+    left: 8px;
+    right: auto;
+    max-height: min(68vh, 560px);
+    gap: 1px;
+}
+
+.desktop-root .message-shortcut {
+    width: 10px;
+    min-height: 10px;
+}
+
+.desktop-root .message-shortcut-preview {
+    transform: translate(0, -50%);
+}

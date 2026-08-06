@@ -1,0 +1,68 @@
+.desktop-root .message-actions {
+    display: flex;
+    min-height: 22px;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 3px;
+    margin-top: 7px;
+    color: var(--text-tertiary);
+}
+
+.desktop-root .assistant-turn-actions {
+    align-self: flex-start;
+    width: min(760px, 88%);
+    margin: -9px auto 0 max(0px, calc((100% - 860px) / 2));
+}
+
+.desktop-root .assistant-turn-actions .message-actions {
+    margin-top: 0;
+}
+
+.desktop-root .user-message-actions {
+    align-self: flex-end;
+    margin-top: 1px;
+}
+
+.desktop-root .message-time {
+    margin-right: 2px;
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    user-select: none;
+}
+
+.desktop-root .message-action-button {
+    display: inline-grid;
+    width: 22px;
+    height: 22px;
+    place-items: center;
+    flex: none;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    transition:
+        color 120ms ease,
+        background-color 120ms ease;
+}
+
+.desktop-root .message-action-button:hover {
+    background: color-mix(in srgb, var(--text-tertiary) 12%, transparent);
+    color: var(--text-primary);
+}
+
+.desktop-root .message-action-button.is-copied {
+    color: var(--success);
+}
+
+.desktop-root .message-feedback-button.is-selected {
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+}
+
+.desktop-root .message-actions .message-toggle {
+    position: static;
+    margin-right: auto;
+}

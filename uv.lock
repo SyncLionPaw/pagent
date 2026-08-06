@@ -1123,7 +1123,7 @@ wheels = [
 
 [[package]]
 name = "pagent"
-version = "0.7.21"
+version = "0.7.22"
 source = { editable = "." }
 dependencies = [
     { name = "asyncssh" },
@@ -1179,7 +1179,7 @@ requires-dist = [
     { name = "transformers", marker = "extra == 'tokens'", specifier = ">=4.40" },
     { name = "uvicorn", marker = "extra == 'server'", specifier = ">=0.30" },
 ]
-provides-extras = ["tokens", "ssh", "server"]
+provides-extras = ["server", "ssh", "tokens"]
 
 [package.metadata.requires-dev]
 cloud = [

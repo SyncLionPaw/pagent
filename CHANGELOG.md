@@ -18,6 +18,37 @@
 
 ---
 
+## 0.7.22 — 2026-08-06
+
+Desktop 消息体验、产物交付、插件市场预览和会话管理更新，并加入原生 iOS 初版。
+
+### Highlights
+
+- **Desktop 对话**：执行过程按真实事件顺序分段；代码高亮；回复级复制、时间与反馈按钮；消息锚点导航
+- **Artifacts**：交付卡片按文件类型着色，支持右侧预览与文件系统打开；项目、沙箱路径卡移至底部
+- **会话体验**：空会话提供三个测试案例；首轮结束后由模型独立生成短标题，不污染对话历史
+- **稳定性**：沙箱目录扫描限时、并发请求合并与缓存回退，避免重复 `sandbox_tree timeout`
+- **Desktop UI**：设置依赖项改为横向 Stepper；新增插件市场入口与 mock Skill 浏览界面
+- **iOS**：新增 `editors/ios` 原生 SwiftUI 初版，覆盖消息、任务、设置与 Guard 登录流程
+
+### Install
+
+```bash
+uv tool install --force pagent
+```
+
+- VS Code：`pagent-vscode-0.7.22.vsix`
+- 桌面端：
+  - macOS Apple Silicon：`pagent-Desktop-0.7.22-mac-arm64.zip`
+  - Windows x64：`pagent-Desktop-0.7.22-win-x64.zip`
+  - Linux x64：`pagent-Desktop-0.7.22-linux-x64.tar.gz`
+
+### Links
+
+- Compare: https://github.com/SyncLionPaw/pagent/compare/v0.7.20...v0.7.22
+
+---
+
 ## 0.7.20 — 2026-07-26
 
 Subagent 委托、HTTP 后端、配置/路径 SSOT，以及 Desktop 三平台打包与子代理 UI。

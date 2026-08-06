@@ -1,7 +1,7 @@
 {
   "name": "pagent-web",
   "private": true,
-  "version": "0.7.20",
+  "version": "0.7.22",
   "type": "module",
   "description": "pagent Web — React UI 对标 Desktop，连接 pagent --http。",
   "scripts": {

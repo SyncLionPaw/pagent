@@ -63,11 +63,9 @@ from .config_view import config_to_public_dict
 from .environment import environment_check
 from .repl import format_fatal_error, open_runner
 from .setup import ProviderSetup, write_user_provider
+from .title import fallback_title, make_title
 from .tool_permit import needs_tool_permit, summarize_tool_args
 from .transport import active_sink
-
-# metainfo.json 里 title 的最大字符数：超出截断加省略号，供前端会话列表展示。
-TITLE_MAX_CHARS = 40
 
 
 def thread_context_limit(thread) -> int:
@@ -543,24 +541,25 @@ async def emit_sandbox_tree(runner) -> None:
         emit_line(json.dumps(payload, ensure_ascii=False) + "\n")
         return
 
+    try:
+        nodes = await asyncio.wait_for(
+            build_sandbox_tree(runner, runner.sandbox.home),
+            timeout=8,
+        )
+    except TimeoutError:
+        log("[wire] sandbox_tree scan timed out")
+        nodes = []
+
     payload = {
         "jsonrpc": "2.0",
         "method": "SandboxTree",
         "params": {
             "thread_id": runner.thread.id,
             "workdir": runner.sandbox.workdir,
-            "nodes": await build_sandbox_tree(runner, runner.sandbox.home),
+            "nodes": nodes,
         },
     }
     emit_line(json.dumps(payload, ensure_ascii=False) + "\n")
-
-
-def make_title(text: str) -> str:
-    """把首条用户消息压成一行标题：折叠空白、去首尾、超长截断加省略号。"""
-    one_line = " ".join(text.split())
-    if len(one_line) <= TITLE_MAX_CHARS:
-        return one_line
-    return one_line[:TITLE_MAX_CHARS] + "…"
 
 
 def build_usage_snapshot(
@@ -613,10 +612,10 @@ def touch_thread_usage(
     thread.save_metainfo(metainfo)
 
 
-def touch_thread_metainfo(runner, user_text: str) -> None:
+def touch_thread_metainfo(runner, user_text: str) -> bool:
     """更新 thread 的 metainfo.json：首条用户消息定标题，每轮刷新时间戳与消息数。
 
-    title 是面向用户的会话名（取首条用户消息截断），一旦写入不再被后续消息覆盖；
+    首轮先写确定性回退标题，模型摘要完成后再替换；后续消息不再改名。
     thread_id（thread-<时间戳>）是内部管理编号，不作展示。
 
     Args:
@@ -626,11 +625,31 @@ def touch_thread_metainfo(runner, user_text: str) -> None:
     thread = runner.thread
     metainfo = thread.load_metainfo()
     now = datetime.now().isoformat(timespec="seconds")
+    needs_title = not bool(metainfo.get("title"))
     metainfo.setdefault("created_at", now)
-    metainfo.setdefault("title", make_title(user_text))
+    if needs_title:
+        metainfo["title"] = fallback_title(user_text)
     metainfo["updated_at"] = now
     metainfo["message_count"] = len(runner.messages.data)
     thread.save_metainfo(metainfo)
+    return needs_title
+
+
+async def update_thread_title(runner, user_text: str) -> None:
+    """Generate and persist the first-turn title without touching chat messages."""
+    try:
+        title = await make_title(runner.agent.provider, user_text)
+    except Exception as exc:
+        log(f"[wire] make_title failed: {exc}")
+        return
+    metainfo = runner.thread.load_metainfo()
+    if metainfo.get("title_generated"):
+        return
+    metainfo["title"] = title
+    metainfo["title_generated"] = True
+    metainfo["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    runner.thread.save_metainfo(metainfo)
+    emit_thread_title(runner.thread.id, title)
 
 
 # slash 命令清单：name 是不带 / 的命令名，summary 供前端菜单展示。
@@ -678,6 +697,16 @@ def emit_thread_meta(thread_id: str, meta: dict) -> None:
         "jsonrpc": "2.0",
         "method": "ThreadMeta",
         "params": {"thread_id": thread_id, "meta": meta},
+    }
+    emit_line(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
+def emit_thread_title(thread_id: str, title: str) -> None:
+    """Notify clients that an asynchronously generated title is ready."""
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "ThreadTitle",
+        "params": {"thread_id": thread_id, "title": title},
     }
     emit_line(json.dumps(payload, ensure_ascii=False) + "\n")
 
@@ -835,10 +864,18 @@ def format_exc(exc: BaseException, *, phase: str = "start") -> str:
     return format_fatal_error(exc, phase=phase)
 
 
-async def run_user_turn(runner, text: str, config: ReplConfig, state: dict) -> None:
+async def run_user_turn(
+    runner,
+    text: str,
+    config: ReplConfig,
+    state: dict,
+    *,
+    generate_title: bool = False,
+) -> None:
     """跑一轮 Agent，事件逐行透传 stdout；需审批工具补发 PermitRequest。"""
     ask_permit = not config.permission_auto()
     last_usage: dict | None = None
+    completed = False
     restore_subagent_observer = install_subagent_observer(runner, state)
     try:
         async for event in runner.run(text, return_type="event"):
@@ -851,6 +888,7 @@ async def run_user_turn(runner, text: str, config: ReplConfig, state: dict) -> N
                 and needs_tool_permit(event.name)
             ):
                 emit_permit_request(event)
+        completed = True
     except asyncio.CancelledError:
         raise
     except Exception as exc:
@@ -865,6 +903,8 @@ async def run_user_turn(runner, text: str, config: ReplConfig, state: dict) -> N
                 context_limit=thread_context_limit(runner.thread),
             )
         state["turn"] = None
+        if generate_title and completed:
+            await update_thread_title(runner, text)
 
 
 def turn_active(state: dict) -> bool:
@@ -1197,8 +1237,16 @@ async def handle_command(command: dict, runner, config: ReplConfig, state: dict)
             log("[wire] 上一轮还在跑，忽略新 user（一次一轮）")
             return runner
         # 落一次 metainfo：首条用户消息定标题，供前端会话列表展示面向用户的名字。
-        touch_thread_metainfo(runner, text)
-        state["turn"] = asyncio.create_task(run_user_turn(runner, text, config, state))
+        generate_title = touch_thread_metainfo(runner, text)
+        state["turn"] = asyncio.create_task(
+            run_user_turn(
+                runner,
+                text,
+                config,
+                state,
+                generate_title=generate_title,
+            )
+        )
         return runner
 
     if cmd == "permit":

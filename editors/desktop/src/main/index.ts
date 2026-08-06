@@ -106,6 +106,14 @@ let sandboxStatus: SandboxStatusPayload = {
 let threadListWaiters: Array<(payload: ThreadListPayload) => void> = [];
 let sandboxTreeWaiters: SandboxTreeWaiter[] = [];
 let sandboxStatusWaiters: SandboxStatusWaiter[] = [];
+let sandboxTreeCache: SandboxTreePayload = {
+  thread_id: "",
+  workdir: "",
+  nodes: [],
+};
+let sandboxTreeRequest:
+  | { threadId: string; promise: Promise<SandboxTreePayload> }
+  | undefined;
 import { DOCUMENTATION_URL } from "../shared/docs";
 
 /** dock/about 用带透明边距的高清图标（符合 macOS 图标网格，避免视觉偏大）。 */
@@ -883,6 +891,7 @@ function handleWireLine(line: string): void {
   }
   if (event.method === "SandboxTree") {
     const payload = normalizeSandboxTree(event.params);
+    sandboxTreeCache = payload;
     const matched = sandboxTreeWaiters.filter(
       (waiter) => waiter.threadId === payload.thread_id,
     );
@@ -1067,19 +1076,34 @@ async function restoreHistory(): Promise<void> {
 }
 
 function requestSandboxTree(): Promise<SandboxTreePayload> {
-  return new Promise((resolvePromise, reject) => {
-    if (!bridge || !currentThreadId) {
-      resolvePromise({ thread_id: "", workdir: "", nodes: [] });
-      return;
-    }
-    const targetThreadId = currentThreadId;
+  const activeBridge = bridge;
+  if (!activeBridge || !currentThreadId) {
+    return Promise.resolve({ thread_id: "", workdir: "", nodes: [] });
+  }
+  const targetThreadId = currentThreadId;
+  if (sandboxTreeRequest?.threadId === targetThreadId) {
+    return sandboxTreeRequest.promise;
+  }
+  const request = new Promise<SandboxTreePayload>((resolvePromise) => {
     const timer = setTimeout(() => {
       const index = sandboxTreeWaiters.indexOf(waiter);
       if (index >= 0) {
         sandboxTreeWaiters.splice(index, 1);
       }
-      reject(new Error("sandbox_tree timeout"));
-    }, 10_000);
+      postDesktopEvent({
+        type: "log",
+        text: "[sandbox] sandbox_tree timeout; using cached tree",
+      });
+      resolvePromise(
+        sandboxTreeCache.thread_id === targetThreadId
+          ? sandboxTreeCache
+          : {
+            thread_id: targetThreadId,
+            workdir: "",
+            nodes: [],
+          },
+      );
+    }, 12_000);
     const onTree = (payload: SandboxTreePayload) => {
       clearTimeout(timer);
       resolvePromise(payload);
@@ -1089,8 +1113,15 @@ function requestSandboxTree(): Promise<SandboxTreePayload> {
       resolve: onTree,
     };
     sandboxTreeWaiters.push(waiter);
-    bridge.send({ cmd: "sandbox_tree" });
+    activeBridge.send({ cmd: "sandbox_tree" });
   });
+  const trackedRequest = request.finally(() => {
+    if (sandboxTreeRequest?.promise === trackedRequest) {
+      sandboxTreeRequest = undefined;
+    }
+  });
+  sandboxTreeRequest = { threadId: targetThreadId, promise: trackedRequest };
+  return trackedRequest;
 }
 
 function requestSandboxStatus(): Promise<SandboxStatusPayload> {

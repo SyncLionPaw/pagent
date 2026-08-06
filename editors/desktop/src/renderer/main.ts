@@ -53,6 +53,8 @@ const LEFT_PANE_WIDTH_PX = 232;
 const LEFT_COLLAPSED_WIDTH_PX = 44;
 const RIGHT_PANE_WIDTH_PX = 352;
 const RIGHT_COLLAPSED_WIDTH_PX = 44;
+const RIGHT_PANE_MIN_WIDTH_PX = 300;
+const RIGHT_PANE_MAX_WIDTH_RATIO = 0.45;
 const LEFT_SPLIT_RATIO_KEY = "pagent-desktop-left-split-ratio";
 const LEFT_SPLIT_MIN_RATIO = 0.2;
 const LEFT_SPLIT_MAX_RATIO = 0.8;
@@ -61,9 +63,60 @@ type ThemeMode = "dark" | "light";
 type PanelTab = "project" | "sandbox" | "terminal";
 type ProjectPane = "files" | "artifacts";
 type ActivityState = "running" | "sleeping" | "error";
-type ResourceKind = "cpu" | "memory" | "disk";
 type TerminalEntryKind = "command" | "stdout" | "stderr" | "status";
 type CapabilityKind = "skills" | "tools" | "sandbox" | "artifacts";
+type MarketplaceCategory = "development" | "office" | "research";
+
+const MARKETPLACE_SKILLS: Array<{
+  name: string;
+  description: string;
+  category: MarketplaceCategory;
+  categoryLabel: string;
+  icon: DesktopIconName;
+}> = [
+    {
+      name: "Code Review",
+      description: "检查代码变更中的逻辑缺陷、风险和测试缺口。",
+      category: "development",
+      categoryLabel: "研发",
+      icon: "code-xml",
+    },
+    {
+      name: "Test Generator",
+      description: "分析现有实现并生成聚焦关键路径的单元测试。",
+      category: "development",
+      categoryLabel: "研发",
+      icon: "workflow",
+    },
+    {
+      name: "Meeting Notes",
+      description: "整理会议记录，提取结论、负责人和后续行动。",
+      category: "office",
+      categoryLabel: "办公",
+      icon: "file-text",
+    },
+    {
+      name: "Document Writer",
+      description: "将零散材料整理为结构清晰、面向用户的文档。",
+      category: "office",
+      categoryLabel: "办公",
+      icon: "file",
+    },
+    {
+      name: "Paper Research",
+      description: "检索、阅读并归纳论文中的方法、证据和结论。",
+      category: "research",
+      categoryLabel: "研究",
+      icon: "globe",
+    },
+    {
+      name: "Data Analysis",
+      description: "读取结构化数据并生成可复核的分析结论。",
+      category: "research",
+      categoryLabel: "研究",
+      icon: "database",
+    },
+  ];
 
 type TerminalEntry = {
   kind: TerminalEntryKind;
@@ -313,31 +366,6 @@ function currentSessionTitle(
     return current.title;
   }
   return "新建任务";
-}
-
-function resourceSnapshot(activityState: ActivityState): Record<ResourceKind, {
-  value: string;
-  percent: number;
-}> {
-  if (activityState === "running") {
-    return {
-      cpu: { value: "41%", percent: 41 },
-      memory: { value: "1.3 GB", percent: 57 },
-      disk: { value: "2.4 GB", percent: 34 },
-    };
-  }
-  if (activityState === "error") {
-    return {
-      cpu: { value: "--", percent: 12 },
-      memory: { value: "--", percent: 18 },
-      disk: { value: "2.4 GB", percent: 34 },
-    };
-  }
-  return {
-    cpu: { value: "0%", percent: 0 },
-    memory: { value: "0 GB", percent: 0 },
-    disk: { value: "2.4 GB", percent: 34 },
-  };
 }
 
 function renderSessionList(
@@ -700,9 +728,11 @@ function renderPathRootCard(rootPath: string, label = "本机路径"): string {
     return "";
   }
   return `
-    <div class="artifact-root">
-      <div class="artifact-root-label">${escapeHtml(label)}</div>
-      <div class="artifact-root-path" title="${escapeHtml(rootPath)}">${escapeHtml(rootPath)}</div>
+    <div class="path-root-slot">
+      <div class="artifact-root">
+        <div class="artifact-root-label">${escapeHtml(label)}</div>
+        <div class="artifact-root-path" title="${escapeHtml(rootPath)}">${escapeHtml(rootPath)}</div>
+      </div>
     </div>
   `;
 }
@@ -725,13 +755,13 @@ function renderArtifacts(artifacts: ArtifactSummary[], rootPath: string): string
   const header = renderPathRootCard(rootPath);
   if (artifacts.length === 0) {
     return `
-      ${header}
       <div class="session-empty">
         <div class="session-empty-copy">当前项目还没有产物。</div>
       </div>
+      ${header}
     `;
   }
-  return `${header}${artifacts.map((artifact) => `
+  return `${artifacts.map((artifact) => `
     <div class="artifact-row" data-artifact-preview-path="${escapeHtml(artifact.path)}" role="button" tabindex="0" title="预览 ${escapeHtml(artifact.name)}">
       <span class="artifact-icon">${renderIcon(artifactIcon(artifact.name))}</span>
       <div class="artifact-main">
@@ -742,7 +772,7 @@ function renderArtifacts(artifacts: ArtifactSummary[], rootPath: string): string
         ${renderIcon("folder-open")}
       </button>
     </div>
-  `).join("")}`;
+  `).join("")}${header}`;
 }
 
 // 与 chat 区一致：开启 GFM（含表格），关掉 async 拿同步字符串。
@@ -857,6 +887,9 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
               <div class="titlebar-switch-thumb" data-titlebar-switch-thumb></div>
             </div>
           </div>
+          <button class="titlebar-action marketplace-button" type="button" data-marketplace-open title="插件市场" aria-label="打开插件市场">
+            ${renderIcon("store")}
+          </button>
         </div>
         <div class="titlebar-right">
           <button class="titlebar-action" type="button" data-docs-open title="打开文档" aria-label="打开文档">
@@ -1184,23 +1217,6 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             </div>
 
             <div class="right-footer" data-right-footer>
-              <div class="resource-strip" data-resource-strip>
-                <div class="resource-item">
-                  <span class="resource-icon">${renderIcon("activity")}</span>
-                  <div class="resource-track"><span data-resource-bar="cpu"></span></div>
-                  <span class="resource-value" data-resource-value="cpu">0%</span>
-                </div>
-                <div class="resource-item">
-                  <span class="resource-icon">${renderIcon("cpu")}</span>
-                  <div class="resource-track"><span data-resource-bar="memory"></span></div>
-                  <span class="resource-value" data-resource-value="memory">0 GB</span>
-                </div>
-                <div class="resource-item">
-                  <span class="resource-icon">${renderIcon("database")}</span>
-                  <div class="resource-track"><span data-resource-bar="disk"></span></div>
-                  <span class="resource-value" data-resource-value="disk">2.4 GB</span>
-                </div>
-              </div>
               <button class="icon-button collapse-right-button" type="button" data-collapse-right title="折叠右栏">
                 ${renderIcon("panel-right-close")}
               </button>
@@ -1267,6 +1283,37 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             </button>
           </div>
           <div class="desktop-modal-body" data-settings-body></div>
+        </section>
+      </div>
+      <div class="desktop-modal" data-marketplace-modal hidden>
+        <div class="desktop-modal-backdrop" data-marketplace-close></div>
+        <section class="desktop-modal-card marketplace-modal-card" role="dialog" aria-modal="true" aria-labelledby="marketplace-title">
+          <div class="desktop-modal-header">
+            <div>
+              <div id="marketplace-title" class="desktop-modal-title">插件市场</div>
+              <div class="marketplace-subtitle">发现并扩展 pagent Skills</div>
+            </div>
+            <button class="modal-close-button" type="button" data-marketplace-close title="关闭" aria-label="关闭">
+              ${renderIcon("x")}
+            </button>
+          </div>
+          <div class="desktop-modal-body marketplace-modal-body">
+            <div class="marketplace-toolbar">
+              <label class="marketplace-search">
+                <i class="codicon codicon-search" aria-hidden="true"></i>
+                <input type="search" data-marketplace-search placeholder="搜索 Skills" aria-label="搜索 Skills" />
+              </label>
+              <div class="marketplace-filters" aria-label="Skill 分类">
+                <button class="marketplace-filter active" type="button" data-marketplace-filter="all">全部</button>
+                <button class="marketplace-filter" type="button" data-marketplace-filter="development">研发</button>
+                <button class="marketplace-filter" type="button" data-marketplace-filter="office">办公</button>
+                <button class="marketplace-filter" type="button" data-marketplace-filter="research">研究</button>
+              </div>
+            </div>
+            <div class="marketplace-grid" data-marketplace-grid></div>
+            <div class="marketplace-empty" data-marketplace-empty hidden>没有匹配的 Skill</div>
+            <div class="marketplace-footnote">当前为界面预览，Skill 来源与安装能力将在后续版本接入。</div>
+          </div>
         </section>
       </div>
       <div class="desktop-modal" data-docs-qr-modal hidden>
@@ -1629,7 +1676,6 @@ async function start(): Promise<void> {
   const sandboxBackendIcon = findRequired<HTMLElement>("[data-sandbox-backend-icon]");
   const sandboxBackend = findRequired<HTMLElement>("[data-sandbox-backend]");
   const sandboxPill = findRequired<HTMLElement>("[data-sandbox-pill]");
-  const resourceStrip = findRequired<HTMLElement>("[data-resource-strip]");
   const rightFooter = findRequired<HTMLElement>("[data-right-footer]");
   const threadMetaModal = findRequired<HTMLElement>("[data-thread-meta-modal]");
   const threadMetaBody = findRequired<HTMLElement>("[data-thread-meta-body]");
@@ -1639,6 +1685,15 @@ async function start(): Promise<void> {
   const documentationButton = findRequired<HTMLButtonElement>("[data-docs-open]");
   const shortcutsOpenButton = findRequired<HTMLButtonElement>("[data-shortcuts-open]");
   const shortcutsModal = findRequired<HTMLElement>("[data-shortcuts-modal]");
+  const marketplaceOpenButton = findRequired<HTMLButtonElement>(
+    "[data-marketplace-open]",
+  );
+  const marketplaceModal = findRequired<HTMLElement>("[data-marketplace-modal]");
+  const marketplaceSearch = findRequired<HTMLInputElement>(
+    "[data-marketplace-search]",
+  );
+  const marketplaceGrid = findRequired<HTMLElement>("[data-marketplace-grid]");
+  const marketplaceEmpty = findRequired<HTMLElement>("[data-marketplace-empty]");
   const titlebarSwitch = findRequired<HTMLElement>("[data-titlebar-switch]");
   const titlebarSwitchThumb = findRequired<HTMLElement>("[data-titlebar-switch-thumb]");
   const settingsModal = findRequired<HTMLElement>("[data-settings-modal]");
@@ -1741,6 +1796,31 @@ async function start(): Promise<void> {
       onArtifactOpen: (path) => {
         void openArtifactFromChat(path);
       },
+      highlightCode,
+      messageActions: true,
+      starterPrompts: [
+        {
+          title: "梳理项目",
+          description: "分析结构、核心模块和运行方式",
+          prompt: "分析当前项目结构，总结核心模块、关键入口和本地运行方式。",
+        },
+        {
+          title: "补充测试",
+          description: "寻找高价值缺口并补充测试",
+          prompt: "检查当前项目的测试覆盖，找出一个高价值缺口并补充测试。",
+        },
+        {
+          title: "生成报告",
+          description: "整理项目说明并交付为文件",
+          prompt:
+            "基于当前项目生成一份简洁的项目说明，并通过 copy_to_host 交付为 Markdown 文件。",
+        },
+      ],
+      onStarterPrompt: (prompt) => {
+        promptInput.value = prompt;
+        resizePrompt(promptInput);
+        void sendMessage();
+      },
     },
   );
   const contextUsageRing = new ContextUsageRing(contextUsageMount);
@@ -1784,7 +1864,7 @@ async function start(): Promise<void> {
   function showMessageShortcutPreview(button: HTMLButtonElement, text: string): void {
     const rect = button.getBoundingClientRect();
     messageShortcutPreview.textContent = text;
-    messageShortcutPreview.style.left = `${rect.left - 8}px`;
+    messageShortcutPreview.style.left = `${rect.right + 8}px`;
     messageShortcutPreview.style.top = `${rect.top + rect.height / 2}px`;
     messageShortcutPreview.hidden = false;
   }
@@ -1940,6 +2020,8 @@ async function start(): Promise<void> {
   let metaModalRequestId = 0;
   let settingsModalCloseTimer = 0;
   let settingsRequestId = 0;
+  let marketplaceModalCloseTimer = 0;
+  let marketplaceCategory: MarketplaceCategory | "all" = "all";
   let docsQrModalCloseTimer = 0;
   let newSessionModalCloseTimer = 0;
   let newSessionRequestId = 0;
@@ -2004,6 +2086,66 @@ async function start(): Promise<void> {
     settingsModalCloseTimer = window.setTimeout(() => {
       settingsModal.hidden = true;
       settingsBody.innerHTML = "";
+    }, 140);
+  }
+
+  function renderMarketplace(): void {
+    const query = marketplaceSearch.value.trim().toLocaleLowerCase();
+    const visible = MARKETPLACE_SKILLS.filter((skill) => {
+      const categoryMatches =
+        marketplaceCategory === "all" || skill.category === marketplaceCategory;
+      const textMatches =
+        !query ||
+        `${skill.name} ${skill.description} ${skill.categoryLabel}`
+          .toLocaleLowerCase()
+          .includes(query);
+      return categoryMatches && textMatches;
+    });
+    marketplaceGrid.innerHTML = visible
+      .map(
+        (skill) => `
+          <article class="marketplace-card">
+            <div class="marketplace-card-icon" aria-hidden="true">${renderIcon(skill.icon)}</div>
+            <div class="marketplace-card-copy">
+              <div class="marketplace-card-head">
+                <strong>${escapeHtml(skill.name)}</strong>
+                <span>${escapeHtml(skill.categoryLabel)}</span>
+              </div>
+              <p>${escapeHtml(skill.description)}</p>
+            </div>
+            <button class="marketplace-install" type="button" disabled title="来源接入后开放安装">预览</button>
+          </article>
+        `,
+      )
+      .join("");
+    marketplaceEmpty.hidden = visible.length > 0;
+  }
+
+  function openMarketplaceModal(): void {
+    window.clearTimeout(marketplaceModalCloseTimer);
+    marketplaceSearch.value = "";
+    marketplaceCategory = "all";
+    marketplaceModal
+      .querySelectorAll<HTMLButtonElement>("[data-marketplace-filter]")
+      .forEach((button) => {
+        button.classList.toggle("active", button.dataset.marketplaceFilter === "all");
+      });
+    renderMarketplace();
+    marketplaceModal.hidden = false;
+    window.requestAnimationFrame(() => {
+      marketplaceModal.classList.add("is-open");
+      marketplaceSearch.focus();
+    });
+  }
+
+  function closeMarketplaceModal(): void {
+    if (marketplaceModal.hidden) {
+      return;
+    }
+    marketplaceModal.classList.remove("is-open");
+    window.clearTimeout(marketplaceModalCloseTimer);
+    marketplaceModalCloseTimer = window.setTimeout(() => {
+      marketplaceModal.hidden = true;
     }, 140);
   }
 
@@ -2522,16 +2664,6 @@ async function start(): Promise<void> {
       ? renderIcon("square")
       : renderIcon("arrow-up");
 
-    const resourceMap = resourceSnapshot(uiState.activityState);
-    (["cpu", "memory", "disk"] as ResourceKind[]).forEach((kind) => {
-      const value = document.querySelector<HTMLElement>(`[data-resource-value="${kind}"]`);
-      const bar = document.querySelector<HTMLElement>(`[data-resource-bar="${kind}"]`);
-      if (!value || !bar) {
-        return;
-      }
-      value.textContent = resourceMap[kind].value;
-      bar.style.width = `${resourceMap[kind].percent}%`;
-    });
   }
 
   function applyHeader(): void {
@@ -2666,36 +2798,36 @@ async function start(): Promise<void> {
     const header = renderSandboxRootCard();
     if (uiState.sandboxTree.length === 0) {
       fileTree.innerHTML = `
-        ${header}
         <div class="session-empty">
           <div class="session-empty-title">沙箱里还没有文件</div>
           <div class="session-empty-copy">沙箱连接后，这里会展示当前 workdir 的目录树。</div>
         </div>
+        ${header}
       `;
       return;
     }
-    fileTree.innerHTML = `${header}${renderTreeRows(
+    fileTree.innerHTML = `${renderTreeRows(
       uiState.sandboxTree,
       uiState.expandedTree,
-    )}`;
+    )}${header}`;
   }
 
   function renderProjectTree(): void {
     const header = renderPathRootCard(uiState.runtime.projectPath, "本机路径");
     if (uiState.projectTreeNodes.length === 0) {
       projectTree.innerHTML = `
-        ${header}
         <div class="session-empty">
           <div class="session-empty-title">项目目录为空</div>
           <div class="session-empty-copy">绑定项目后，这里会展示项目目录树。</div>
         </div>
+        ${header}
       `;
       return;
     }
-    projectTree.innerHTML = `${header}${renderTreeRows(
+    projectTree.innerHTML = `${renderTreeRows(
       uiState.projectTreeNodes,
       uiState.expandedProjectTree,
-    )}`;
+    )}${header}`;
   }
 
   function renderTerminal(): void {
@@ -2781,10 +2913,6 @@ async function start(): Promise<void> {
       refreshProjectButton.title = "刷新产物";
       refreshProjectButton.setAttribute("aria-label", "刷新产物");
     }
-    resourceStrip.classList.toggle(
-      "hidden",
-      uiState.activeTab === "project" && pane === "artifacts",
-    );
   }
 
   function applyRightTab(): void {
@@ -3013,7 +3141,11 @@ async function start(): Promise<void> {
         if (side === "left") {
           uiState.leftWidth = Math.max(200, Math.min(320, startWidth + delta));
         } else {
-          uiState.rightWidth = Math.max(300, Math.min(420, startWidth - delta));
+          const maxWidth = workbench.clientWidth * RIGHT_PANE_MAX_WIDTH_RATIO;
+          uiState.rightWidth = Math.max(
+            RIGHT_PANE_MIN_WIDTH_PX,
+            Math.min(maxWidth, startWidth - delta),
+          );
         }
         applyWorkbenchChrome();
       };
@@ -3136,6 +3268,8 @@ async function start(): Promise<void> {
       void refreshSessions();
       void refreshArtifacts();
       void window.desktop.sendWireCommand({ cmd: "capabilities" });
+    } else if (event.method === "ThreadTitle") {
+      void refreshSessions();
     } else if (event.method === "HistoryReplay") {
       const threadId = String(event.params.thread_id ?? "");
       // 空 thread_id 通常是 reset/resume 失败后的占位回放，等后续 Error 定态。
@@ -3530,8 +3664,12 @@ async function start(): Promise<void> {
   });
 
   projectButton.addEventListener("click", async () => {
+    const previousProjectPath = uiState.runtime.projectPath;
     const state = await window.desktop.selectProject();
     applyRuntimeState(state);
+    if (state.projectPath === previousProjectPath) {
+      return;
+    }
     uiState.projectLoadedPath = "";
     chatRenderer.showHistorySkeleton();
     uiState.activityState = "sleeping";
@@ -3546,6 +3684,34 @@ async function start(): Promise<void> {
 
   settingsOpenButton.addEventListener("click", () => {
     void openSettingsModal();
+  });
+
+  marketplaceOpenButton.addEventListener("click", openMarketplaceModal);
+  marketplaceSearch.addEventListener("input", renderMarketplace);
+  marketplaceModal.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+    if (target.closest("[data-marketplace-close]")) {
+      closeMarketplaceModal();
+      return;
+    }
+    const filter = target.closest<HTMLButtonElement>(
+      "[data-marketplace-filter]",
+    );
+    if (!filter?.dataset.marketplaceFilter) {
+      return;
+    }
+    marketplaceCategory = filter.dataset.marketplaceFilter as
+      | MarketplaceCategory
+      | "all";
+    marketplaceModal
+      .querySelectorAll<HTMLButtonElement>("[data-marketplace-filter]")
+      .forEach((button) => {
+        button.classList.toggle("active", button === filter);
+      });
+    renderMarketplace();
   });
 
   documentationButton.addEventListener("click", () => {
@@ -3891,6 +4057,9 @@ async function start(): Promise<void> {
       }
       if (!settingsModal.hidden) {
         closeSettingsModal();
+      }
+      if (!marketplaceModal.hidden) {
+        closeMarketplaceModal();
       }
       if (!docsQrModal.hidden) {
         closeDocsQrModal();

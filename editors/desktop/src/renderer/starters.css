@@ -1,0 +1,60 @@
+.desktop-root .empty-state:has(.starter-cards) {
+    width: min(760px, 100%);
+    padding: 24px 0;
+    color: var(--text-secondary);
+    text-align: left;
+}
+
+.desktop-root .starter-heading {
+    margin-bottom: 10px;
+    color: var(--text-tertiary);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+
+.desktop-root .starter-cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.desktop-root .starter-card {
+    display: grid;
+    min-width: 0;
+    gap: 5px;
+    padding: 12px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-md);
+    background: var(--surface-raised);
+    box-shadow: var(--shadow-1);
+    color: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition:
+        border-color 140ms ease,
+        background-color 140ms ease;
+}
+
+.desktop-root .starter-card:hover {
+    border-color: color-mix(in srgb, var(--primary) 28%, var(--border-soft));
+    background: color-mix(in srgb, var(--primary) 5%, var(--surface-raised));
+}
+
+.desktop-root .starter-card-title {
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.desktop-root .starter-card-description {
+    color: var(--text-tertiary);
+    font-size: 11px;
+    line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+    .desktop-root .starter-cards {
+        grid-template-columns: 1fr;
+    }
+}

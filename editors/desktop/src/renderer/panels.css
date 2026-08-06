@@ -1,0 +1,15 @@
+.desktop-root .file-tree,
+.desktop-root .artifacts-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.desktop-root .path-root-slot {
+    flex: none;
+    margin-top: auto;
+    padding-top: 8px;
+}
+
+.desktop-root .path-root-slot .artifact-root {
+    margin-bottom: 0;
+}

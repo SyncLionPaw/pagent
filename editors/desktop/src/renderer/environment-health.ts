@@ -146,22 +146,27 @@ export function renderHealthPanel(env: EnvironmentCheck): string {
     <section class="health-panel">
       <div class="health-head">
         <div>
-          <div class="health-title">环境自检</div>
+          <div class="health-title">运行依赖</div>
           <div class="health-summary ${requiredOk ? "is-ok" : "is-warn"}">
             ${requiredOk ? "必需项就绪" : "有必需项未就绪"}
           </div>
         </div>
         <button class="new-session-secondary" type="button" data-health-refresh>重新检测</button>
       </div>
-      <div class="health-list">
+      <div class="health-stepper" aria-label="运行依赖检查">
         ${items
-          .map((item) => {
+          .map((item, index) => {
             const state = itemState(item);
             return `
-              <div class="health-row is-${state}">
-                <span class="health-light" aria-hidden="true"></span>
-                <span class="health-name">${escapeHtml(item.label)}</span>
-                <span class="health-detail">${escapeHtml(item.detail)}</span>
+              <div class="health-step is-${state}">
+                <div class="health-step-track" aria-hidden="true">
+                  <span class="health-step-marker">${index + 1}</span>
+                </div>
+                <div class="health-step-copy">
+                  <span class="health-name">${escapeHtml(item.label)}</span>
+                  <span class="health-step-kind">${item.optional ? "可选" : "必需"}</span>
+                  <span class="health-detail" title="${escapeHtml(item.detail)}">${escapeHtml(item.detail)}</span>
+                </div>
               </div>
             `;
           })

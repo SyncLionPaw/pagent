@@ -48,6 +48,14 @@ type ChatRendererOptions = {
   stackActivities?: boolean;
   activityIcon?: () => HTMLElement;
   onArtifactOpen?: (path: string) => void;
+  highlightCode?: (code: string, language?: string) => string;
+  messageActions?: boolean;
+  starterPrompts?: Array<{
+    title: string;
+    description: string;
+    prompt: string;
+  }>;
+  onStarterPrompt?: (prompt: string) => void;
 };
 
 export class ChatRenderer {
@@ -93,6 +101,8 @@ export class ChatRenderer {
   private activityToolCount = 0;
   private activityThinkingCount = 0;
   private assistantTurnLabeled = false;
+  private assistantTurnTexts: string[] = [];
+  private assistantTurnTimestamp: Date | null = null;
 
   // onPermit 由入口注入：用户点“批准/拒绝”时回传决定给宿主（视图层不碰 vscode API）。
   constructor(
@@ -105,12 +115,14 @@ export class ChatRenderer {
 
   /** 追加一条用户气泡，并立刻挂出“思考中”占位（发出即有反馈）。 */
   addUser(text: string): void {
+    this.finishAssistantTurn();
     this.flushArtifacts();
     this.finishActivityStack();
     this.assistantTurnLabeled = false;
     this.hideEmptyState();
     const body = this.appendBubble("user");
     body.textContent = text;
+    body.dataset.messageText = text;
     this.applyMessageCollapse(body);
     this.forceScrollToBottom();
     this.showPlaceholder();
@@ -158,6 +170,8 @@ export class ChatRenderer {
     this.activityToolCount = 0;
     this.activityThinkingCount = 0;
     this.assistantTurnLabeled = false;
+    this.assistantTurnTexts = [];
+    this.assistantTurnTimestamp = null;
     this.root.replaceChildren();
     this.showEmptyState();
   }
@@ -172,7 +186,6 @@ export class ChatRenderer {
     }
     if (method === "TextDelta") {
       this.removePlaceholder();
-      this.collapseActivityStack();
       this.enqueueAssistantText(readString(params, "text"));
       return;
     }
@@ -221,6 +234,7 @@ export class ChatRenderer {
     if (method === "Error") {
       this.finishActivityStack();
       this.showError(readString(params, "message") || "未知错误");
+      this.finishAssistantTurn(new Date());
       this.flushArtifacts();
       return;
     }
@@ -236,6 +250,7 @@ export class ChatRenderer {
       if (message) {
         this.showNotice(message);
       }
+      this.finishAssistantTurn(new Date());
       this.flushArtifacts();
       return;
     }
@@ -310,8 +325,15 @@ export class ChatRenderer {
         const role = readString(record, "role");
         if (role === "user") {
           this.settlePendingToolCards("已中断", false);
+          this.finishAssistantTurn();
         }
-        this.replayText(role, readString(record, "text"));
+        this.replayText(
+          role,
+          readString(record, "text"),
+          readString(record, "created_at") ||
+          readString(record, "createdAt") ||
+          readString(record, "timestamp"),
+        );
       } else if (kind === "thinking") {
         this.replayThinking(readString(record, "text"));
       } else if (kind === "tool_call") {
@@ -329,6 +351,7 @@ export class ChatRenderer {
       }
     }
     this.settlePendingToolCards("已中断", false);
+    this.finishAssistantTurn();
     this.flushArtifacts();
     if (raw.length === 0) {
       this.showEmptyState();
@@ -340,7 +363,7 @@ export class ChatRenderer {
 
   /** 回放一条完整文本气泡（user 或 assistant），一次性定稿，不走打字机。
    *  assistant 正文按 markdown 渲染（含表格），user 输入保持纯文本。 */
-  private replayText(role: string, text: string): void {
+  private replayText(role: string, text: string, timestamp: string): void {
     if (role !== "user" && role !== "assistant") {
       return;
     }
@@ -351,9 +374,13 @@ export class ChatRenderer {
     if (role === "user") {
       this.assistantTurnLabeled = false;
     }
-    const body = this.appendBubble(role);
+    const body = this.appendBubble(role, parseMessageTime(timestamp));
+    body.dataset.messageText = text;
     if (role === "assistant") {
-      renderMarkdownInto(body, text);
+      this.assistantTurnTexts.push(text);
+      this.assistantTurnTimestamp =
+        parseMessageTime(timestamp) ?? this.assistantTurnTimestamp;
+      renderMarkdownInto(body, text, this.options.highlightCode);
     } else {
       body.textContent = text;
     }
@@ -385,6 +412,7 @@ export class ChatRenderer {
       return;
     }
     if (!this.reasoningBody) {
+      this.sealAssistantBubble();
       this.reasoningBody = this.appendThinkingPanel();
       this.reasoningText = "";
     }
@@ -405,6 +433,7 @@ export class ChatRenderer {
       return;
     }
     if (!this.assistantBody) {
+      this.finishActivitySegment();
       this.assistantBody = this.appendBubble("assistant");
       this.assistantText = "";
       this.resetMarkdownState();
@@ -456,6 +485,7 @@ export class ChatRenderer {
       this.paintAssistant();
     }
     this.flushMarkdownRender();
+    this.commitAssistantText();
     if (this.assistantBody) {
       this.applyMessageCollapse(this.assistantBody);
     }
@@ -489,12 +519,31 @@ export class ChatRenderer {
       this.paintAssistant();
     }
     this.flushMarkdownRender();
+    this.commitAssistantText();
     if (this.assistantBody) {
       this.applyMessageCollapse(this.assistantBody);
     }
     this.assistantBody = undefined;
     this.assistantText = "";
     this.resetMarkdownState();
+  }
+
+  private commitAssistantText(): void {
+    if (this.assistantText.trim()) {
+      this.assistantTurnTexts.push(this.assistantText);
+    }
+  }
+
+  private finishAssistantTurn(timestamp = this.assistantTurnTimestamp): void {
+    const text = this.assistantTurnTexts.join("\n\n").trim();
+    if (text && this.options.messageActions) {
+      const row = document.createElement("div");
+      row.className = "assistant-turn-actions";
+      row.appendChild(makeMessageActions(() => text, timestamp, true));
+      this.root.appendChild(row);
+    }
+    this.assistantTurnTexts = [];
+    this.assistantTurnTimestamp = null;
   }
 
   /** 流式 Markdown 渲染：按固定间隔合并多次打字机更新，避免每个字符都重排。
@@ -536,7 +585,12 @@ export class ChatRenderer {
       return;
     }
     if (this.assistantText !== this.lastMarkdownRenderedText) {
-      renderMarkdownInto(this.assistantBody, this.assistantText);
+      renderMarkdownInto(
+        this.assistantBody,
+        this.assistantText,
+        this.options.highlightCode,
+      );
+      this.assistantBody.dataset.messageText = this.assistantText;
       this.lastMarkdownRenderedText = this.assistantText;
       this.lastMarkdownRenderAt = performance.now();
     }
@@ -635,9 +689,23 @@ export class ChatRenderer {
     this.activityThinkingCount = 0;
   }
 
+  private finishReasoningSegment(): void {
+    this.collapseThinkingPanel();
+    this.reasoningBody = undefined;
+    this.reasoningPanel = undefined;
+    this.reasoningPreview = undefined;
+    this.reasoningText = "";
+  }
+
+  private finishActivitySegment(): void {
+    this.finishReasoningSegment();
+    this.finishActivityStack();
+  }
+
   /** 新建一张工具卡片（折叠，默认展开）：标题工具名，展开区显示参数，末尾留结果占位。 */
   private addToolCard(id: string, name: string, args: string): void {
     this.sealAssistantBubble();
+    this.finishReasoningSegment();
     this.hideEmptyState();
     if (id) {
       this.toolCalls.set(id, { name });
@@ -748,11 +816,8 @@ export class ChatRenderer {
       card.type = "button";
       card.className = "delivered-artifact-card";
       card.title = `在右侧打开 ${path}`;
-
-      const icon = document.createElement("i");
-      icon.className = `codicon ${visual.icon} delivered-artifact-icon`;
-      icon.dataset.kind = visual.kind;
-      icon.dataset.extension = visual.extension;
+      card.dataset.kind = visual.kind;
+      card.dataset.extension = visual.extension;
       const copy = document.createElement("span");
       copy.className = "delivered-artifact-copy";
       const title = document.createElement("span");
@@ -764,7 +829,7 @@ export class ChatRenderer {
       copy.append(title, meta);
       const arrow = document.createElement("i");
       arrow.className = "codicon codicon-chevron-right delivered-artifact-arrow";
-      card.append(icon, copy, arrow);
+      card.append(copy, arrow);
       card.addEventListener("click", () => this.options.onArtifactOpen?.(path));
       cards.appendChild(card);
     });
@@ -871,6 +936,7 @@ export class ChatRenderer {
       return existing;
     }
     this.sealAssistantBubble();
+    this.finishReasoningSegment();
     this.hideEmptyState();
 
     const row = document.createElement("div");
@@ -911,6 +977,7 @@ export class ChatRenderer {
    *  slash 命令不进对话历史，卡片插在文字流中间前先封口当前 assistant 气泡保证顺序。 */
   private addSlashResult(name: string, text: string, ok: boolean): void {
     this.sealAssistantBubble();
+    this.finishActivitySegment();
     this.hideEmptyState();
 
     const details = document.createElement("details");
@@ -1082,7 +1149,10 @@ export class ChatRenderer {
   }
 
   /** 新建一个带角色标签的气泡行，返回其正文元素供填充。 */
-  private appendBubble(role: "user" | "assistant"): HTMLElement {
+  private appendBubble(
+    role: "user" | "assistant",
+    timestamp: Date | null = new Date(),
+  ): HTMLElement {
     const row = document.createElement("div");
     row.className = `chat-row ${role}`;
     const msg = document.createElement("div");
@@ -1099,6 +1169,14 @@ export class ChatRenderer {
     body.className = "bubble-body";
     bubble.appendChild(body);
     msg.appendChild(bubble);
+    if (this.options.messageActions && role === "user") {
+      const actions = makeMessageActions(
+        () => body.dataset.messageText ?? body.innerText,
+        timestamp,
+      );
+      actions.classList.add("user-message-actions");
+      msg.appendChild(actions);
+    }
     row.appendChild(msg);
     this.root.appendChild(row);
     return body;
@@ -1127,7 +1205,14 @@ export class ChatRenderer {
         toggle.textContent = collapsed ? "展开" : "收起";
         toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
       });
-      bubble.appendChild(toggle);
+      const actions = bubble.querySelector<HTMLElement>(
+        ":scope > .message-actions",
+      );
+      if (actions) {
+        actions.prepend(toggle);
+      } else {
+        bubble.appendChild(toggle);
+      }
     });
   }
 
@@ -1179,7 +1264,33 @@ export class ChatRenderer {
     }
     const node = document.createElement("div");
     node.className = "empty-state";
-    node.textContent = "问点什么开始 —— 回车发送，Shift+Enter 换行。";
+    const prompts = this.options.starterPrompts ?? [];
+    if (prompts.length === 0) {
+      node.textContent = "问点什么开始 —— 回车发送，Shift+Enter 换行。";
+    } else {
+      const heading = document.createElement("div");
+      heading.className = "starter-heading";
+      heading.textContent = "从一个案例开始";
+      const cards = document.createElement("div");
+      cards.className = "starter-cards";
+      for (const item of prompts) {
+        const card = document.createElement("button");
+        card.className = "starter-card";
+        card.type = "button";
+        const title = document.createElement("span");
+        title.className = "starter-card-title";
+        title.textContent = item.title;
+        const description = document.createElement("span");
+        description.className = "starter-card-description";
+        description.textContent = item.description;
+        card.append(title, description);
+        card.addEventListener("click", () => {
+          this.options.onStarterPrompt?.(item.prompt);
+        });
+        cards.appendChild(card);
+      }
+      node.append(heading, cards);
+    }
     this.emptyState = node;
     this.root.appendChild(node);
   }
@@ -1276,16 +1387,140 @@ function stopReasonNotice(stopReason: string): string {
   return "";
 }
 
+function parseMessageTime(value: string): Date | null {
+  if (!value) {
+    return null;
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+async function copyMessageText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    const copied = document.execCommand("copy");
+    textarea.remove();
+    return copied;
+  }
+}
+
+function makeMessageActions(
+  getText: () => string,
+  timestamp: Date | null,
+  feedback = false,
+): HTMLElement {
+  const actions = document.createElement("div");
+  actions.className = "message-actions";
+  if (timestamp) {
+    const time = document.createElement("time");
+    time.className = "message-time";
+    time.dateTime = timestamp.toISOString();
+    time.title = timestamp.toLocaleString();
+    time.textContent = timestamp.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    actions.appendChild(time);
+  }
+
+  if (feedback) {
+    const feedbackButtons = [
+      { value: "up", label: "点赞", icon: "thumbsup" },
+      { value: "down", label: "点踩", icon: "thumbsdown" },
+    ];
+    for (const item of feedbackButtons) {
+      const button = document.createElement("button");
+      button.className = "message-action-button message-feedback-button";
+      button.type = "button";
+      button.dataset.feedback = item.value;
+      button.title = item.label;
+      button.setAttribute("aria-label", item.label);
+      button.setAttribute("aria-pressed", "false");
+      button.innerHTML = `<i class="codicon codicon-${item.icon}" aria-hidden="true"></i>`;
+      button.addEventListener("click", () => {
+        const selected = button.getAttribute("aria-pressed") === "true";
+        const peers = Array.from(
+          actions.querySelectorAll<HTMLButtonElement>(
+            ".message-feedback-button",
+          ),
+        );
+        for (const peer of peers) {
+          const active = peer === button && !selected;
+          peer.setAttribute("aria-pressed", String(active));
+          peer.classList.toggle("is-selected", active);
+          const icon = peer.dataset.feedback === "up" ? "thumbsup" : "thumbsdown";
+          peer.innerHTML = `<i class="codicon codicon-${icon}${active ? "-filled" : ""}" aria-hidden="true"></i>`;
+        }
+      });
+      actions.appendChild(button);
+    }
+  }
+
+  const copy = document.createElement("button");
+  copy.className = "message-action-button";
+  copy.type = "button";
+  copy.title = "复制消息";
+  copy.setAttribute("aria-label", "复制消息");
+  copy.innerHTML = '<i class="codicon codicon-copy" aria-hidden="true"></i>';
+  copy.addEventListener("click", async () => {
+    const copied = await copyMessageText(getText());
+    copy.classList.toggle("is-copied", copied);
+    copy.title = copied ? "已复制" : "复制失败";
+    copy.setAttribute("aria-label", copy.title);
+    copy.innerHTML = copied
+      ? '<i class="codicon codicon-check" aria-hidden="true"></i>'
+      : '<i class="codicon codicon-warning" aria-hidden="true"></i>';
+    window.setTimeout(() => {
+      if (!copy.isConnected) {
+        return;
+      }
+      copy.classList.remove("is-copied");
+      copy.title = "复制消息";
+      copy.setAttribute("aria-label", "复制消息");
+      copy.innerHTML =
+        '<i class="codicon codicon-copy" aria-hidden="true"></i>';
+    }, 1400);
+  });
+  actions.appendChild(copy);
+  return actions;
+}
+
 // marked 默认开启 GFM（含表格），关掉 async 拿同步字符串结果。
 marked.setOptions({ gfm: true, breaks: false });
 
 /** 把 markdown 文本渲染进元素：marked 解析成 HTML，DOMPurify 消毒后注入。
  *  流式阶段会被节流调用，RunEnd / 历史回放时也复用同一套解析与消毒逻辑。
  *  加 markdown-body class 让 CSS 关掉气泡的 pre-wrap，交给块级元素自然排版。 */
-function renderMarkdownInto(el: HTMLElement, text: string): void {
+function renderMarkdownInto(
+  el: HTMLElement,
+  text: string,
+  highlightCode?: (code: string, language?: string) => string,
+): void {
   const html = marked.parse(text, { async: false });
   el.innerHTML = DOMPurify.sanitize(html);
   el.classList.add("markdown-body");
+  if (!highlightCode) {
+    return;
+  }
+  for (const code of Array.from(el.querySelectorAll<HTMLElement>("pre code"))) {
+    const language = Array.from(code.classList)
+      .find((name) => name.startsWith("language-"))
+      ?.slice("language-".length);
+    const highlighted = highlightCode(code.textContent ?? "", language);
+    code.innerHTML = DOMPurify.sanitize(highlighted, {
+      ALLOWED_TAGS: ["span"],
+      ALLOWED_ATTR: ["class"],
+    });
+    code.classList.add("hljs");
+  }
 }
 
 // 折叠行摘要最长显示的字符数，超出截断加省略号。
@@ -1303,39 +1538,38 @@ function summarizeLine(text: string): string {
 
 function deliveredArtifactVisual(name: string): {
   kind: string;
-  icon: string;
   extension: string;
 } {
   const match = /\.([^.]+)$/.exec(name);
   const extension = (match?.[1] ?? "FILE").slice(0, 4).toUpperCase();
   if (/\.(html?|css|jsx?|tsx?|py|sh|go|rs|java|c|cpp|sql)$/i.test(name)) {
-    return { kind: "code", icon: "codicon-file-code", extension };
+    return { kind: "code", extension };
   }
   if (/\.json$/i.test(name)) {
-    return { kind: "data", icon: "codicon-json", extension };
+    return { kind: "data", extension };
   }
   if (/\.(ya?ml|toml|xml)$/i.test(name)) {
-    return { kind: "data", icon: "codicon-symbol-structure", extension };
+    return { kind: "data", extension };
   }
   if (/\.pdf$/i.test(name)) {
-    return { kind: "document", icon: "codicon-file-pdf", extension };
+    return { kind: "document", extension };
   }
   if (/\.(md|mdx)$/i.test(name)) {
-    return { kind: "document", icon: "codicon-markdown", extension };
+    return { kind: "document", extension };
   }
   if (/\.(txt|log|docx?|rtf|odt|epub|pptx?)$/i.test(name)) {
-    return { kind: "document", icon: "codicon-file-text", extension };
+    return { kind: "document", extension };
   }
   if (/\.(png|jpe?g|gif|webp|svg|ico)$/i.test(name)) {
-    return { kind: "image", icon: "codicon-file-media", extension };
+    return { kind: "image", extension };
   }
   if (/\.(csv|tsv|xlsx?|ods)$/i.test(name)) {
-    return { kind: "sheet", icon: "codicon-table", extension };
+    return { kind: "sheet", extension };
   }
   if (/\.(zip|tar|gz|7z|rar)$/i.test(name)) {
-    return { kind: "archive", icon: "codicon-file-zip", extension };
+    return { kind: "archive", extension };
   }
-  return { kind: "file", icon: "codicon-file", extension };
+  return { kind: "file", extension };
 }
 
 /** 生成气泡上方的角色小标签。 */
