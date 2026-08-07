@@ -1,9 +1,12 @@
 from collections.abc import AsyncIterator
 
+from .events import ToolCallArgsDelta, ToolCallClaimBegin, ToolCallClaimEnd
 from .message import Message, Messages, ToolCall
 from .provider import ProviderProtocol
 from .tool import FunctionTool, to_openai_tools
 from .usage import usage_to_dict
+
+GenerateItem = Message | ToolCallClaimBegin | ToolCallArgsDelta | ToolCallClaimEnd
 
 
 class AgentCore:
@@ -36,13 +39,14 @@ class AgentCore:
         self,
         messages: Messages,
         **run_kwargs,
-    ) -> AsyncIterator[Message]:
+    ) -> AsyncIterator[GenerateItem]:
         stream = await self.provider.complete(
             messages.to_openai(),
             tools=self.tool_schemas,
             **run_kwargs,
         )
         tool_calls_by_idx: dict[int, dict] = {}
+        claimed: set[int] = set()
         self.last_usage = None
 
         async for chunk in stream:
@@ -85,6 +89,13 @@ class AgentCore:
 
                 function_delta = getattr(tool_call_delta, "function", None)
                 if function_delta is None:
+                    if index not in claimed and tool_call["id"]:
+                        yield ToolCallClaimBegin(
+                            tool_call["id"],
+                            tool_call["function"]["name"],
+                            index,
+                        )
+                        claimed.add(index)
                     continue
 
                 function_name = getattr(function_delta, "name", None)
@@ -94,7 +105,22 @@ class AgentCore:
                 if function_arguments:
                     tool_call["function"]["arguments"] += function_arguments
 
-        for _, tool_call in sorted(tool_calls_by_idx.items()):
+                if index not in claimed and (
+                    tool_call["function"]["name"] or tool_call["id"]
+                ):
+                    yield ToolCallClaimBegin(
+                        tool_call["id"],
+                        tool_call["function"]["name"],
+                        index,
+                    )
+                    claimed.add(index)
+
+                if function_arguments and index in claimed:
+                    yield ToolCallArgsDelta(tool_call["id"], function_arguments)
+
+        for index, tool_call in sorted(tool_calls_by_idx.items()):
+            if index in claimed:
+                yield ToolCallClaimEnd(tool_call["id"])
             yield Message(role="assistant", content=ToolCall.from_openai(tool_call))
 
 

@@ -12,7 +12,10 @@ from pagentv4 import (
     ReasoningDelta,
     Runner,
     TextDelta,
+    ToolCallArgsDelta,
     ToolCallBegin,
+    ToolCallClaimBegin,
+    ToolCallClaimEnd,
     ToolResult,
     TurnEnd,
 )
@@ -417,17 +420,55 @@ class RenderState:
                 return block
         return None
 
+    def print_tool_claim_begin(self, tool_call_id: str, name: str) -> None:
+        self.flush_buffers()
+        block = self.find_tool_block(tool_call_id)
+        if block is None:
+            block = ToolBlock(
+                tool_call_id=tool_call_id,
+                name=name or "tool",
+                arguments="",
+                call_preview="",
+            )
+            self.tool_blocks.append(block)
+        else:
+            block.name = name or block.name
+        line = f"{block.name} …"
+        block.call_preview = line
+        emit(c(line, DIM, on=self.color))
+        self.previous_kind = "tool_call"
+
+    def append_tool_claim_args(self, tool_call_id: str, arguments_delta: str) -> None:
+        if not arguments_delta:
+            return
+        block = self.find_tool_block(tool_call_id)
+        if block is None:
+            block = ToolBlock(
+                tool_call_id=tool_call_id,
+                name="tool",
+                arguments="",
+                call_preview="",
+            )
+            self.tool_blocks.append(block)
+        block.arguments += arguments_delta
+
     def print_tool_call(self, tool_call_id: str, name: str, arguments: str) -> None:
         self.flush_buffers()
         line = format_tool_call(name, arguments)
-        self.tool_blocks.append(
-            ToolBlock(
-                tool_call_id=tool_call_id,
-                name=name,
-                arguments=arguments,
-                call_preview=line,
+        block = self.find_tool_block(tool_call_id)
+        if block is None:
+            self.tool_blocks.append(
+                ToolBlock(
+                    tool_call_id=tool_call_id,
+                    name=name,
+                    arguments=arguments,
+                    call_preview=line,
+                )
             )
-        )
+        else:
+            block.name = name
+            block.arguments = arguments
+            block.call_preview = line
         emit(f"{CYAN}{line}{RESET}" if self.color else line)
         self.previous_kind = "tool_call"
 
@@ -467,6 +508,12 @@ class RenderState:
 def render_event(event, state: RenderState) -> None:
     if isinstance(event, ReasoningDelta):
         state.append_reasoning(event.text)
+    elif isinstance(event, ToolCallClaimBegin):
+        state.print_tool_claim_begin(event.tool_call_id, event.name)
+    elif isinstance(event, ToolCallArgsDelta):
+        state.append_tool_claim_args(event.tool_call_id, event.arguments_delta)
+    elif isinstance(event, ToolCallClaimEnd):
+        pass
     elif isinstance(event, ToolCallBegin):
         state.print_tool_call(event.tool_call_id, event.name, event.arguments)
     elif isinstance(event, ToolResult):

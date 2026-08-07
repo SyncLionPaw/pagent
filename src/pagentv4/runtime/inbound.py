@@ -21,7 +21,10 @@ from ..core.events import (
     ReasoningDelta,
     RunBegin,
     TextDelta,
+    ToolCallArgsDelta,
     ToolCallBegin,
+    ToolCallClaimBegin,
+    ToolCallClaimEnd,
     ToolResult,
     TurnBegin,
     TurnEnd,
@@ -108,7 +111,14 @@ class CheckpointPolicy:
             return self.poll_cancel_after_tool_call_begin
         if isinstance(outbound_event, ToolResult):
             return self.poll_cancel_after_tool_result
-        if isinstance(outbound_event, TextDelta | ReasoningDelta):
+        if isinstance(
+            outbound_event,
+            TextDelta
+            | ReasoningDelta
+            | ToolCallClaimBegin
+            | ToolCallArgsDelta
+            | ToolCallClaimEnd,
+        ):
             if not self.poll_cancel_after_stream_delta:
                 return False
             clock = time.monotonic() if now is None else now

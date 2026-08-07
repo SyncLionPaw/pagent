@@ -14,6 +14,9 @@
 | `TextDelta` | `text` | assistant 文本片段 |
 | `ReasoningDelta` | `text` | assistant 推理片段 |
 | `TurnResult` | `content`, `tool_calls`, `reasoning_content` | 本轮模型输出摘要；不是 turn 结束标志 |
+| `ToolCallClaimBegin` | `tool_call_id`, `name`, `index` | 流式阶段模型开始宣称要调某个工具 |
+| `ToolCallArgsDelta` | `tool_call_id`, `arguments_delta` | 该 claim 的参数增量 |
+| `ToolCallClaimEnd` | `tool_call_id` | 该 claim 参数填完（执行前） |
 | `ToolCallBegin` | `tool_call_id`, `name`, `arguments` | 即将执行工具 |
 | `ToolResult` | `tool_call_id`, `name`, `content`, `ok` | 工具输出已追加 |
 | `TurnEnd` | `turn`, `stopped`, `stop_reason` | 本轮结束；见下方 `StopReason` |
@@ -26,6 +29,7 @@
 
 - 发出 `TurnBegin`
 - 调用模型，产生 `TextDelta`、`ReasoningDelta` 和可能的工具调用
+  （流式阶段还有 `ToolCallClaimBegin` / `ToolCallArgsDelta` / `ToolCallClaimEnd`）
 - 把这一段模型输出汇总成 `TurnResult`
 - 如果这一轮请求了工具，在同一个 turn 里执行工具，产生 `ToolCallBegin` 和 `ToolResult`
 - 根据结果发出 `TurnEnd`
@@ -54,6 +58,9 @@ RunBegin
   TurnBegin(0)
     TextDelta*
     ReasoningDelta*
+    ToolCallClaimBegin(...)
+    ToolCallArgsDelta*
+    ToolCallClaimEnd(...)
     TurnResult(tool_calls=[...])
     ToolCallBegin(...)
     ToolResult(...)

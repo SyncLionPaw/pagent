@@ -2371,6 +2371,9 @@ Inbound steer/cancel remains separate from hooks; see `runtime/inbound.py`.
 | `TextDelta` | `text` | Assistant text chunk |
 | `ReasoningDelta` | `text` | Assistant reasoning chunk |
 | `TurnResult` | `content`, `tool_calls`, `reasoning_content` | Summary of the model output for this turn; not the end marker |
+| `ToolCallClaimBegin` | `tool_call_id`, `name`, `index` | Model started claiming a tool call while streaming |
+| `ToolCallArgsDelta` | `tool_call_id`, `arguments_delta` | Argument fill chunk for an open claim |
+| `ToolCallClaimEnd` | `tool_call_id` | Claim argument fill finished (before execution) |
 | `ToolCallBegin` | `tool_call_id`, `name`, `arguments` | About to execute one tool |
 | `ToolResult` | `tool_call_id`, `name`, `content`, `ok` | Tool output appended |
 | `TurnEnd` | `turn`, `stopped`, `stop_reason` | Turn finished; see `StopReason` below |
@@ -2383,6 +2386,7 @@ One turn includes these steps:
 
 - emit `TurnBegin`
 - call the model and produce `TextDelta`, `ReasoningDelta`, and possible tool calls
+  (`ToolCallClaimBegin` / `ToolCallArgsDelta` / `ToolCallClaimEnd` while arguments fill)
 - summarize that model output as `TurnResult`
 - if tools were requested, execute them in the same turn and emit `ToolCallBegin` and `ToolResult`
 - emit `TurnEnd`
@@ -2411,6 +2415,9 @@ RunBegin
   TurnBegin(0)
     TextDelta*
     ReasoningDelta*
+    ToolCallClaimBegin(...)
+    ToolCallArgsDelta*
+    ToolCallClaimEnd(...)
     TurnResult(tool_calls=[...])
     ToolCallBegin(...)
     ToolResult(...)

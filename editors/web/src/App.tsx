@@ -60,6 +60,9 @@ const CHAT_METHODS = new Set([
   "RunBegin",
   "ReasoningDelta",
   "TextDelta",
+  "ToolCallClaimBegin",
+  "ToolCallArgsDelta",
+  "ToolCallClaimEnd",
   "ToolCallBegin",
   "ToolResult",
   "PermitRequest",
@@ -601,6 +604,11 @@ export default function App() {
       if (toolCallId && yoloRef.current) {
         sendCommand({ cmd: "permit", tool_call_id: toolCallId });
       }
+      return;
+    }
+    if (event.method === "ToolCallClaimBegin") {
+      const name = readString(event.params, "name") || "tool";
+      appendTerminal("status", `填写工具参数：${name}`);
       return;
     }
     if (event.method === "ToolCallBegin") {
