@@ -18,6 +18,35 @@
 
 ---
 
+## 0.7.24 — 2026-08-07
+
+Desktop 插件市场、PDF 预览和消息操作更新，并强化公开依赖来源约束。
+
+### Highlights
+
+- **插件市场**：市场入口使用 VS Code Extensions 图标；Skill 卡片支持搜索、分类和详情预览
+- **PDF 预览**：接入 Mozilla PDF.js，通过受控文件协议加载；支持连续滚动、按需渲染、翻页和缩放
+- **消息操作**：用户消息增加编辑按钮，可将原文回填输入框；执行过程摘要精简为思考和工具计数
+- **公开依赖**：开发准则要求依赖、锁文件、CI 和发布资产均使用公开可访问来源
+
+### Install
+
+```bash
+uv tool install --force pagent
+```
+
+- VS Code：`pagent-vscode-0.7.24.vsix`
+- 桌面端：
+  - macOS Apple Silicon：`pagent-Desktop-0.7.24-mac-arm64.zip`
+  - Windows x64：`pagent-Desktop-0.7.24-win-x64.zip`
+  - Linux x64：`pagent-Desktop-0.7.24-linux-x64.tar.gz`
+
+### Links
+
+- Compare: https://github.com/SyncLionPaw/pagent/compare/v0.7.23...v0.7.24
+
+---
+
 ## 0.7.23 — 2026-08-06
 
 修复 Desktop / VS Code 发版时 `npm ci` 拉取内网 registry 失败。
