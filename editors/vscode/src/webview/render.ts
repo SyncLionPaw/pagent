@@ -15,6 +15,8 @@
 // 第 8 课：ReasoningDelta 累积进一个可折叠的“思考”面板（<details>）。
 // 第 11 课：ToolCallBegin/ToolResult 渲染成折叠“工具卡片” —— begin 建卡（显示
 //   工具名 + 参数，标“运行中”），result 按 tool_call_id 回填结果并按 ok/fail 配色。
+// Claim 流式：ToolCallClaimBegin 先建「填写中」卡，ToolCallArgsDelta 追加参数，
+//   ToolCallClaimEnd 标参数就绪；随后 ToolCallBegin 切到「运行中」（不重复建卡）。
 //
 // UI 打磨：
 //   - 运行态占位：用户发出到首个增量到达之间，在 assistant 位插一个“思考中”动画气泡，
@@ -88,6 +90,8 @@ export class ChatRenderer {
   // tool_call_id → 该工具卡片的结果区元素，供 ToolResult 回填配对。
   private toolCards = new Map<string, HTMLElement>();
   private toolCalls = new Map<string, { name: string }>();
+  // tool_call_id → claim 阶段累积的 arguments（仅 UI，不落库）。
+  private toolClaimArgs = new Map<string, string>();
   private pendingArtifacts: string[] = [];
   // tool_call_id → 该工具卡片的审批区元素，供决定落定后禁用按钮 / 撤下。
   private permitPrompts = new Map<string, HTMLElement>();
@@ -160,6 +164,7 @@ export class ChatRenderer {
     this.root.classList.remove("history-entering");
     this.toolCards.clear();
     this.toolCalls.clear();
+    this.toolClaimArgs.clear();
     this.pendingArtifacts = [];
     this.permitPrompts.clear();
     this.subagentPanels.clear();
@@ -187,6 +192,25 @@ export class ChatRenderer {
     if (method === "TextDelta") {
       this.removePlaceholder();
       this.enqueueAssistantText(readString(params, "text"));
+      return;
+    }
+    if (method === "ToolCallClaimBegin") {
+      this.removePlaceholder();
+      this.beginToolClaim(
+        readString(params, "tool_call_id"),
+        readString(params, "name"),
+      );
+      return;
+    }
+    if (method === "ToolCallArgsDelta") {
+      this.appendToolClaimArgs(
+        readString(params, "tool_call_id"),
+        readString(params, "arguments_delta"),
+      );
+      return;
+    }
+    if (method === "ToolCallClaimEnd") {
+      this.endToolClaim(readString(params, "tool_call_id"));
       return;
     }
     if (method === "ToolCallBegin") {
@@ -702,15 +726,144 @@ export class ChatRenderer {
     this.finishActivityStack();
   }
 
-  /** 新建一张工具卡片（折叠，默认展开）：标题工具名，展开区显示参数，末尾留结果占位。 */
+  /** Claim 开始：先建「填写中」卡，避免参数流式填充时界面空白。 */
+  private beginToolClaim(id: string, name: string): void {
+    this.sealAssistantBubble();
+    this.finishReasoningSegment();
+    this.hideEmptyState();
+    if (id) {
+      this.toolCalls.set(id, { name });
+      this.toolClaimArgs.set(id, "");
+    }
+    this.upsertToolCard(id, name, "", "claiming");
+  }
+
+  private appendToolClaimArgs(id: string, delta: string): void {
+    if (!id || !delta) {
+      return;
+    }
+    const next = (this.toolClaimArgs.get(id) ?? "") + delta;
+    this.toolClaimArgs.set(id, next);
+    if (!this.toolCards.has(id)) {
+      const name = this.toolCalls.get(id)?.name ?? "";
+      this.upsertToolCard(id, name, next, "claiming");
+      return;
+    }
+    this.updateToolCardArgs(id, next);
+  }
+
+  private endToolClaim(id: string): void {
+    if (!id) {
+      return;
+    }
+    this.setToolCardPhase(id, "claimed");
+  }
+
+  /** 执行开始：有 claim 卡则复用并切到「运行中」，否则新建。 */
   private addToolCard(id: string, name: string, args: string): void {
     this.sealAssistantBubble();
     this.finishReasoningSegment();
     this.hideEmptyState();
     if (id) {
       this.toolCalls.set(id, { name });
+      this.toolClaimArgs.delete(id);
     }
-    this.appendToolCard(this.activityHost("tool"), this.toolCards, id, name, args);
+    this.upsertToolCard(id, name, args, "running");
+  }
+
+  private upsertToolCard(
+    id: string,
+    name: string,
+    args: string,
+    phase: "claiming" | "claimed" | "running",
+  ): void {
+    if (id && this.toolCards.has(id)) {
+      this.updateToolCardArgs(id, args);
+      this.setToolCardPhase(id, phase);
+      const details = this.toolCards.get(id)?.closest(".tool-card");
+      if (details instanceof HTMLElement) {
+        const label = details.querySelector(".tool-name");
+        if (label && name) {
+          label.textContent = name;
+        }
+      }
+      return;
+    }
+    this.appendToolCard(
+      this.activityHost("tool"),
+      this.toolCards,
+      id,
+      name,
+      args,
+      phase,
+    );
+  }
+
+  private updateToolCardArgs(id: string, args: string): void {
+    const slot = this.toolCards.get(id);
+    if (!slot) {
+      return;
+    }
+    const details = slot.closest(".tool-card");
+    if (!(details instanceof HTMLElement)) {
+      return;
+    }
+    const preview = details.querySelector(".tool-preview");
+    if (preview) {
+      preview.textContent = summarizeLine(args);
+    }
+    const body = details.querySelector(".tool-body");
+    if (!(body instanceof HTMLElement)) {
+      return;
+    }
+    let section = body.querySelector(".tool-section[data-kind='args']");
+    if (!args) {
+      section?.remove();
+      return;
+    }
+    if (!(section instanceof HTMLElement)) {
+      section = makeToolSection("参数", args);
+      section.setAttribute("data-kind", "args");
+      body.insertBefore(section, slot);
+    } else {
+      const pre = section.querySelector(".tool-section-body");
+      if (pre) {
+        pre.textContent = args;
+      }
+    }
+    if (this.isNearBottom()) {
+      this.forceScrollToBottom();
+    }
+  }
+
+  private setToolCardPhase(
+    id: string,
+    phase: "claiming" | "claimed" | "running",
+  ): void {
+    const slot = this.toolCards.get(id);
+    if (!slot) {
+      return;
+    }
+    const details = slot.closest(".tool-card");
+    if (!(details instanceof HTMLElement)) {
+      return;
+    }
+    details.classList.add("call");
+    details.classList.toggle("claiming", phase === "claiming");
+    details.classList.toggle("claimed", phase === "claimed");
+    const status = details.querySelector(".tool-status");
+    if (!status) {
+      return;
+    }
+    if (phase === "claiming") {
+      setToolStatus(status, "codicon-loading codicon-modifier-spin", "填写中");
+      return;
+    }
+    if (phase === "claimed") {
+      setToolStatus(status, "codicon-edit", "参数就绪");
+      return;
+    }
+    setToolStatus(status, "codicon-loading codicon-modifier-spin", "运行中");
   }
 
   private appendToolCard(
@@ -719,9 +872,15 @@ export class ChatRenderer {
     id: string,
     name: string,
     args: string,
+    phase: "claiming" | "claimed" | "running" = "running",
   ): void {
     const details = document.createElement("details");
     details.className = "tool-card call";
+    if (phase === "claiming") {
+      details.classList.add("claiming");
+    } else if (phase === "claimed") {
+      details.classList.add("claimed");
+    }
     details.open = false;
 
     const summary = document.createElement("summary");
@@ -736,13 +895,21 @@ export class ChatRenderer {
     preview.textContent = summarizeLine(args);
     const status = document.createElement("span");
     status.className = "tool-status";
-    setToolStatus(status, "codicon-loading codicon-modifier-spin", "运行中");
+    if (phase === "claiming") {
+      setToolStatus(status, "codicon-loading codicon-modifier-spin", "填写中");
+    } else if (phase === "claimed") {
+      setToolStatus(status, "codicon-edit", "参数就绪");
+    } else {
+      setToolStatus(status, "codicon-loading codicon-modifier-spin", "运行中");
+    }
     summary.append(icon, label, preview, status);
 
     const body = document.createElement("div");
     body.className = "tool-body";
     if (args) {
-      body.appendChild(makeToolSection("参数", args));
+      const argsSection = makeToolSection("参数", args);
+      argsSection.setAttribute("data-kind", "args");
+      body.appendChild(argsSection);
     }
     const resultSlot = document.createElement("div");
     resultSlot.className = "tool-result-slot";
@@ -900,11 +1067,34 @@ export class ChatRenderer {
       panel.preview.textContent = "思考";
       return;
     }
+    if (method === "ToolCallClaimBegin") {
+      panel.preview.textContent = "填写工具";
+      const id = readString(inner, "tool_call_id");
+      if (id) {
+        this.toolCalls.set(id, { name: readString(inner, "name") });
+        this.toolClaimArgs.set(id, "");
+      }
+      return;
+    }
+    if (method === "ToolCallArgsDelta") {
+      panel.preview.textContent = "填写工具";
+      const id = readString(inner, "tool_call_id");
+      const delta = readString(inner, "arguments_delta");
+      if (id && delta) {
+        this.toolClaimArgs.set(id, (this.toolClaimArgs.get(id) ?? "") + delta);
+      }
+      return;
+    }
+    if (method === "ToolCallClaimEnd") {
+      panel.preview.textContent = "工具就绪";
+      return;
+    }
     if (method === "ToolCallBegin") {
       panel.preview.textContent = "工具";
       const id = readString(inner, "tool_call_id");
       if (id) {
         this.toolCalls.set(id, { name: readString(inner, "name") });
+        this.toolClaimArgs.delete(id);
       }
       return;
     }

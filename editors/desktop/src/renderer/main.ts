@@ -3231,6 +3231,11 @@ async function start(): Promise<void> {
         if (text) {
           appendTerminalEntry("stdout", `[subagent:${label}] ${text}`);
         }
+      } else if (subagent.inner.method === "ToolCallClaimBegin") {
+        appendTerminalEntry(
+          "status",
+          `[subagent:${label}] 填写工具参数：${String(subagent.inner.params.name ?? "tool")}`,
+        );
       } else if (subagent.inner.method === "ToolCallBegin") {
         appendTerminalEntry(
           "command",
@@ -3257,6 +3262,8 @@ async function start(): Promise<void> {
       event.method === "RunBegin" ||
       event.method === "ReasoningDelta" ||
       event.method === "TextDelta" ||
+      event.method === "ToolCallClaimBegin" ||
+      event.method === "ToolCallArgsDelta" ||
       event.method === "ToolCallBegin"
     ) {
       uiState.activityState = "running";
@@ -3304,6 +3311,12 @@ async function start(): Promise<void> {
       renderCapabilities();
     }
 
+    if (event.method === "ToolCallClaimBegin") {
+      appendTerminalEntry(
+        "status",
+        `填写工具参数：${String(event.params.name ?? "tool")}`,
+      );
+    }
     if (event.method === "ToolCallBegin") {
       appendTerminalEntry(
         "command",

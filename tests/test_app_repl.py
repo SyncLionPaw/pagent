@@ -19,7 +19,15 @@ from app.repl import (
     say_goodbye,
     split_prefixed_command,
 )
-from pagentv4 import TextDelta, ToolCallBegin, ToolResult, TurnEnd
+from pagentv4 import (
+    TextDelta,
+    ToolCallArgsDelta,
+    ToolCallBegin,
+    ToolCallClaimBegin,
+    ToolCallClaimEnd,
+    ToolResult,
+    TurnEnd,
+)
 
 
 class FakeRunner:
@@ -169,6 +177,28 @@ async def test_render_turn_separates_tool_block_from_text(capsys):
     assert "pagent> 先试一下。\ntool → run_command(" in out
     assert "curl -s -o /dev/null https://www.baidu.com" in out
     assert '\n  ok: {"ok": true, "exit_code": 0}\n\npagent> 上到网。\n' in out
+
+
+@pytest.mark.asyncio
+async def test_render_turn_shows_tool_claim_before_execution(capsys):
+    runner = FakeStreamRunner(
+        [
+            ToolCallClaimBegin("call-1", "run_command", 0),
+            ToolCallArgsDelta("call-1", '{"command":'),
+            ToolCallArgsDelta("call-1", '"pwd"}'),
+            ToolCallClaimEnd("call-1"),
+            ToolCallBegin("call-1", "run_command", '{"command":"pwd"}'),
+            ToolResult("call-1", "run_command", '{"ok": true}', ok=True),
+        ]
+    )
+    state = RenderState(color=False)
+
+    await render_turn(runner, "test", color=False, state=state)
+
+    out = capsys.readouterr().out
+    assert "run_command …" in out
+    assert "tool → run_command(command='pwd')" in out
+    assert state.tool_blocks[0].arguments == '{"command":"pwd"}'
 
 
 @pytest.mark.asyncio

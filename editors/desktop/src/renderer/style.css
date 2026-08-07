@@ -1410,6 +1410,11 @@ input:focus-visible {
     background: var(--surface-inset);
 }
 
+.desktop-root .tool-card.claiming {
+    border-style: dashed;
+    opacity: 0.92;
+}
+
 .desktop-root .bubble.message-collapsible {
     position: relative;
     padding-bottom: 36px;

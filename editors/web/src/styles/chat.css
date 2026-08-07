@@ -918,7 +918,7 @@ body[data-theme="light"] .thinking-preview {
 }
 
 /* 工具卡片（第 11 课）：ToolCallBegin 建卡，ToolResult 回填。
- * call=运行中中性边框，result.ok=成功色，result.fail=错误色；折叠展开看参数/结果。 */
+ * claiming=填写参数，call=运行中中性边框，result.ok=成功色，result.fail=错误色。 */
 .tool-card {
   align-self: flex-start;
   width: 80%;
@@ -926,6 +926,11 @@ body[data-theme="light"] .thinking-preview {
   border-radius: 8px;
   background: var(--vscode-editor-background);
   padding: 4px 10px;
+}
+
+.tool-card.claiming {
+  border-style: dashed;
+  opacity: 0.92;
 }
 
 .tool-card.result.ok {
