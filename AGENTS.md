@@ -65,6 +65,20 @@ git config core.hooksPath .githooks
 chmod +x scripts/ci-check.sh .githooks/pre-push
 ```
 
+## Dependency and artifact sources
+
+- Use public, generally available ecosystems and packages, such as PyPI/pip/uv
+  and npm. Do not introduce company-internal libraries, registries, mirrors,
+  artifact repositories, or download URLs.
+- Lockfiles and committed package-manager configuration must resolve through
+  public sources such as `pypi.org` and `registry.npmjs.org`. Before committing,
+  check that they contain no internal hostnames or credentials.
+- CI and release workflows must work on a clean public GitHub runner without
+  access to private networks, internal credentials, or pre-populated caches.
+- Release artifacts and runtime dependencies must remain downloadable by
+  external users from public sources. Local private mirrors may be used only as
+  uncommitted developer-machine configuration.
+
 ## Conventions
 
 - `agent.run()` returns **`RunEnd`**; use `.content` for the answer (not `str(run_end)`).

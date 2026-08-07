@@ -26,6 +26,7 @@
         "highlight.js": "^11.11.1",
         "lucide": "^1.24.0",
         "marked": "^16.2.1",
+        "pdfjs-dist": "^4.10.38",
         "qrcode": "^1.5.4"
     }
 }

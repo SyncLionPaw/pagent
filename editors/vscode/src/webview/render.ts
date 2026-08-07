@@ -48,6 +48,7 @@ type ChatRendererOptions = {
   stackActivities?: boolean;
   activityIcon?: () => HTMLElement;
   onArtifactOpen?: (path: string) => void;
+  onEditUserMessage?: (text: string) => void;
   highlightCode?: (code: string, language?: string) => string;
   messageActions?: boolean;
   starterPrompts?: Array<{
@@ -659,12 +660,12 @@ export class ChatRenderer {
     if (!this.activityMeta) {
       return;
     }
-    const parts = [`${this.activityCount} 项`];
-    if (this.activityToolCount) {
-      parts.push(`${this.activityToolCount} 工具`);
-    }
+    const parts: string[] = [];
     if (this.activityThinkingCount) {
       parts.push(`${this.activityThinkingCount} 思考`);
+    }
+    if (this.activityToolCount) {
+      parts.push(`${this.activityToolCount} 工具`);
     }
     this.activityMeta.textContent = parts.join(" · ");
     this.activityStack?.classList.toggle(
@@ -1173,6 +1174,8 @@ export class ChatRenderer {
       const actions = makeMessageActions(
         () => body.dataset.messageText ?? body.innerText,
         timestamp,
+        false,
+        this.options.onEditUserMessage,
       );
       actions.classList.add("user-message-actions");
       msg.appendChild(actions);
@@ -1416,6 +1419,7 @@ function makeMessageActions(
   getText: () => string,
   timestamp: Date | null,
   feedback = false,
+  onEdit?: (text: string) => void,
 ): HTMLElement {
   const actions = document.createElement("div");
   actions.className = "message-actions";
@@ -1462,6 +1466,19 @@ function makeMessageActions(
       });
       actions.appendChild(button);
     }
+  }
+
+  if (onEdit) {
+    const edit = document.createElement("button");
+    edit.className = "message-action-button";
+    edit.type = "button";
+    edit.title = "编辑消息";
+    edit.setAttribute("aria-label", "编辑消息");
+    edit.innerHTML = '<i class="codicon codicon-edit" aria-hidden="true"></i>';
+    edit.addEventListener("click", () => {
+      onEdit(getText());
+    });
+    actions.appendChild(edit);
   }
 
   const copy = document.createElement("button");

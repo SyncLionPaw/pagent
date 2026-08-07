@@ -4,6 +4,8 @@ import {
   dialog,
   ipcMain,
   nativeImage,
+  net,
+  protocol,
   shell,
   type OpenDialogOptions,
 } from "electron";
@@ -19,6 +21,7 @@ import {
 import type { Dirent } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 
 import {
   AgentBridge,
@@ -115,6 +118,21 @@ let sandboxTreeRequest:
   | { threadId: string; promise: Promise<SandboxTreePayload> }
   | undefined;
 import { DOCUMENTATION_URL } from "../shared/docs";
+
+const ARTIFACT_SCHEME = "pagent-artifact";
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: ARTIFACT_SCHEME,
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      corsEnabled: true,
+      stream: true,
+    },
+  },
+]);
 
 /** dock/about 用带透明边距的高清图标（符合 macOS 图标网格，避免视觉偏大）。 */
 function appIconPngPath(): string {
@@ -614,7 +632,6 @@ function resolveArtifactPath(filePath: string): string | undefined {
 const ARTIFACT_TEXT_LIMIT = 512 * 1024;
 const ARTIFACT_IMAGE_LIMIT = 8 * 1024 * 1024;
 const ARTIFACT_HTML_LIMIT = 4 * 1024 * 1024;
-const ARTIFACT_PDF_LIMIT = 32 * 1024 * 1024;
 
 const ARTIFACT_LANGUAGES: Record<string, string> = {
   ".ts": "typescript",
@@ -666,6 +683,33 @@ const ARTIFACT_TEXT_EXT = new Set([
   ".conf",
 ]);
 
+function artifactSourceUrl(filePath: string): string {
+  const encoded = Buffer.from(filePath, "utf8").toString("base64url");
+  return `${ARTIFACT_SCHEME}://file/${encoded}`;
+}
+
+function registerArtifactProtocol(): void {
+  protocol.handle(ARTIFACT_SCHEME, (request) => {
+    const url = new URL(request.url);
+    if (url.hostname !== "file") {
+      return new Response("Not found", { status: 404 });
+    }
+    let filePath = "";
+    try {
+      filePath = Buffer.from(url.pathname.slice(1), "base64url").toString("utf8");
+    } catch {
+      return new Response("Invalid artifact path", { status: 400 });
+    }
+    const target = resolveArtifactPath(filePath);
+    if (!target || path.extname(target).toLowerCase() !== ".pdf") {
+      return new Response("Not found", { status: 404 });
+    }
+    return net.fetch(pathToFileURL(target).toString(), {
+      headers: request.headers,
+    });
+  });
+}
+
 /** 读取 artifact 内容供右侧面板内联预览：markdown/html/pdf 富渲染，代码/文本高亮，图片转 data URL，其余标记为二进制。 */
 function readArtifactPreview(filePath: string): ArtifactPreview {
   const target = resolveArtifactPath(filePath);
@@ -687,11 +731,7 @@ function readArtifactPreview(filePath: string): ArtifactPreview {
   }
 
   if (ext === ".pdf") {
-    if (stat.size > ARTIFACT_PDF_LIMIT) {
-      return { ...base, kind: "binary", reason: "PDF 过大，无法内联预览" };
-    }
-    const buffer = readFileSync(target);
-    return { ...base, kind: "pdf", dataUrl: `data:application/pdf;base64,${buffer.toString("base64")}` };
+    return { ...base, kind: "pdf", sourceUrl: artifactSourceUrl(target) };
   }
 
   if (ext === ".html" || ext === ".htm") {
@@ -1217,6 +1257,7 @@ function hideAppDuringQuit(): void {
 
 app.whenReady().then(() => {
   app.setName("pagent Desktop");
+  registerArtifactProtocol();
   applyAppIcon();
   mainWindow = createWindow();
 

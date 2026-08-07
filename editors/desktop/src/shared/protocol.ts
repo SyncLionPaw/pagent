@@ -55,6 +55,7 @@ export type ArtifactPreview = {
     language?: string;
     text?: string;
     dataUrl?: string;
+    sourceUrl?: string;
     truncated?: boolean;
     reason?: string;
 };

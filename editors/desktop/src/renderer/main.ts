@@ -23,6 +23,12 @@ import typescript from "highlight.js/lib/languages/typescript";
 import xml from "highlight.js/lib/languages/xml";
 import yaml from "highlight.js/lib/languages/yaml";
 import { marked } from "marked";
+import {
+  GlobalWorkerOptions,
+  getDocument,
+  type PDFDocumentProxy,
+  type RenderTask,
+} from "pdfjs-dist";
 import type {
   AppInfo,
   AppSettings,
@@ -59,6 +65,11 @@ const LEFT_SPLIT_RATIO_KEY = "pagent-desktop-left-split-ratio";
 const LEFT_SPLIT_MIN_RATIO = 0.2;
 const LEFT_SPLIT_MAX_RATIO = 0.8;
 
+GlobalWorkerOptions.workerSrc = new URL(
+  "./pdf.worker.min.mjs",
+  window.location.href,
+).href;
+
 type ThemeMode = "dark" | "light";
 type PanelTab = "project" | "sandbox" | "terminal";
 type ProjectPane = "files" | "artifacts";
@@ -67,56 +78,79 @@ type TerminalEntryKind = "command" | "stdout" | "stderr" | "status";
 type CapabilityKind = "skills" | "tools" | "sandbox" | "artifacts";
 type MarketplaceCategory = "development" | "office" | "research";
 
-const MARKETPLACE_SKILLS: Array<{
+type MarketplaceSkill = {
+  id: string;
   name: string;
   description: string;
   category: MarketplaceCategory;
   categoryLabel: string;
   icon: DesktopIconName;
-}> = [
-    {
-      name: "Code Review",
-      description: "检查代码变更中的逻辑缺陷、风险和测试缺口。",
-      category: "development",
-      categoryLabel: "研发",
-      icon: "code-xml",
-    },
-    {
-      name: "Test Generator",
-      description: "分析现有实现并生成聚焦关键路径的单元测试。",
-      category: "development",
-      categoryLabel: "研发",
-      icon: "workflow",
-    },
-    {
-      name: "Meeting Notes",
-      description: "整理会议记录，提取结论、负责人和后续行动。",
-      category: "office",
-      categoryLabel: "办公",
-      icon: "file-text",
-    },
-    {
-      name: "Document Writer",
-      description: "将零散材料整理为结构清晰、面向用户的文档。",
-      category: "office",
-      categoryLabel: "办公",
-      icon: "file",
-    },
-    {
-      name: "Paper Research",
-      description: "检索、阅读并归纳论文中的方法、证据和结论。",
-      category: "research",
-      categoryLabel: "研究",
-      icon: "globe",
-    },
-    {
-      name: "Data Analysis",
-      description: "读取结构化数据并生成可复核的分析结论。",
-      category: "research",
-      categoryLabel: "研究",
-      icon: "database",
-    },
-  ];
+  capabilities: string[];
+  example: string;
+};
+
+const MARKETPLACE_SKILLS: MarketplaceSkill[] = [
+  {
+    id: "code-review",
+    name: "Code Review",
+    description: "检查代码变更中的逻辑缺陷、风险和测试缺口。",
+    category: "development",
+    categoryLabel: "研发",
+    icon: "code-xml",
+    capabilities: ["审查提交或本地差异", "按严重程度整理问题", "指出缺失的测试场景"],
+    example: "审查当前分支相对 main 的改动，优先检查行为回归。",
+  },
+  {
+    id: "test-generator",
+    name: "Test Generator",
+    description: "分析现有实现并生成聚焦关键路径的单元测试。",
+    category: "development",
+    categoryLabel: "研发",
+    icon: "workflow",
+    capabilities: ["识别关键分支", "沿用项目测试框架", "补充边界与失败用例"],
+    example: "为当前模块补充单元测试，覆盖错误处理和边界输入。",
+  },
+  {
+    id: "meeting-notes",
+    name: "Meeting Notes",
+    description: "整理会议记录，提取结论、负责人和后续行动。",
+    category: "office",
+    categoryLabel: "办公",
+    icon: "file-text",
+    capabilities: ["提炼会议结论", "识别负责人和期限", "整理待确认事项"],
+    example: "整理这份会议记录，输出结论、行动项和未决问题。",
+  },
+  {
+    id: "document-writer",
+    name: "Document Writer",
+    description: "将零散材料整理为结构清晰、面向用户的文档。",
+    category: "office",
+    categoryLabel: "办公",
+    icon: "file",
+    capabilities: ["重组材料结构", "统一术语和语气", "生成面向用户的说明"],
+    example: "把这些实现说明整理成一篇面向新用户的使用文档。",
+  },
+  {
+    id: "paper-research",
+    name: "Paper Research",
+    description: "检索、阅读并归纳论文中的方法、证据和结论。",
+    category: "research",
+    categoryLabel: "研究",
+    icon: "globe",
+    capabilities: ["定位相关论文", "归纳方法和实验", "保留可核查的引用"],
+    example: "调研近三年的相关论文，比较方法、数据集和实验结论。",
+  },
+  {
+    id: "data-analysis",
+    name: "Data Analysis",
+    description: "读取结构化数据并生成可复核的分析结论。",
+    category: "research",
+    categoryLabel: "研究",
+    icon: "database",
+    capabilities: ["检查数据质量", "计算关键指标", "解释异常和限制"],
+    example: "分析这份 CSV 的趋势和异常值，并说明计算口径。",
+  },
+];
 
 type TerminalEntry = {
   kind: TerminalEntryKind;
@@ -838,8 +872,26 @@ function renderArtifactPreview(preview: ArtifactPreview): string {
   if (preview.kind === "image" && preview.dataUrl) {
     return `${head}<div class="artifact-preview-body artifact-preview-image"><img src="${preview.dataUrl}" alt="${escapeHtml(preview.name)}" /></div>`;
   }
-  if (preview.kind === "pdf" && preview.dataUrl) {
-    return `${head}<div class="artifact-preview-body artifact-preview-frame"><iframe src="${preview.dataUrl}" title="${escapeHtml(preview.name)}"></iframe></div>`;
+  if (preview.kind === "pdf" && preview.sourceUrl) {
+    return `${head}
+      <div class="artifact-preview-body artifact-preview-pdf">
+        <div class="artifact-pdf-toolbar">
+          <div class="artifact-pdf-pagination">
+            <button type="button" data-pdf-previous title="上一页" aria-label="上一页"><i class="codicon codicon-chevron-left" aria-hidden="true"></i></button>
+            <span data-pdf-page>1 / —</span>
+            <button type="button" data-pdf-next title="下一页" aria-label="下一页"><i class="codicon codicon-chevron-right" aria-hidden="true"></i></button>
+          </div>
+          <div class="artifact-pdf-zoom">
+            <button type="button" data-pdf-zoom-out title="缩小" aria-label="缩小"><i class="codicon codicon-remove" aria-hidden="true"></i></button>
+            <span data-pdf-zoom>100%</span>
+            <button type="button" data-pdf-zoom-in title="放大" aria-label="放大"><i class="codicon codicon-add" aria-hidden="true"></i></button>
+          </div>
+        </div>
+        <div class="artifact-pdf-viewport" data-pdf-viewport>
+          <div class="artifact-pdf-status" data-pdf-status>正在加载 PDF…</div>
+          <div class="artifact-pdf-pages" data-pdf-pages></div>
+        </div>
+      </div>`;
   }
   if (preview.kind === "html" && preview.dataUrl) {
     return `${head}<div class="artifact-preview-body artifact-preview-frame"><iframe src="${preview.dataUrl}" title="${escapeHtml(preview.name)}" sandbox="allow-scripts allow-popups allow-forms"></iframe></div>`;
@@ -888,7 +940,7 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             </div>
           </div>
           <button class="titlebar-action marketplace-button" type="button" data-marketplace-open title="插件市场" aria-label="打开插件市场">
-            ${renderIcon("store")}
+            <i class="codicon codicon-extensions" aria-hidden="true"></i>
           </button>
         </div>
         <div class="titlebar-right">
@@ -1298,21 +1350,24 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             </button>
           </div>
           <div class="desktop-modal-body marketplace-modal-body">
-            <div class="marketplace-toolbar">
-              <label class="marketplace-search">
-                <i class="codicon codicon-search" aria-hidden="true"></i>
-                <input type="search" data-marketplace-search placeholder="搜索 Skills" aria-label="搜索 Skills" />
-              </label>
-              <div class="marketplace-filters" aria-label="Skill 分类">
-                <button class="marketplace-filter active" type="button" data-marketplace-filter="all">全部</button>
-                <button class="marketplace-filter" type="button" data-marketplace-filter="development">研发</button>
-                <button class="marketplace-filter" type="button" data-marketplace-filter="office">办公</button>
-                <button class="marketplace-filter" type="button" data-marketplace-filter="research">研究</button>
+            <div class="marketplace-browse" data-marketplace-browse>
+              <div class="marketplace-toolbar">
+                <label class="marketplace-search">
+                  <i class="codicon codicon-search" aria-hidden="true"></i>
+                  <input type="search" data-marketplace-search placeholder="搜索 Skills" aria-label="搜索 Skills" />
+                </label>
+                <div class="marketplace-filters" aria-label="Skill 分类">
+                  <button class="marketplace-filter active" type="button" data-marketplace-filter="all">全部</button>
+                  <button class="marketplace-filter" type="button" data-marketplace-filter="development">研发</button>
+                  <button class="marketplace-filter" type="button" data-marketplace-filter="office">办公</button>
+                  <button class="marketplace-filter" type="button" data-marketplace-filter="research">研究</button>
+                </div>
               </div>
+              <div class="marketplace-grid" data-marketplace-grid></div>
+              <div class="marketplace-empty" data-marketplace-empty hidden>没有匹配的 Skill</div>
+              <div class="marketplace-footnote">当前提供 Skill 预览，来源与安装能力将在后续版本接入。</div>
             </div>
-            <div class="marketplace-grid" data-marketplace-grid></div>
-            <div class="marketplace-empty" data-marketplace-empty hidden>没有匹配的 Skill</div>
-            <div class="marketplace-footnote">当前为界面预览，Skill 来源与安装能力将在后续版本接入。</div>
+            <div class="marketplace-preview" data-marketplace-preview hidden></div>
           </div>
         </section>
       </div>
@@ -1692,8 +1747,12 @@ async function start(): Promise<void> {
   const marketplaceSearch = findRequired<HTMLInputElement>(
     "[data-marketplace-search]",
   );
+  const marketplaceBrowse = findRequired<HTMLElement>("[data-marketplace-browse]");
   const marketplaceGrid = findRequired<HTMLElement>("[data-marketplace-grid]");
   const marketplaceEmpty = findRequired<HTMLElement>("[data-marketplace-empty]");
+  const marketplacePreview = findRequired<HTMLElement>(
+    "[data-marketplace-preview]",
+  );
   const titlebarSwitch = findRequired<HTMLElement>("[data-titlebar-switch]");
   const titlebarSwitchThumb = findRequired<HTMLElement>("[data-titlebar-switch-thumb]");
   const settingsModal = findRequired<HTMLElement>("[data-settings-modal]");
@@ -1773,6 +1832,12 @@ async function start(): Promise<void> {
   const refreshProjectButton = findRequired<HTMLButtonElement>("[data-refresh-project]");
   let keepSidebarOpen = false;
   let artifactPreviewPath = "";
+  let pdfPreviewDocument: PDFDocumentProxy | undefined;
+  const pdfRenderTasks = new Map<number, RenderTask>();
+  let pdfPreviewGeneration = 0;
+  let pdfRenderRevision = 0;
+  let pdfPageNumber = 1;
+  let pdfZoom = 1;
 
   renderArtifactList();
 
@@ -1795,6 +1860,13 @@ async function start(): Promise<void> {
       },
       onArtifactOpen: (path) => {
         void openArtifactFromChat(path);
+      },
+      onEditUserMessage: (text) => {
+        promptInput.value = text;
+        resizePrompt(promptInput);
+        closeMention();
+        promptInput.focus();
+        promptInput.setSelectionRange(text.length, text.length);
       },
       highlightCode,
       messageActions: true,
@@ -2022,6 +2094,7 @@ async function start(): Promise<void> {
   let settingsRequestId = 0;
   let marketplaceModalCloseTimer = 0;
   let marketplaceCategory: MarketplaceCategory | "all" = "all";
+  let marketplacePreviewId = "";
   let docsQrModalCloseTimer = 0;
   let newSessionModalCloseTimer = 0;
   let newSessionRequestId = 0;
@@ -2113,7 +2186,7 @@ async function start(): Promise<void> {
               </div>
               <p>${escapeHtml(skill.description)}</p>
             </div>
-            <button class="marketplace-install" type="button" disabled title="来源接入后开放安装">预览</button>
+            <button class="marketplace-install" type="button" data-marketplace-skill-id="${escapeHtml(skill.id)}" aria-label="预览 ${escapeHtml(skill.name)}">预览</button>
           </article>
         `,
       )
@@ -2121,10 +2194,56 @@ async function start(): Promise<void> {
     marketplaceEmpty.hidden = visible.length > 0;
   }
 
+  function showMarketplacePreview(skill: MarketplaceSkill): void {
+    marketplacePreviewId = skill.id;
+    marketplaceBrowse.hidden = true;
+    marketplacePreview.hidden = false;
+    marketplacePreview.innerHTML = `
+      <button class="marketplace-preview-back" type="button" data-marketplace-preview-back>
+        ${renderIcon("arrow-left")}
+        <span>返回市场</span>
+      </button>
+      <div class="marketplace-preview-hero">
+        <div class="marketplace-preview-icon" aria-hidden="true">${renderIcon(skill.icon)}</div>
+        <div>
+          <div class="marketplace-preview-heading">
+            <h2>${escapeHtml(skill.name)}</h2>
+            <span>${escapeHtml(skill.categoryLabel)}</span>
+          </div>
+          <p>${escapeHtml(skill.description)}</p>
+        </div>
+      </div>
+      <section class="marketplace-preview-section">
+        <h3>能力范围</h3>
+        <ul>
+          ${skill.capabilities.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+        </ul>
+      </section>
+      <section class="marketplace-preview-section">
+        <h3>示例指令</h3>
+        <div class="marketplace-preview-example">${escapeHtml(skill.example)}</div>
+      </section>
+      <div class="marketplace-preview-notice">
+        这是功能预览。Skill 来源与安装能力接入后，可在这里查看版本和安装。
+      </div>
+    `;
+    marketplacePreview
+      .querySelector<HTMLButtonElement>("[data-marketplace-preview-back]")
+      ?.focus();
+  }
+
+  function showMarketplaceBrowse(): void {
+    marketplacePreviewId = "";
+    marketplacePreview.hidden = true;
+    marketplacePreview.innerHTML = "";
+    marketplaceBrowse.hidden = false;
+  }
+
   function openMarketplaceModal(): void {
     window.clearTimeout(marketplaceModalCloseTimer);
     marketplaceSearch.value = "";
     marketplaceCategory = "all";
+    showMarketplaceBrowse();
     marketplaceModal
       .querySelectorAll<HTMLButtonElement>("[data-marketplace-filter]")
       .forEach((button) => {
@@ -2863,6 +2982,7 @@ async function start(): Promise<void> {
   }
 
   function closeArtifactPreview(): void {
+    disposePdfPreview();
     artifactPreviewPath = "";
     artifactsPanel.classList.remove("preview-open");
     projectHost.classList.remove("preview-open");
@@ -2870,7 +2990,286 @@ async function start(): Promise<void> {
     artifactPreview.innerHTML = "";
   }
 
+  function disposePdfPreview(): void {
+    pdfPreviewGeneration += 1;
+    pdfRenderRevision += 1;
+    for (const task of pdfRenderTasks.values()) {
+      task.cancel();
+    }
+    pdfRenderTasks.clear();
+    if (pdfPreviewDocument) {
+      void pdfPreviewDocument.destroy();
+      pdfPreviewDocument = undefined;
+    }
+  }
+
+  function updatePdfToolbar(): void {
+    const document = pdfPreviewDocument;
+    if (!document) {
+      return;
+    }
+    const pageLabel = artifactPreview.querySelector<HTMLElement>("[data-pdf-page]");
+    const zoomLabel = artifactPreview.querySelector<HTMLElement>("[data-pdf-zoom]");
+    if (pageLabel) {
+      pageLabel.textContent = `${pdfPageNumber} / ${document.numPages}`;
+    }
+    if (zoomLabel) {
+      zoomLabel.textContent = `${Math.round(pdfZoom * 100)}%`;
+    }
+    artifactPreview
+      .querySelectorAll<HTMLButtonElement>("[data-pdf-previous]")
+      .forEach((button) => {
+        button.disabled = pdfPageNumber <= 1;
+      });
+    artifactPreview
+      .querySelectorAll<HTMLButtonElement>("[data-pdf-next]")
+      .forEach((button) => {
+        button.disabled = pdfPageNumber >= document.numPages;
+      });
+  }
+
+  async function renderPdfPage(pageNumber: number): Promise<void> {
+    const document = pdfPreviewDocument;
+    const generation = pdfPreviewGeneration;
+    const revision = pdfRenderRevision;
+    const zoom = pdfZoom;
+    if (!document || pdfRenderTasks.has(pageNumber)) {
+      return;
+    }
+    const pageHost = artifactPreview.querySelector<HTMLElement>(
+      `[data-pdf-page-number="${pageNumber}"]`,
+    );
+    const viewportHost = artifactPreview.querySelector<HTMLElement>(
+      "[data-pdf-viewport]",
+    );
+    const canvas = pageHost?.querySelector<HTMLCanvasElement>(
+      "[data-pdf-page-canvas]",
+    );
+    const status = pageHost?.querySelector<HTMLElement>("[data-pdf-page-status]");
+    if (
+      !pageHost ||
+      !viewportHost ||
+      !canvas ||
+      !status ||
+      pageHost.dataset.renderedZoom === String(zoom)
+    ) {
+      return;
+    }
+    pageHost.dataset.renderingZoom = String(zoom);
+    canvas.hidden = true;
+    const page = await document.getPage(pageNumber);
+    if (
+      generation !== pdfPreviewGeneration ||
+      revision !== pdfRenderRevision
+    ) {
+      return;
+    }
+    const baseViewport = page.getViewport({ scale: 1 });
+    const availableWidth = Math.max(240, viewportHost.clientWidth - 32);
+    const fitScale = Math.min(1.6, availableWidth / baseViewport.width);
+    const displayScale = fitScale * zoom;
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const renderViewport = page.getViewport({ scale: displayScale * pixelRatio });
+    const displayViewport = page.getViewport({ scale: displayScale });
+    canvas.width = Math.ceil(renderViewport.width);
+    canvas.height = Math.ceil(renderViewport.height);
+    canvas.style.width = `${Math.ceil(displayViewport.width)}px`;
+    canvas.style.height = `${Math.ceil(displayViewport.height)}px`;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("无法创建 PDF 画布");
+    }
+    const renderTask = page.render({
+      canvasContext: context,
+      viewport: renderViewport,
+    });
+    pdfRenderTasks.set(pageNumber, renderTask);
+    renderTask.onContinue = (continueRender: () => void) => {
+      continueRender();
+    };
+    try {
+      await renderTask.promise;
+    } catch (error) {
+      if (
+        generation !== pdfPreviewGeneration ||
+        revision !== pdfRenderRevision ||
+        (error instanceof Error && error.name === "RenderingCancelledException")
+      ) {
+        return;
+      }
+      status.hidden = false;
+      status.textContent =
+        error instanceof Error ? `第 ${pageNumber} 页渲染失败：${error.message}` : `第 ${pageNumber} 页渲染失败`;
+      return;
+    } finally {
+      if (pdfRenderTasks.get(pageNumber) === renderTask) {
+        pdfRenderTasks.delete(pageNumber);
+      }
+    }
+    if (
+      generation !== pdfPreviewGeneration ||
+      revision !== pdfRenderRevision
+    ) {
+      return;
+    }
+    status.hidden = true;
+    canvas.hidden = false;
+    delete pageHost.dataset.renderingZoom;
+    pageHost.dataset.renderedZoom = String(zoom);
+  }
+
+  function renderVisiblePdfPages(): void {
+    const viewport = artifactPreview.querySelector<HTMLElement>(
+      "[data-pdf-viewport]",
+    );
+    if (!viewport) {
+      return;
+    }
+    const viewportRect = viewport.getBoundingClientRect();
+    const margin = viewportRect.height;
+    artifactPreview
+      .querySelectorAll<HTMLElement>("[data-pdf-page-number]")
+      .forEach((pageHost) => {
+        const rect = pageHost.getBoundingClientRect();
+        if (
+          rect.bottom >= viewportRect.top - margin &&
+          rect.top <= viewportRect.bottom + margin
+        ) {
+          const pageNumber = Number(pageHost.dataset.pdfPageNumber);
+          if (Number.isInteger(pageNumber)) {
+            void renderPdfPage(pageNumber);
+          }
+        }
+      });
+  }
+
+  function updatePdfPageFromScroll(): void {
+    const viewport = artifactPreview.querySelector<HTMLElement>(
+      "[data-pdf-viewport]",
+    );
+    if (!viewport) {
+      return;
+    }
+    const viewportRect = viewport.getBoundingClientRect();
+    const viewportCenter = viewportRect.top + viewportRect.height / 2;
+    let nearestPage = pdfPageNumber;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    artifactPreview
+      .querySelectorAll<HTMLElement>("[data-pdf-page-number]")
+      .forEach((pageHost) => {
+        const pageRect = pageHost.getBoundingClientRect();
+        const pageCenter = pageRect.top + pageRect.height / 2;
+        const distance = Math.abs(pageCenter - viewportCenter);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestPage = Number(pageHost.dataset.pdfPageNumber);
+        }
+      });
+    if (Number.isInteger(nearestPage) && nearestPage !== pdfPageNumber) {
+      pdfPageNumber = nearestPage;
+      updatePdfToolbar();
+    }
+    renderVisiblePdfPages();
+  }
+
+  function scrollToPdfPage(pageNumber: number): void {
+    const viewport = artifactPreview.querySelector<HTMLElement>(
+      "[data-pdf-viewport]",
+    );
+    const pages = artifactPreview.querySelector<HTMLElement>("[data-pdf-pages]");
+    const pageHost = artifactPreview.querySelector<HTMLElement>(
+      `[data-pdf-page-number="${pageNumber}"]`,
+    );
+    if (!viewport || !pages || !pageHost) {
+      return;
+    }
+    pdfPageNumber = pageNumber;
+    updatePdfToolbar();
+    viewport.scrollTo({
+      top: pageHost.offsetTop - pages.offsetTop - 12,
+      behavior: "smooth",
+    });
+    void renderPdfPage(pageNumber);
+  }
+
+  function rerenderVisiblePdfPages(): void {
+    pdfRenderRevision += 1;
+    for (const task of pdfRenderTasks.values()) {
+      task.cancel();
+    }
+    pdfRenderTasks.clear();
+    artifactPreview
+      .querySelectorAll<HTMLElement>("[data-pdf-page-number]")
+      .forEach((pageHost) => {
+        delete pageHost.dataset.renderedZoom;
+        delete pageHost.dataset.renderingZoom;
+        const canvas = pageHost.querySelector<HTMLCanvasElement>(
+          "[data-pdf-page-canvas]",
+        );
+        const status = pageHost.querySelector<HTMLElement>(
+          "[data-pdf-page-status]",
+        );
+        if (canvas) {
+          canvas.hidden = true;
+        }
+        if (status) {
+          status.hidden = false;
+        }
+      });
+    updatePdfToolbar();
+    renderVisiblePdfPages();
+  }
+
+  async function mountPdfPreview(sourceUrl: string): Promise<void> {
+    disposePdfPreview();
+    const generation = pdfPreviewGeneration;
+    pdfPageNumber = 1;
+    pdfZoom = 1;
+    try {
+      const document = await getDocument({ url: sourceUrl }).promise;
+      if (generation !== pdfPreviewGeneration) {
+        await document.destroy();
+        return;
+      }
+      pdfPreviewDocument = document;
+      const status = artifactPreview.querySelector<HTMLElement>("[data-pdf-status]");
+      const pages = artifactPreview.querySelector<HTMLElement>("[data-pdf-pages]");
+      const viewport = artifactPreview.querySelector<HTMLElement>(
+        "[data-pdf-viewport]",
+      );
+      if (!status || !pages || !viewport) {
+        return;
+      }
+      status.hidden = true;
+      pages.innerHTML = Array.from(
+        { length: document.numPages },
+        (_, index) => `
+          <div class="artifact-pdf-page" data-pdf-page-number="${index + 1}">
+            <div class="artifact-pdf-page-status" data-pdf-page-status>第 ${index + 1} 页</div>
+            <canvas data-pdf-page-canvas hidden></canvas>
+          </div>
+        `,
+      ).join("");
+      viewport.addEventListener("scroll", updatePdfPageFromScroll, {
+        passive: true,
+      });
+      updatePdfToolbar();
+      renderVisiblePdfPages();
+    } catch (error) {
+      if (generation !== pdfPreviewGeneration) {
+        return;
+      }
+      const status = artifactPreview.querySelector<HTMLElement>("[data-pdf-status]");
+      if (status) {
+        status.hidden = false;
+        status.textContent =
+          error instanceof Error ? `PDF 加载失败：${error.message}` : "PDF 加载失败";
+      }
+    }
+  }
+
   async function showArtifactPreview(filePath: string): Promise<void> {
+    disposePdfPreview();
     artifactPreviewPath = filePath;
     artifactsPanel.classList.add("preview-open");
     projectHost.classList.add("preview-open");
@@ -2881,6 +3280,9 @@ async function start(): Promise<void> {
       return;
     }
     artifactPreview.innerHTML = renderArtifactPreview(preview);
+    if (preview.kind === "pdf" && preview.sourceUrl) {
+      await mountPdfPreview(preview.sourceUrl);
+    }
   }
 
   async function openArtifactFromChat(filePath: string): Promise<void> {
@@ -3697,6 +4099,23 @@ async function start(): Promise<void> {
       closeMarketplaceModal();
       return;
     }
+    if (target.closest("[data-marketplace-preview-back]")) {
+      showMarketplaceBrowse();
+      marketplaceSearch.focus();
+      return;
+    }
+    const previewButton = target.closest<HTMLButtonElement>(
+      "[data-marketplace-skill-id]",
+    );
+    if (previewButton?.dataset.marketplaceSkillId) {
+      const skill = MARKETPLACE_SKILLS.find(
+        (item) => item.id === previewButton.dataset.marketplaceSkillId,
+      );
+      if (skill) {
+        showMarketplacePreview(skill);
+      }
+      return;
+    }
     const filter = target.closest<HTMLButtonElement>(
       "[data-marketplace-filter]",
     );
@@ -4059,6 +4478,11 @@ async function start(): Promise<void> {
         closeSettingsModal();
       }
       if (!marketplaceModal.hidden) {
+        if (marketplacePreviewId) {
+          showMarketplaceBrowse();
+          marketplaceSearch.focus();
+          return;
+        }
         closeMarketplaceModal();
       }
       if (!docsQrModal.hidden) {
@@ -4175,6 +4599,28 @@ async function start(): Promise<void> {
     }
     if (target.closest("[data-artifact-preview-close]")) {
       closeArtifactPreview();
+      return;
+    }
+    if (target.closest("[data-pdf-previous]") && pdfPageNumber > 1) {
+      scrollToPdfPage(pdfPageNumber - 1);
+      return;
+    }
+    if (
+      target.closest("[data-pdf-next]") &&
+      pdfPreviewDocument &&
+      pdfPageNumber < pdfPreviewDocument.numPages
+    ) {
+      scrollToPdfPage(pdfPageNumber + 1);
+      return;
+    }
+    if (target.closest("[data-pdf-zoom-out]")) {
+      pdfZoom = Math.max(0.5, pdfZoom - 0.25);
+      rerenderVisiblePdfPages();
+      return;
+    }
+    if (target.closest("[data-pdf-zoom-in]")) {
+      pdfZoom = Math.min(2, pdfZoom + 0.25);
+      rerenderVisiblePdfPages();
       return;
     }
     const openButton = target.closest<HTMLButtonElement>("[data-artifact-path]");

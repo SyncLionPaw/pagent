@@ -59,6 +59,19 @@ function copyCodicons() {
   }
 }
 
+function copyPdfWorker() {
+  fs.copyFileSync(
+    path.join(
+      root,
+      "node_modules",
+      "pdfjs-dist",
+      "build",
+      "pdf.worker.min.mjs",
+    ),
+    path.join(dist, "pdf.worker.min.mjs"),
+  );
+}
+
 const mainOptions = {
   entryPoints: ["src/main/index.ts"],
   bundle: true,
@@ -107,6 +120,7 @@ const rendererOptions = {
 async function build() {
   copyRendererAssets();
   copyCodicons();
+  copyPdfWorker();
   await Promise.all([
     esbuild.build(mainOptions),
     esbuild.build(preloadOptions),

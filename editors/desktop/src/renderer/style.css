@@ -4058,6 +4058,109 @@ input:focus-visible {
     border: 0;
 }
 
+.artifact-preview-pdf {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    padding: 0;
+    background: var(--surface-inset);
+}
+
+.artifact-pdf-toolbar {
+    display: flex;
+    min-height: 34px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--hairline);
+    background: var(--surface-raised);
+}
+
+.artifact-pdf-pagination,
+.artifact-pdf-zoom {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.artifact-pdf-pagination span,
+.artifact-pdf-zoom span {
+    min-width: 48px;
+    color: var(--text-tertiary);
+    font-size: 10px;
+    text-align: center;
+}
+
+.artifact-pdf-toolbar button {
+    display: inline-grid;
+    width: 25px;
+    height: 25px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.artifact-pdf-toolbar button:hover:not(:disabled) {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+.artifact-pdf-toolbar button:disabled {
+    cursor: default;
+    opacity: 0.35;
+}
+
+.artifact-pdf-viewport {
+    position: relative;
+    min-height: 0;
+    flex: 1;
+    overflow: auto;
+    padding: 16px;
+    text-align: center;
+}
+
+.artifact-pdf-pages {
+    display: flex;
+    min-width: min-content;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.artifact-pdf-page {
+    display: grid;
+    min-width: 240px;
+    min-height: 360px;
+    place-items: center;
+}
+
+.artifact-pdf-viewport canvas {
+    display: block;
+    margin: 0 auto;
+    background: #ffffff;
+    box-shadow: 0 2px 12px rgb(0 0 0 / 18%);
+}
+
+.artifact-pdf-status,
+.artifact-pdf-page-status {
+    display: grid;
+    min-height: 180px;
+    place-items: center;
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.artifact-pdf-page-status {
+    width: 240px;
+    min-height: 360px;
+    border: 1px solid var(--border-soft);
+    background: var(--surface-raised);
+}
+
 .artifact-preview-markdown {
     padding: 16px 20px;
     font-size: 13px;
