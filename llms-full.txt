@@ -2549,6 +2549,33 @@ and keep the project under version control.
 `copy_to_host`) are omitted because the project is already the working
 directory.
 
+### Try inplace safely
+
+Use a temporary directory for the first run:
+
+```bash
+mkdir -p /tmp/pagent-inplace-test
+echo "alpha" > /tmp/pagent-inplace-test/hello.txt
+pagent -C /tmp/pagent-inplace-test
+```
+
+Ask pagent:
+
+```text
+Read hello.txt, replace alpha with beta, then run cat hello.txt to verify it.
+```
+
+Approve the tool calls, exit pagent, and inspect the original file:
+
+```bash
+cat /tmp/pagent-inplace-test/hello.txt
+# beta
+```
+
+The change appears directly in the bound directory. The thread stores its
+conversation and configuration under `~/.pagent/threads/`; it does not create a
+separate workspace for this mode.
+
 ```python
 runner = await Runner.create(
     "demo",

@@ -64,6 +64,32 @@ pagent -C /path/to/project
 `list_dir`。项目已经是工作目录，因此不挂载 `list_host_files`、`copy_from_host`
 和 `copy_to_host`。
 
+### 安全试用 inplace
+
+第一次使用时，可以先绑定临时目录：
+
+```bash
+mkdir -p /tmp/pagent-inplace-test
+echo "alpha" > /tmp/pagent-inplace-test/hello.txt
+pagent -C /tmp/pagent-inplace-test
+```
+
+输入：
+
+```text
+读取 hello.txt，把 alpha 改成 beta，然后运行 cat hello.txt 验证。
+```
+
+批准工具调用，退出 pagent 后检查原文件：
+
+```bash
+cat /tmp/pagent-inplace-test/hello.txt
+# beta
+```
+
+修改会直接写入绑定目录。thread 的对话和配置仍保存在 `~/.pagent/threads/`，
+该模式不会创建独立 workspace。
+
 ```python
 runner = await Runner.create(
     "demo",
