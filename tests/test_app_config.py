@@ -172,6 +172,39 @@ def test_backend_from_cli_overrides_project_config(tmp_path, monkeypatch):
     assert config.backend == "ssh"
 
 
+def test_inplace_backend_from_cli_freezes_current_directory(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    monkeypatch.chdir(tmp_path)
+
+    config = config_from_args(build_parser().parse_args(["--backend", "inplace"]))
+
+    assert config.backend == "inplace"
+    assert config.thread_overrides()["project_path"] == str(tmp_path)
+
+
+def test_inplace_short_flag_sets_backend_and_project(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    project = tmp_path / "project"
+    project.mkdir()
+
+    config = config_from_args(build_parser().parse_args(["-C", str(project)]))
+
+    assert config.backend == "inplace"
+    assert config.project_path == str(project)
+
+
+def test_inplace_short_flag_rejects_conflicting_options(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+    parser = build_parser()
+
+    with pytest.raises(SystemExit):
+        parser.parse_args(["-C", str(tmp_path), "--backend", "local"])
+    with pytest.raises(ValueError, match="cannot be combined"):
+        config_from_args(
+            parser.parse_args(["-C", str(tmp_path), "--project", str(tmp_path)])
+        )
+
+
 def test_runtime_modes_from_cli_override_project_config(tmp_path, monkeypatch):
     monkeypatch.setenv("HOME", str(tmp_path / "home"))
     monkeypatch.chdir(tmp_path)

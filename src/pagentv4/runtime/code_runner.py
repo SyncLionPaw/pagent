@@ -85,6 +85,7 @@ class CodeRunner(BaseRunner):
         ssh_config: str = "~/.ssh/config",
         ssh_workdir: str = "~/pagent",
         command_policy: str = "workdir",
+        project_path: str | Path | None = None,
         # thread / conversation 配置
         thread_id: str | None = None,
         conversation_id: str | None = None,
@@ -114,6 +115,11 @@ class CodeRunner(BaseRunner):
             ssh_config=ssh_config,
             ssh_workdir=ssh_workdir,
             command_policy=command_policy,
+            project_path=(
+                str(Path(project_path).expanduser().resolve())
+                if project_path is not None
+                else None
+            ),
         )
         thread = Thread.open(
             resolved_thread_id, root=root, overrides=resolved_spec.__dict__

@@ -2,9 +2,10 @@
 
 语言：[中文](/zh/pagentv4/sandbox) | [English](/pagentv4/sandbox)
 
-A **sandbox** is the agent's companion computer: an isolated workspace where
-it can run commands and read/write files. Paths are normalized to a virtual
-home (default `/home/agent`) across all backends.
+A **sandbox** is the agent's companion computer where it can run commands and
+read/write files. A backend can use a managed workspace or bind the project
+directory directly. Paths are normalized to a virtual home (default
+`/home/agent`) across all backends.
 
 ## Quick path: `Runner.create()`
 
@@ -38,10 +39,36 @@ Flow:
 
 | `backend=` | Notes |
 |------------|-------|
-| `"local"` | Default. Thread workspace on host under `~/.pagent/threads/<thread_id>/workspace/` |
+| `"local"` | Default. Thread workspace under `~/.pagent/threads/<thread_id>/workspaces/main/` |
+| `"inplace"` | Edit the bound project directory directly, like a local coding CLI |
 | `"docker"` | Container with bind mount |
 | `"podman"` | Same as docker, Podman CLI |
 | `"ssh"` | Remote host via asyncssh |
+
+Run the terminal agent against the current directory:
+
+```bash
+pagent -C .
+```
+
+Bind another directory:
+
+```bash
+pagent -C /path/to/project
+```
+
+`-C PROJECT` expands to `--backend inplace --project PROJECT`. The long form
+remains available for configuration and scripts.
+
+The project path is stored in the new thread's `thread.toml`. Resuming that
+thread edits the same directory even when pagent starts from another directory.
+Commands and file tools operate on the project itself, so review tool approvals
+and keep the project under version control.
+
+`inplace` exposes `run_command`, `read_file`, `write_file`, `str_replace`, and
+`list_dir`. Host bridge tools (`list_host_files`, `copy_from_host`,
+`copy_to_host`) are omitted because the project is already the working
+directory.
 
 ```python
 runner = await Runner.create(
@@ -78,8 +105,9 @@ With `thread_id="demo"`:
 ~/.pagent/threads/demo/workspace/
 ```
 
-Persistent runners get their workspace from the thread. The sandbox maps agent
-paths under `/home/agent` to this directory.
+Persistent runners using `local` get their workspace from the thread. With
+`inplace`, the sandbox maps agent paths under `/home/agent` to the bound project
+directory.
 
 ## Direct `Sandbox` API
 
@@ -112,9 +140,10 @@ Wording shown to the model avoids internal terms like "sandbox".
 
 ## Thread integration
 
-A [Thread](./core-types#thread) stores sandbox spec, messages, and workspace
-together under `~/.pagent/threads/<id>/`. Use this when you need the same
-computer and conversation to survive across process restarts — see
+A [Thread](./core-types#thread) stores the sandbox spec and messages under
+`~/.pagent/threads/<id>/`. The `local` backend also stores its workspace there;
+`inplace` stores the bound project path in `thread.toml`. Use a thread when the
+same computer and conversation must survive process restarts. See
 `examples/pagentv4/runner/sandbox.py`.
 
 ## Limits

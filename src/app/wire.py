@@ -380,6 +380,8 @@ def emit_thread_list(project_path: str | None = None) -> None:
 
 def resolved_backend_name(runner) -> str:
     """返回当前运行 sandbox 的真实 backend 名称。"""
+    if runner.thread.spec.backend == "inplace":
+        return "inplace"
     backend = runner.sandbox.backend
     inner = getattr(backend, "inner", backend)
     class_name = inner.__class__.__name__

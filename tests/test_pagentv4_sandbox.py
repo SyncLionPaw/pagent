@@ -7,7 +7,9 @@ import pytest
 
 from pagentv4 import Runner, Sandbox, SandboxLimits
 from pagentv4.sandbox import (
+    INPLACE_TOOL_NAMES,
     SANDBOX_TOOL_NAMES,
+    InplaceBackend,
     LocalBackend,
     SandboxSpec,
     build_backend,
@@ -67,6 +69,7 @@ def test_default_workspaces_root_is_user_home(tmp_path, monkeypatch):
 
 def test_build_backend_dispatch():
     assert isinstance(build_backend("local"), LocalBackend)
+    assert isinstance(build_backend("inplace"), InplaceBackend)
     assert isinstance(build_backend("docker"), DockerBackend)
     assert isinstance(build_backend("podman"), PodmanBackend)
     with pytest.raises(ValueError):
@@ -107,6 +110,40 @@ async def test_local_run_returns_stdout(tmp_path):
         assert result.exit_code == 0
         assert result.stdout.strip() == "hello"
         assert result.timed_out is False
+
+
+@pytest.mark.asyncio
+async def test_inplace_uses_project_tools_and_prompt(tmp_path):
+    async with await Sandbox.create(
+        backend="inplace",
+        workdir=str(tmp_path),
+        host_root=str(tmp_path),
+    ) as box:
+        assert [tool.name for tool in box.tools()] == list(INPLACE_TOOL_NAMES)
+        description = await box.describe()
+
+    assert "当前项目目录" in description
+    assert "无需复制或另行交付" in description
+    assert "list_host_files" not in description
+    assert "copy_from_host" not in description
+    assert "copy_to_host" not in description
+
+
+@pytest.mark.asyncio
+async def test_inplace_filters_host_bridge_tools(tmp_path):
+    async with await Sandbox.create(
+        backend="inplace",
+        workdir=str(tmp_path),
+        tools=("read_file", "copy_from_host", "copy_to_host"),
+    ) as box:
+        assert [tool.name for tool in box.tools()] == ["read_file"]
+
+    with pytest.raises(ValueError, match="at least one project tool"):
+        await Sandbox.create(
+            backend="inplace",
+            workdir=str(tmp_path),
+            tools=("copy_from_host",),
+        )
 
 
 @pytest.mark.asyncio
@@ -919,6 +956,20 @@ async def test_open_sandbox_for_spec_ssh_missing_host_raises_value_error():
 
     profile = ThreadSpec(backend="ssh", ssh_host=None)
     with pytest.raises(ValueError, match="ssh_host"):
+        await open_sandbox_for_spec(profile, "/tmp/x")
+
+
+@pytest.mark.asyncio
+async def test_open_sandbox_for_spec_inplace_requires_project_directory(tmp_path):
+    from pagentv4 import ThreadSpec
+    from pagentv4.sandbox import open_sandbox_for_spec
+
+    with pytest.raises(ValueError, match="requires project_path"):
+        await open_sandbox_for_spec(ThreadSpec(backend="inplace"), "/tmp/x")
+
+    missing = tmp_path / "missing"
+    profile = ThreadSpec(backend="inplace", project_path=str(missing))
+    with pytest.raises(ValueError, match="not a directory"):
         await open_sandbox_for_spec(profile, "/tmp/x")
 
 

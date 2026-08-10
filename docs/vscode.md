@@ -119,7 +119,7 @@ model = "deepseek-v4-flash"
 # base_url = "https://..."
 
 [sandbox]
-backend = "local" # local | docker | podman | ssh
+backend = "local" # local | inplace | docker | podman | ssh
 command_policy = "workdir"
 
 [sandbox.ssh] # read when backend = ssh

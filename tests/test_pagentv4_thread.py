@@ -11,6 +11,7 @@ from pagentv4.conversation import SqliteConversationStore
 from pagentv4.core.message import Message
 from pagentv4.ithread import validate_thread_id
 from pagentv4.runtime.thread import default_threads_root
+from pagentv4.sandbox.tools import INPLACE_TOOL_NAMES
 
 
 def test_default_threads_root_is_user_home(monkeypatch, tmp_path):
@@ -188,3 +189,76 @@ async def test_thread_project_binds_host_root_not_workdir(tmp_path):
         assert sandbox.host_root == str(project.resolve())
     finally:
         await sandbox.close()
+
+
+@pytest.mark.asyncio
+async def test_thread_inplace_edits_project_without_workspace(tmp_path):
+    project = tmp_path / "user-project"
+    project.mkdir()
+    threads = tmp_path / "threads"
+    thread = Thread.open(
+        "inplace",
+        root=threads,
+        overrides={"backend": "inplace", "project_path": str(project)},
+    )
+
+    assert thread.spec.project_path == str(project)
+    assert thread.spec.sandbox_tools == INPLACE_TOOL_NAMES
+    assert not (thread.root / "workspaces").exists()
+    payload = tomllib.loads(thread.spec_path.read_text())
+    assert payload["sandbox"]["tools"] == list(INPLACE_TOOL_NAMES)
+
+    sandbox = await thread.open_sandbox()
+    try:
+        assert sandbox.workdir == str(project)
+        assert sandbox.host_root == str(project)
+        assert [tool.name for tool in sandbox.tools()] == list(INPLACE_TOOL_NAMES)
+        description = await sandbox.describe()
+        assert "直接映射到当前项目" in description
+        assert "无需复制或另行交付" in description
+        assert "copy_from_host" not in description
+        assert "copy_to_host" not in description
+        await sandbox.files.write("edited.txt", "written in place")
+    finally:
+        await sandbox.close()
+
+    assert (project / "edited.txt").read_text() == "written in place"
+    assert not (thread.root / "workspaces").exists()
+
+
+@pytest.mark.asyncio
+async def test_thread_inplace_resume_uses_frozen_project_path(tmp_path, monkeypatch):
+    project = tmp_path / "user-project"
+    other = tmp_path / "other"
+    project.mkdir()
+    other.mkdir()
+    threads = tmp_path / "threads"
+    Thread.open(
+        "inplace",
+        root=threads,
+        overrides={"backend": "inplace", "project_path": str(project)},
+    )
+
+    monkeypatch.chdir(other)
+    resumed = Thread.open("inplace", root=threads)
+    sandbox = await resumed.open_sandbox()
+    try:
+        assert sandbox.workdir == str(project)
+    finally:
+        await sandbox.close()
+
+
+def test_thread_inplace_defaults_project_path_to_creation_cwd(tmp_path, monkeypatch):
+    project = tmp_path / "user-project"
+    project.mkdir()
+    monkeypatch.chdir(project)
+
+    thread = Thread.open(
+        "inplace",
+        root=tmp_path / "threads",
+        overrides={"backend": "inplace"},
+    )
+
+    assert thread.spec.project_path == str(project)
+    payload = tomllib.loads(thread.spec_path.read_text())
+    assert payload["project"]["path"] == str(project)

@@ -353,7 +353,7 @@ def new_session_options(
     default_image = (
         cfg.image or DEFAULT_SANDBOX_IMAGE
     ).strip() or DEFAULT_SANDBOX_IMAGE
-    backends = ["local"]
+    backends = ["local", "inplace"]
     if detect_container_runtime():
         backends.append("container")
     backends.append("ssh")

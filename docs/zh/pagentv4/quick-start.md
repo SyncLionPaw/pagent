@@ -81,7 +81,8 @@ finally:
     await runner.close()
 ```
 
-后端选项见 [Sandbox](./sandbox)（`local`、`docker`、`podman`、`ssh`）。
+后端选项见 [Sandbox](./sandbox)
+（`local`、`inplace`、`docker`、`podman`、`ssh`）。
 
 ## 轻量内存循环：`VanillaRunner`
 

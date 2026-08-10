@@ -12,8 +12,8 @@
             messages.jsonl   # 主对话
             messages.sub.<name>.<seq>.jsonl  # 子对话（delegate 产生），同 thread 落盘
 
-``[project].path`` 是用户侧工作目录：挂到 sandbox 的 host_root（list_host_files /
-copy_from_host / copy_to_host → ``<project>/artifacts``），不是沙箱 workdir。
+``[project].path`` 是用户侧工作目录。local/container/ssh 用它作为 host_root；
+inplace 直接把它作为 sandbox workdir。
 
 thread_id 是内部管理编号（thread-<时间戳>），metainfo.json 里的 title 才是面向
 用户展示的名字，前端列会话时优先显示它。
@@ -33,6 +33,7 @@ from ..conversation import JsonlConversationStore, SqliteConversationStore
 from ..core.message import Messages
 from ..paths import default_pagent_home
 from ..sandbox import Sandbox, open_sandbox_for_spec
+from ..sandbox.tools import resolve_inplace_tool_names
 from . import (
     MAIN_WORKSPACE_NAME,
     METAINFO_FILENAME,
@@ -47,6 +48,16 @@ from . import (
 def load_thread_toml(path: Path) -> dict:
     with path.open("rb") as fp:
         return tomllib.load(fp)
+
+
+def normalize_inplace_tools(spec: ThreadSpec) -> bool:
+    if spec.backend != "inplace":
+        return False
+    resolved = tuple(resolve_inplace_tool_names(spec.sandbox_tools))
+    if resolved == spec.sandbox_tools:
+        return False
+    spec.sandbox_tools = resolved
+    return True
 
 
 def format_toml_value(value: str | int | bool) -> str:
@@ -201,7 +212,8 @@ class Thread:
     async def open_sandbox(self, name: str = MAIN_WORKSPACE_NAME) -> Sandbox:
         """打开某个命名 workspace 的沙箱；主 agent 用 ``main``，子 agent 各自命名。"""
         workspace = self.workspace_path_for(name)
-        workspace.mkdir(parents=True, exist_ok=True)
+        if self.spec.backend != "inplace":
+            workspace.mkdir(parents=True, exist_ok=True)
         label = (
             f"thread {self.id!r}"
             if name == MAIN_WORKSPACE_NAME
@@ -223,8 +235,8 @@ class Thread:
     ) -> Thread:
         """打开或首次创建一个 thread。
 
-        - 目录不存在：把 `overrides`（缺省 {}）合进 ThreadSpec 默认值写入 thread.toml，
-          mkdir workspaces/main/。
+        - 目录不存在：把 `overrides`（缺省 {}）合进 ThreadSpec 默认值写入 thread.toml；
+          除 inplace 外，创建 workspaces/main/。
         - 目录已存在：读 thread.toml；`overrides` 里跟已存字段冲突的项被忽略，
           实际使用的 spec 仍以磁盘为准。`ignored_overrides` 记录哪些字段被丢了。
         """
@@ -239,7 +251,7 @@ class Thread:
             existing = ThreadSpec.from_dict(payload)
             # resume 时补写迟到的自描述字段：老 thread.toml 没有 [lock] 段，或
             # project_path 首次绑定，都在这里回填一次并落盘（唯一事实来源随之补全）。
-            backfilled = False
+            backfilled = normalize_inplace_tools(existing)
             if existing.project_path is None and isinstance(
                 provided.get("project_path"), str
             ):
@@ -256,9 +268,10 @@ class Thread:
                 )
             ignored = cls.diff_overrides(existing, provided)
             thread_dir.mkdir(parents=True, exist_ok=True)
-            (thread_dir / WORKSPACES_DIRNAME / MAIN_WORKSPACE_NAME).mkdir(
-                parents=True, exist_ok=True
-            )
+            if existing.backend != "inplace":
+                (thread_dir / WORKSPACES_DIRNAME / MAIN_WORKSPACE_NAME).mkdir(
+                    parents=True, exist_ok=True
+                )
             return cls(
                 id=thread_id,
                 root=thread_dir,
@@ -269,12 +282,16 @@ class Thread:
             )
 
         spec = ThreadSpec(**provided) if provided else ThreadSpec()
+        if spec.backend == "inplace" and spec.project_path is None:
+            spec.project_path = str(Path.cwd().resolve())
+        normalize_inplace_tools(spec)
         # 冻结时把 thread.toml 自身的绝对路径写进 [lock]（自指锚点，单一事实来源）。
         spec.file_self_fs_pos = str(spec_path.resolve())
         thread_dir.mkdir(parents=True, exist_ok=True)
-        (thread_dir / WORKSPACES_DIRNAME / MAIN_WORKSPACE_NAME).mkdir(
-            parents=True, exist_ok=True
-        )
+        if spec.backend != "inplace":
+            (thread_dir / WORKSPACES_DIRNAME / MAIN_WORKSPACE_NAME).mkdir(
+                parents=True, exist_ok=True
+            )
         spec_path.write_text(
             dump_thread_toml(spec.to_dict()),
             encoding="utf-8",

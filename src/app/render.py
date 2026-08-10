@@ -260,6 +260,8 @@ def format_sandbox_line(runner: Runner) -> str:
     if backend in ("docker", "podman"):
         image = thread.spec.image or "?"
         return f"{backend} · {image} · {runner.sandbox.home}"
+    if backend == "inplace":
+        return f"inplace · {runner.sandbox.workdir}"
     return f"local · {runner.sandbox.home}"
 
 

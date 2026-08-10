@@ -78,6 +78,13 @@ async def open_sub_sandbox(
     if not sub_spec.workspace:
         return parent_sandbox, False
 
+    if resolved_backend == "inplace":
+        raise ValueError(
+            f"sub agent workspace {sub_spec.workspace!r} cannot use backend "
+            "'inplace'; leave workspace empty to share the project, or set the "
+            "sub agent backend to 'local', 'container', 'docker', 'podman', or 'ssh'"
+        )
+
     workspace = thread.workspace_path_for(sub_spec.workspace)
     workspace.mkdir(parents=True, exist_ok=True)
     profile = replace(

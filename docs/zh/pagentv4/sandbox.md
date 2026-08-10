@@ -2,8 +2,8 @@
 
 语言：[中文](/zh/pagentv4/sandbox) | [English](/pagentv4/sandbox)
 
-**sandbox** 是 agent 的伴身电脑：隔离的工作空间，可跑命令、读写文件。
-各后端统一映射到虚拟 home（默认 `/home/agent`）。
+**sandbox** 是 agent 的伴身电脑，可跑命令、读写文件。后端可以使用独立 workspace，
+也可以直接绑定项目目录。各后端统一映射到虚拟 home（默认 `/home/agent`）。
 
 ## 快捷路径：`Runner.create()`
 
@@ -35,10 +35,34 @@ finally:
 
 | `backend=` | 说明 |
 |------------|------|
-| `"local"` | 默认。thread workspace 在 `~/.pagent/threads/<thread_id>/workspace/` |
+| `"local"` | 默认。thread workspace 在 `~/.pagent/threads/<thread_id>/workspaces/main/` |
+| `"inplace"` | 直接编辑绑定的项目目录，行为与本地 coding CLI 一致 |
 | `"docker"` | 容器 + bind mount |
 | `"podman"` | 同 docker，用 Podman CLI |
 | `"ssh"` | 经 asyncssh 连远端 |
+
+让终端 agent 直接编辑当前目录：
+
+```bash
+pagent -C .
+```
+
+绑定其他目录：
+
+```bash
+pagent -C /path/to/project
+```
+
+`-C PROJECT` 等同于 `--backend inplace --project PROJECT`。配置文件和脚本仍可使用
+完整参数。
+
+新 thread 会把项目路径写入 `thread.toml`。之后从其他目录恢复该 thread，仍会编辑
+原来的项目。命令和文件工具会直接修改项目内容，使用时应检查工具审批，并用版本控制
+保留修改记录。
+
+`inplace` 提供 `run_command`、`read_file`、`write_file`、`str_replace` 和
+`list_dir`。项目已经是工作目录，因此不挂载 `list_host_files`、`copy_from_host`
+和 `copy_to_host`。
 
 ```python
 runner = await Runner.create(
@@ -75,7 +99,8 @@ runner = await Runner.create(
 ~/.pagent/threads/demo/workspace/
 ```
 
-持久化 runner 从 thread 获取 workspace。sandbox 把 agent 看到的 `/home/agent` 下路径映射到此目录。
+`local` 模式的持久化 runner 从 thread 获取 workspace。`inplace` 模式会把 agent
+看到的 `/home/agent` 下路径映射到绑定的项目目录。
 
 ## 直接使用 `Sandbox` API
 
@@ -107,8 +132,9 @@ async with await Sandbox.create(backend="local", workspace_id="demo") as box:
 
 ## 与 Thread 集成
 
-[Thread](./core-types#thread) 在 `~/.pagent/threads/<id>/` 下同时保存
-sandbox spec、消息和 workspace。进程重启后仍要同一台电脑和同一段对话时用——见
+[Thread](./core-types#thread) 在 `~/.pagent/threads/<id>/` 下保存 sandbox spec 和消息。
+`local` 还会把 workspace 放在这里；`inplace` 会把绑定的项目路径写入 `thread.toml`。
+进程重启后仍要使用同一台电脑和同一段对话时使用 thread。示例见
 `examples/pagentv4/runner/sandbox.py`。
 
 ## 资源限制

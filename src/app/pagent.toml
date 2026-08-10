@@ -17,10 +17,11 @@ model = "deepseek-v4-flash"
 # base_url = ""  # 可选，覆盖 DeepSeek 默认 endpoint
 
 [sandbox]
-backend = "local" # local | container（自动探测 docker/podman）| docker | podman | ssh
+backend = "local" # local（thread workspace）| inplace（直接改项目）| container | docker | podman | ssh
 command_policy = "workdir" # open | workdir — workdir 拦截 run_command 里的越界路径；所有后端通用
 # 工具白名单：不设或空 = 放开全部 8 个；设了就只启用列出的（所有后端通用）。
 # 下面即全集 8 个，删去不想启用的即可。
+# inplace 会固定移除 list_host_files / copy_from_host / copy_to_host。
 tools = [
   "run_command",
   "read_file",
@@ -50,6 +51,7 @@ workdir = "~/pagent"
 # ── [project] 绑定资源，按 runner.location 分模式 ──────
 # location=local：绑本地用户目录 → host_root（list_host_files / copy_from_host 的根）。
 #   留空（默认）时 host_root 回退到启动 pagent 时的当前工作目录（cwd）。
+#   backend=inplace 时，该目录同时是文件工具和 run_command 的工作目录。
 # location=cloud：绑云端资源（仓库 / bucket…），cloud runner 未实现，选到即报错。
 [project.local]
 # path = ""  # 用户目录绝对/相对路径（等同 --project）

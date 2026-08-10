@@ -34,6 +34,8 @@ SANDBOX_TOOL_NAMES = (
     "copy_to_host",
 )
 
+INPLACE_TOOL_NAMES = SANDBOX_TOOL_NAMES[:5]
+
 
 def resolve_tool_names(allowed: tuple[str, ...] | list[str] | None) -> list[str]:
     """把白名单解析成实际启用的工具名（按 SANDBOX_TOOL_NAMES 固定顺序）。
@@ -50,6 +52,20 @@ def resolve_tool_names(allowed: tuple[str, ...] | list[str] | None) -> list[str]
             f"expected subset of {list(SANDBOX_TOOL_NAMES)}"
         )
     return [name for name in SANDBOX_TOOL_NAMES if name in picked]
+
+
+def resolve_inplace_tool_names(
+    allowed: tuple[str, ...] | list[str] | None,
+) -> list[str]:
+    """Resolve tools for direct project editing, excluding host bridge tools."""
+    requested = resolve_tool_names(allowed)
+    resolved = [name for name in requested if name in INPLACE_TOOL_NAMES]
+    if allowed and not resolved:
+        raise ValueError(
+            "inplace requires at least one project tool; available tools: "
+            f"{list(INPLACE_TOOL_NAMES)}"
+        )
+    return resolved
 
 
 def build_sandbox_tools(sandbox: Sandbox) -> list[FunctionTool]:

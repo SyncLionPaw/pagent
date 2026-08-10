@@ -7,6 +7,7 @@
 | [runners_demo.py](runners_demo.py) | `VanillaRunner` / `ChatRunner` / `CodeRunner` 各跑一例 |
 | [gsm8k_compare.py](gsm8k_compare.py) | GSM8K 小子集：无工具 vs `calc` 工具对比 |
 | [swe_bench_run.py](swe_bench_run.py) | SWE-bench_Lite 冒烟测试：`CodeRunner` 作 coding agent（20 题，分层评测） |
+| [harbor_pagent.py](harbor_pagent.py) | Terminal-Bench 2.1：在任务容器内运行 pagentv4 local harness |
 
 ## API
 
@@ -50,6 +51,58 @@ uv run --with pyarrow python -m examples.eval.swe_bench_run --limit 1 -v
 uv run --with pyarrow python -m examples.eval.swe_bench_run --limit 20
 uv run --with pyarrow python -m examples.eval.swe_bench_run --limit 20 --try-tests  # 含 best-effort 测试运行
 ```
+
+## Terminal-Bench 2.1
+
+Terminal-Bench 2.1 覆盖编译、调试、系统管理和文件操作等多步终端任务。Harbor
+为每题创建隔离环境并运行 verifier。`harbor_pagent.PagentV4Agent` 会把当前
+pagent 源码构建成 wheel，安装到任务容器，然后在容器的 task workdir 中启动
+pagentv4 `Runner + LocalBackend`。模型调用、命令执行和文件操作都发生在任务容器内。
+
+前置条件：
+
+- Python 3.12+
+- Docker Engine 与 `docker compose`
+- 一个支持 tool calling 的 OpenAI-compatible 模型
+
+先运行 Harbor 的 oracle，确认容器和数据集可用：
+
+```bash
+uvx --python 3.12 --from harbor==0.20.0 harbor run \
+  -d terminal-bench/terminal-bench-2-1 \
+  -a oracle \
+  -n 1 -k 1 -l 1
+```
+
+用 pagentv4 跑一道题：
+
+```bash
+export DEEPSEEK_API_KEY="..."
+
+uvx --python 3.12 --from harbor==0.20.0 --with . harbor run \
+  -d terminal-bench/terminal-bench-2-1 \
+  -a examples.eval.harbor_pagent:PagentV4Agent \
+  -m deepseek/deepseek-chat \
+  -n 1 -k 1 -l 1 \
+  --ak max_turns=100
+```
+
+自定义 OpenAI-compatible endpoint（该地址需要能从任务容器访问）：
+
+```bash
+export PAGENT_BENCH_BASE_URL="https://api.example.com/v1"
+export PAGENT_BENCH_API_KEY="not-needed"
+
+uvx --python 3.12 --from harbor==0.20.0 --with . harbor run \
+  -d terminal-bench/terminal-bench-2-1 \
+  -a examples.eval.harbor_pagent:PagentV4Agent \
+  -m local/model-name \
+  -n 1 -k 1 -l 1
+```
+
+结果、运行日志和 pagent 对话轨迹都写入 Harbor job 目录下对应 trial 的 `agent/`
+目录。确认单题链路后，再提高 `-l` 任务数和 `-n` 并发数；固定模型、prompt、
+`max_turns`、数据集版本和 `-k` 后，不同 harness 版本的结果才可比较。
 
 ### SWE-bench 状态分档
 

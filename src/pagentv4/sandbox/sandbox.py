@@ -206,6 +206,11 @@ class Sandbox:
         resolved_host_root = os.path.abspath(
             os.path.expanduser(host_root) if host_root else os.getcwd()
         )
+        resolved_tools = tuple(tools)
+        if isinstance(backend, str) and backend.lower() == "inplace":
+            from .tools import resolve_inplace_tool_names
+
+            resolved_tools = tuple(resolve_inplace_tool_names(resolved_tools))
         spec = SandboxSpec(
             workspace_id=workspace_id,
             workdir=resolved_workdir,
@@ -218,7 +223,7 @@ class Sandbox:
             default_limits=default_limits or SandboxLimits(),
             container_ttl_seconds=container_ttl_seconds,
             command_policy=validate_command_policy(command_policy),
-            tools=tuple(tools),
+            tools=resolved_tools,
         )
         instance = build_backend(backend) if isinstance(backend, str) else backend
         if auto_restart:
@@ -544,6 +549,10 @@ def build_backend(name: str) -> Backend:
         from .backends.local import LocalBackend
 
         return LocalBackend()
+    if key == "inplace":
+        from .backends.inplace import InplaceBackend
+
+        return InplaceBackend()
     if key == "container":
         return build_backend(detect_container_cli())
     if key == "docker":
@@ -559,7 +568,8 @@ def build_backend(name: str) -> Backend:
 
         return SshBackend()
     raise ValueError(
-        f"unknown backend: {name!r}; expected one of local/container/docker/podman/ssh"
+        f"unknown backend: {name!r}; "
+        "expected one of local/inplace/container/docker/podman/ssh"
     )
 
 
@@ -625,6 +635,22 @@ async def open_sandbox_for_spec(
             tools=tools,
         )
 
+    if backend == "inplace":
+        if host_root is None:
+            raise ValueError(f"{prefix}backend 'inplace' requires project_path")
+        if not os.path.isdir(host_root):
+            raise ValueError(
+                f"{prefix}backend 'inplace' project_path is not a directory: "
+                f"{host_root}"
+            )
+        return await Sandbox.create(
+            backend="inplace",
+            workdir=host_root,
+            host_root=host_root,
+            command_policy=profile.command_policy,
+            tools=tools,
+        )
+
     if backend in ("container", "docker", "podman"):
         if not profile.image:
             raise ValueError(f"{prefix}backend {backend!r} requires image")
@@ -659,5 +685,5 @@ async def open_sandbox_for_spec(
 
     raise ValueError(
         f"{prefix}unknown backend: {backend!r}; "
-        "expected one of local/container/docker/podman/ssh"
+        "expected one of local/inplace/container/docker/podman/ssh"
     )

@@ -30,10 +30,11 @@ api_key = "" # 空串按未设处理，回退环境变量 DEEPSEEK_API_KEY
 
 # ── [sandbox] 工具执行环境 ────────────────────────────
 [sandbox]
-backend = "local" # 标签：local | container（自动探测 docker/podman）| docker | podman | ssh
+backend = "local" # local（thread workspace）| inplace（直接改项目）| container | docker | podman | ssh
 command_policy = "workdir" # open（不限）| workdir（拦截 run_command 越界路径）；所有后端通用
 # tools 工具白名单：不设或空 = 放开全部 8 个；设了就只启用列出的（所有后端通用）。
 # 下面即全集 8 个，删去不想启用的即可。
+# inplace 会固定移除 list_host_files / copy_from_host / copy_to_host。
 tools = [
   "run_command",
   "read_file",
@@ -63,6 +64,7 @@ workdir = "~/pagent" # 远端工作目录，agent 只能操作此目录（自动
 # location=local：绑本地用户目录 → host_root（agent 能观察/取文件的宿主机根）。
 #   list_host_files 只列它之下，copy_from_host 从它取，copy_to_host 写它的 artifacts/。
 #   留空（默认）时 host_root 回退到启动 pagent 时的当前工作目录（cwd）。
+#   backend=inplace 时，该目录同时是文件工具和 run_command 的工作目录。
 [project.local]
 # path = ""                       # 用户目录绝对/相对路径（等同 --project）
 

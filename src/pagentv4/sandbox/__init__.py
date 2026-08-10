@@ -1,4 +1,4 @@
-from .backends import LocalBackend
+from .backends import InplaceBackend, LocalBackend
 from .backends.ssh import SshConnection
 from .base import (
     Backend,
@@ -30,12 +30,19 @@ from .sandbox import (
     detect_container_cli,
     open_sandbox_for_spec,
 )
-from .tools import SANDBOX_TOOL_NAMES, build_sandbox_tools, resolve_tool_names
+from .tools import (
+    INPLACE_TOOL_NAMES,
+    SANDBOX_TOOL_NAMES,
+    build_sandbox_tools,
+    resolve_tool_names,
+)
 from .workspace import default_workspaces_root, resolve_workdir
 
 __all__ = [
     "BROWSER_ENVIRONMENT_EXTRA",
     "COMPUTER_DESCRIPTION_TEMPLATE",
+    "INPLACE_TOOL_NAMES",
+    "InplaceBackend",
     "NODE_ENVIRONMENT_EXTRA",
     "SANDBOX_TOOL_NAMES",
     "UV_ENVIRONMENT_EXTRA",

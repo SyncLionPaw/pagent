@@ -455,11 +455,19 @@ def build_parser() -> argparse.ArgumentParser:
         default=8848,
         help="--http 监听端口（默认 8848）",
     )
-    parser.add_argument(
+    backend_group = parser.add_mutually_exclusive_group()
+    backend_group.add_argument(
         "--backend",
-        choices=("local", "container", "docker", "podman", "ssh"),
+        choices=("local", "inplace", "container", "docker", "podman", "ssh"),
         default=None,
         help="覆盖 sandbox backend",
+    )
+    backend_group.add_argument(
+        "-C",
+        "--inplace",
+        metavar="PROJECT",
+        default=None,
+        help="直接编辑 PROJECT（等同 --backend inplace --project PROJECT）",
     )
     parser.add_argument(
         "--project",
@@ -496,6 +504,11 @@ def config_from_args(args: argparse.Namespace) -> ReplConfig:
         fields["permission_mode"] = "auto"
     if args.backend:
         fields["backend"] = args.backend
+    if args.inplace and args.project:
+        raise ValueError("-C/--inplace cannot be combined with --project")
+    if args.inplace:
+        fields["backend"] = "inplace"
+        fields["project_path"] = os.path.abspath(os.path.expanduser(args.inplace))
     if args.project:
         # 归一化成绝对路径：thread.toml 存字面量，相对路径 resume 时会随 cwd 漂移。
         fields["project_path"] = os.path.abspath(os.path.expanduser(args.project))

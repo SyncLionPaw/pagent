@@ -83,7 +83,8 @@ finally:
     await runner.close()
 ```
 
-See [Sandbox](./sandbox) for backends (`local`, `docker`, `podman`, `ssh`).
+See [Sandbox](./sandbox) for backends
+(`local`, `inplace`, `docker`, `podman`, `ssh`).
 
 ## Streaming modes
 

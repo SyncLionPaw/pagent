@@ -13,6 +13,7 @@ from pagentv4.tools.delegate import (
     make_delegate_tools,
     make_subagent_tool,
     next_sub_conversation_id,
+    open_sub_sandbox,
     provider_with_model,
 )
 
@@ -100,6 +101,20 @@ def test_next_sub_conversation_id_increments():
     assert (
         next_sub_conversation_id(store, "messages", "writer") == "messages.sub.writer.0"
     )
+
+
+@pytest.mark.asyncio
+async def test_inplace_subagent_rejects_independent_workspace():
+    thread = types.SimpleNamespace(
+        spec=ThreadSpec(backend="inplace", project_path="/tmp/project"),
+    )
+
+    with pytest.raises(ValueError, match="cannot use backend 'inplace'"):
+        await open_sub_sandbox(
+            thread,
+            SubAgentSpec(workspace="coder"),
+            parent_sandbox=None,
+        )
 
 
 @pytest.mark.asyncio
