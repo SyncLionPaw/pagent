@@ -1164,11 +1164,15 @@ Fill in three things:
 
 | Field | What to pick |
 | --- | --- |
-| **沙箱类型** (Sandbox) | Pick **本机** (Local — default, no Docker) |
+| **沙箱类型** (Sandbox) | Pick **本机** for an independent workspace, or **直接编辑** to modify the selected project folder in place |
 | **镜像** (Image) | Only appears for **容器** (Container); a local pagent image like `pagent:latest` |
-| **项目目录** (Project folder) | Click **浏览** (Browse) and pick a folder — the AI reads/writes files here |
+| **项目目录** (Project folder) | Click **浏览** (Browse) and pick the project for this task |
 
 Click **创建会话** (Create session), type in the box at the bottom, and press **Enter** to send (**Shift+Enter** for a new line).
+
+**直接编辑** works like starting a coding agent inside the project folder. File changes
+take effect immediately, so keep the project under version control. In this mode, use
+the **项目** panel to browse files; the separate **沙箱** tab is hidden.
 
 Try saying:
 
