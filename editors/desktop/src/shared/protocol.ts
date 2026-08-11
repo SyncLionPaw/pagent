@@ -85,7 +85,13 @@ export type SandboxStatus = {
 };
 
 /** 新建会话可选的 sandbox backend（与 wire / ThreadSpec 对齐）。 */
-export type SandboxBackendOption = "local" | "container" | "docker" | "podman" | "ssh";
+export type SandboxBackendOption =
+    | "local"
+    | "inplace"
+    | "container"
+    | "docker"
+    | "podman"
+    | "ssh";
 
 export type EnvironmentCheck = {
     uvInstalled: boolean;

@@ -57,12 +57,13 @@ uv run --with pyarrow python -m examples.eval.swe_bench_run --limit 20 --try-tes
 Terminal-Bench 2.1 覆盖编译、调试、系统管理和文件操作等多步终端任务。Harbor
 为每题创建隔离环境并运行 verifier。`harbor_pagent.PagentV4Agent` 会把当前
 pagent 源码构建成 wheel，安装到任务容器，然后在容器的 task workdir 中启动
-pagentv4 `Runner + LocalBackend`。模型调用、命令执行和文件操作都发生在任务容器内。
+pagentv4 `CodeRunner + InplaceBackend`。命令执行和文件操作都发生在任务容器内，
+模型通过配置的 API 调用。
 
 前置条件：
 
 - Python 3.12+
-- Docker Engine 与 `docker compose`
+- Docker Engine 与 `docker compose`，或提供 Docker-compatible socket 的 Podman
 - 一个支持 tool calling 的 OpenAI-compatible 模型
 
 先运行 Harbor 的 oracle，确认容器和数据集可用：
@@ -79,9 +80,9 @@ uvx --python 3.12 --from harbor==0.20.0 harbor run \
 ```bash
 export DEEPSEEK_API_KEY="..."
 
-uvx --python 3.12 --from harbor==0.20.0 --with . harbor run \
+uvx --python 3.12 --from harbor==0.20.0 --with-editable . harbor run \
   -d terminal-bench/terminal-bench-2-1 \
-  -a examples.eval.harbor_pagent:PagentV4Agent \
+  -a pagentv4.adapters.harbor:PagentV4Agent \
   -m deepseek/deepseek-chat \
   -n 1 -k 1 -l 1 \
   --ak max_turns=100
@@ -93,9 +94,9 @@ uvx --python 3.12 --from harbor==0.20.0 --with . harbor run \
 export PAGENT_BENCH_BASE_URL="https://api.example.com/v1"
 export PAGENT_BENCH_API_KEY="not-needed"
 
-uvx --python 3.12 --from harbor==0.20.0 --with . harbor run \
+uvx --python 3.12 --from harbor==0.20.0 --with-editable . harbor run \
   -d terminal-bench/terminal-bench-2-1 \
-  -a examples.eval.harbor_pagent:PagentV4Agent \
+  -a pagentv4.adapters.harbor:PagentV4Agent \
   -m local/model-name \
   -n 1 -k 1 -l 1
 ```
@@ -103,6 +104,33 @@ uvx --python 3.12 --from harbor==0.20.0 --with . harbor run \
 结果、运行日志和 pagent 对话轨迹都写入 Harbor job 目录下对应 trial 的 `agent/`
 目录。确认单题链路后，再提高 `-l` 任务数和 `-n` 并发数；固定模型、prompt、
 `max_turns`、数据集版本和 `-k` 后，不同 harness 版本的结果才可比较。
+
+### SWE-bench Verified
+
+SWE-bench Verified 共 500 题。先用 `--install-only` 验证镜像、wheel 和 agent
+安装链路，该命令不会调用模型：
+
+```bash
+uvx --python 3.12 --from harbor==0.20.0 --with-editable . harbor run \
+  --install-only -y \
+  -d swe-bench/swe-bench-verified \
+  -a pagentv4.adapters.harbor:PagentV4Agent \
+  -m deepseek/deepseek-chat \
+  -n 1 -k 1 -l 1
+```
+
+安装验证通过后去掉 `--install-only` 运行一道题。确认结果和轨迹正常，再逐步增加
+`-l` 和 `-n`。首次运行每个仓库版本时需要下载较大的官方测试镜像。
+
+在 macOS 上使用 Podman 时，安装 Docker CLI 与 Compose 插件，并让 Harbor 通过
+Podman 的 Docker-compatible socket 访问容器引擎：
+
+```bash
+export DOCKER_HOST="unix://$(podman machine inspect \
+  --format '{{.ConnectionInfo.PodmanSocket.Path}}')"
+docker version
+docker compose version
+```
 
 ### SWE-bench 状态分档
 

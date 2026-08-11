@@ -316,6 +316,9 @@ function sandboxBackendIconName(runtime: RuntimeState): DesktopIconName {
   if (backend === "local") {
     return "hard-drive";
   }
+  if (backend === "inplace") {
+    return "folder-open";
+  }
   if (backend === "container" || backend === "docker" || backend === "podman") {
     return "container";
   }
@@ -326,6 +329,9 @@ function sandboxBackendIconName(runtime: RuntimeState): DesktopIconName {
 }
 
 function sessionSandboxLabel(backend: string): string {
+  if (backend === "inplace") {
+    return "inplace";
+  }
   if (backend === "container" || backend === "docker" || backend === "podman") {
     return "container";
   }
@@ -336,6 +342,9 @@ function sessionSandboxLabel(backend: string): string {
 }
 
 function sessionSandboxIconName(backend: string): DesktopIconName {
+  if (backend === "inplace") {
+    return "folder-open";
+  }
   if (backend === "container" || backend === "docker" || backend === "podman") {
     return "container";
   }
@@ -349,6 +358,9 @@ function sandboxBackendOptionLabel(backend: SandboxBackendOption): string {
   if (backend === "local") {
     return "本机";
   }
+  if (backend === "inplace") {
+    return "直接编辑";
+  }
   if (backend === "container" || backend === "docker" || backend === "podman") {
     return "容器";
   }
@@ -358,6 +370,9 @@ function sandboxBackendOptionLabel(backend: SandboxBackendOption): string {
 function sandboxBackendOptionSub(backend: SandboxBackendOption): string {
   if (backend === "local") {
     return "local";
+  }
+  if (backend === "inplace") {
+    return "inplace";
   }
   if (backend === "container") {
     return "auto";
@@ -374,6 +389,9 @@ function sandboxBackendOptionSub(backend: SandboxBackendOption): string {
 function sandboxBackendOptionHint(backend: SandboxBackendOption): string {
   if (backend === "local") {
     return "命令与文件落在本机 thread workspace，无需 Docker。";
+  }
+  if (backend === "inplace") {
+    return "命令与文件工具直接操作所选项目目录；修改立即生效，建议使用 Git 保留记录。";
   }
   if (backend === "container" || backend === "docker" || backend === "podman") {
     return "命令在容器内执行；工作区仍挂载到本机 thread workspace。";
@@ -579,6 +597,9 @@ function renderNewSessionForm(
     : (images.includes(options.defaultImage) ? options.defaultImage : images[0]);
   const isContainer =
     backend === "container" || backend === "docker" || backend === "podman";
+  const projectHint = backend === "inplace"
+    ? "Agent 直接修改这个目录，不创建独立 workspace。"
+    : "绑定宿主项目（host_root）；agent 沙箱 workspace 仍按会话自动创建。";
   const backendCards = backends
     .map((item) => {
       const active = item === backend ? " active" : "";
@@ -658,7 +679,7 @@ function renderNewSessionForm(
           <input class="new-session-input" data-project-path type="text" value="${escapeHtml(draft.projectPath)}" spellcheck="false" />
           <button class="new-session-browse" type="button" data-pick-project>浏览</button>
         </div>
-        <div class="new-session-hint">绑定宿主项目（host_root）；agent 沙箱 workspace 仍按会话自动创建。</div>
+        <div class="new-session-hint">${escapeHtml(projectHint)}</div>
       </label>
       ${sshBlock}
       <div class="new-session-actions">
@@ -775,6 +796,9 @@ function renderPathRootCard(rootPath: string, label = "本机路径"): string {
 function sandboxPathRootLabel(backend: string): string {
   if (backend === "local") {
     return "本机沙箱";
+  }
+  if (backend === "inplace") {
+    return "项目目录";
   }
   if (backend === "container" || backend === "docker" || backend === "podman") {
     return "容器沙箱";
@@ -1188,7 +1212,7 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             <div class="pane-topbar right-topbar">
               <div class="tab-group" role="tablist" aria-label="右侧面板">
                 <button class="tab-button active" type="button" data-tab="project">项目</button>
-                <button class="tab-button" type="button" data-tab="sandbox">沙箱</button>
+                <button class="tab-button" type="button" data-tab="sandbox" data-sandbox-tab>沙箱</button>
                 <button class="tab-button" type="button" data-tab="terminal">Log</button>
               </div>
             </div>
@@ -1279,7 +1303,7 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             <button class="collapsed-icon" type="button" data-tab="project" title="项目">
               ${renderIcon("folder")}
             </button>
-            <button class="collapsed-icon" type="button" data-tab="sandbox" title="沙箱">
+            <button class="collapsed-icon" type="button" data-tab="sandbox" data-sandbox-tab title="沙箱">
               ${renderIcon("folder-tree")}
             </button>
             <button class="collapsed-expand collapsed-expand-bottom" type="button" data-expand-right title="展开右栏">
@@ -3328,6 +3352,19 @@ async function start(): Promise<void> {
     applyProjectPane();
   }
 
+  function applySandboxTabVisibility(): void {
+    const hidden = uiState.runtime.sandboxBackend === "inplace";
+    document.querySelectorAll<HTMLElement>("[data-sandbox-tab]").forEach((node) => {
+      node.hidden = hidden;
+    });
+    if (!hidden || uiState.activeTab !== "sandbox") {
+      return;
+    }
+    uiState.activeTab = "project";
+    applyRightTab();
+    void ensureProjectPanelLoaded();
+  }
+
   function appendTerminalEntry(kind: TerminalEntryKind, text: string): void {
     const normalized = summarize(text, 200);
     if (!normalized) {
@@ -3407,6 +3444,7 @@ async function start(): Promise<void> {
         status.threadId === uiState.runtime.currentThreadId ? status.alive : undefined,
     };
     applyHeader();
+    applySandboxTabVisibility();
     renderTree();
     renderCapabilities();
   }
@@ -3477,6 +3515,7 @@ async function start(): Promise<void> {
     }
     setComposerHint(state.lastError ?? "");
     applyHeader();
+    applySandboxTabVisibility();
     applyActivityState();
     applyYoloButton();
     renderCapabilities();

@@ -277,9 +277,9 @@ function commandExists(cli: string): boolean {
   }
 }
 
-/** 新建会话可选 backend：local / container（自动探测 docker|podman）/ ssh。 */
+/** 新建会话可选 backend：local / inplace / container（自动探测）/ ssh。 */
 function detectAvailableBackends(): SandboxBackendOption[] {
-  const backends: SandboxBackendOption[] = ["local"];
+  const backends: SandboxBackendOption[] = ["local", "inplace"];
   if (commandExists("docker") || commandExists("podman")) {
     backends.push("container");
   }
