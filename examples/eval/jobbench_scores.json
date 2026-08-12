@@ -1,0 +1,2382 @@
+{
+  "easy/OpenCode": {
+    "summary": {
+      "n": 63,
+      "macro": 0.7305898758275764,
+      "micro": 0.7550949913644214,
+      "median": 0.7807017543859649,
+      "stdev": 0.21724868544077416,
+      "max": 1.0,
+      "min": 0.09411764705882353,
+      "total": 4372,
+      "maxsum": 5790,
+      "ge08": 26,
+      "mid": 28,
+      "lt05": 9,
+      "zero": 0
+    },
+    "rows": [
+      {
+        "occ": "biostatisticians",
+        "task": "task1",
+        "total": 64,
+        "max": 80,
+        "norm": 0.8,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "biostatisticians",
+        "task": "task2",
+        "total": 123,
+        "max": 145,
+        "norm": 0.8482758620689655,
+        "passed": 14,
+        "count": 17
+      },
+      {
+        "occ": "bookkeeping_accounting_and_auditing_clerks",
+        "task": "task1",
+        "total": 45,
+        "max": 72,
+        "norm": 0.625,
+        "passed": 5,
+        "count": 9
+      },
+      {
+        "occ": "civil_engineers",
+        "task": "task1",
+        "total": 49,
+        "max": 72,
+        "norm": 0.6805555555555556,
+        "passed": 6,
+        "count": 9
+      },
+      {
+        "occ": "computer_and_information_research_scientists",
+        "task": "task1",
+        "total": 67,
+        "max": 84,
+        "norm": 0.7976190476190477,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "computer_and_information_systems_managers",
+        "task": "task1",
+        "total": 43,
+        "max": 78,
+        "norm": 0.5512820512820513,
+        "passed": 5,
+        "count": 10
+      },
+      {
+        "occ": "computer_and_information_systems_managers",
+        "task": "task2",
+        "total": 115,
+        "max": 147,
+        "norm": 0.782312925170068,
+        "passed": 14,
+        "count": 18
+      },
+      {
+        "occ": "computer_user_support_specialists",
+        "task": "task1",
+        "total": 57,
+        "max": 75,
+        "norm": 0.76,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "computer_user_support_specialists",
+        "task": "task2",
+        "total": 70,
+        "max": 76,
+        "norm": 0.9210526315789473,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "court_clerks",
+        "task": "task1",
+        "total": 127,
+        "max": 134,
+        "norm": 0.9477611940298507,
+        "passed": 16,
+        "count": 17
+      },
+      {
+        "occ": "court_clerks",
+        "task": "task2",
+        "total": 158,
+        "max": 166,
+        "norm": 0.9518072289156626,
+        "passed": 18,
+        "count": 19
+      },
+      {
+        "occ": "customer_service_representatives",
+        "task": "task1",
+        "total": 51,
+        "max": 67,
+        "norm": 0.7611940298507462,
+        "passed": 6,
+        "count": 8
+      },
+      {
+        "occ": "customer_service_representatives",
+        "task": "task2",
+        "total": 71,
+        "max": 71,
+        "norm": 1.0,
+        "passed": 9,
+        "count": 9
+      },
+      {
+        "occ": "data_entry_keyers",
+        "task": "task1",
+        "total": 35,
+        "max": 96,
+        "norm": 0.3645833333333333,
+        "passed": 4,
+        "count": 11
+      },
+      {
+        "occ": "data_entry_keyers",
+        "task": "task2",
+        "total": 182,
+        "max": 182,
+        "norm": 1.0,
+        "passed": 21,
+        "count": 21
+      },
+      {
+        "occ": "financial_managers_branch_or_department",
+        "task": "task1",
+        "total": 64,
+        "max": 70,
+        "norm": 0.9142857142857143,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "human_resources_specialists",
+        "task": "task1",
+        "total": 68,
+        "max": 86,
+        "norm": 0.7906976744186046,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "human_resources_specialists",
+        "task": "task2",
+        "total": 63,
+        "max": 78,
+        "norm": 0.8076923076923077,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "lawyers",
+        "task": "task1",
+        "total": 163,
+        "max": 163,
+        "norm": 1.0,
+        "passed": 18,
+        "count": 18
+      },
+      {
+        "occ": "lawyers",
+        "task": "task2",
+        "total": 128,
+        "max": 152,
+        "norm": 0.8421052631578947,
+        "passed": 15,
+        "count": 18
+      },
+      {
+        "occ": "licensing_examiners_and_inspectors",
+        "task": "task2",
+        "total": 72,
+        "max": 97,
+        "norm": 0.7422680412371134,
+        "passed": 8,
+        "count": 11
+      },
+      {
+        "occ": "licensing_examiners_and_inspectors",
+        "task": "task3",
+        "total": 8,
+        "max": 85,
+        "norm": 0.09411764705882353,
+        "passed": 1,
+        "count": 10
+      },
+      {
+        "occ": "management_analysts",
+        "task": "task1",
+        "total": 29,
+        "max": 77,
+        "norm": 0.37662337662337664,
+        "passed": 3,
+        "count": 9
+      },
+      {
+        "occ": "management_analysts",
+        "task": "task2",
+        "total": 32,
+        "max": 76,
+        "norm": 0.42105263157894735,
+        "passed": 4,
+        "count": 9
+      },
+      {
+        "occ": "mechanical_engineering_technicians",
+        "task": "task1",
+        "total": 62,
+        "max": 78,
+        "norm": 0.7948717948717948,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "mechanical_engineers",
+        "task": "task1",
+        "total": 25,
+        "max": 74,
+        "norm": 0.33783783783783783,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "mechanical_engineers",
+        "task": "task2",
+        "total": 52,
+        "max": 78,
+        "norm": 0.6666666666666666,
+        "passed": 7,
+        "count": 10
+      },
+      {
+        "occ": "mechanical_engineers",
+        "task": "task3",
+        "total": 61,
+        "max": 74,
+        "norm": 0.8243243243243243,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "medical_and_health_services_managers",
+        "task": "task1",
+        "total": 131,
+        "max": 148,
+        "norm": 0.8851351351351351,
+        "passed": 16,
+        "count": 18
+      },
+      {
+        "occ": "medical_secretaries",
+        "task": "task1",
+        "total": 54,
+        "max": 81,
+        "norm": 0.6666666666666666,
+        "passed": 8,
+        "count": 11
+      },
+      {
+        "occ": "online_merchants",
+        "task": "task1",
+        "total": 59,
+        "max": 64,
+        "norm": 0.921875,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "online_merchants",
+        "task": "task2",
+        "total": 165,
+        "max": 173,
+        "norm": 0.953757225433526,
+        "passed": 20,
+        "count": 21
+      },
+      {
+        "occ": "online_merchants",
+        "task": "task3",
+        "total": 141,
+        "max": 166,
+        "norm": 0.8493975903614458,
+        "passed": 18,
+        "count": 21
+      },
+      {
+        "occ": "personal_financial_advisors",
+        "task": "task1",
+        "total": 28,
+        "max": 70,
+        "norm": 0.4,
+        "passed": 3,
+        "count": 8
+      },
+      {
+        "occ": "personal_financial_advisors",
+        "task": "task2",
+        "total": 48,
+        "max": 74,
+        "norm": 0.6486486486486487,
+        "passed": 6,
+        "count": 9
+      },
+      {
+        "occ": "petroleum_engineers",
+        "task": "task1",
+        "total": 54,
+        "max": 80,
+        "norm": 0.675,
+        "passed": 6,
+        "count": 9
+      },
+      {
+        "occ": "petroleum_engineers",
+        "task": "task2",
+        "total": 51,
+        "max": 68,
+        "norm": 0.75,
+        "passed": 6,
+        "count": 8
+      },
+      {
+        "occ": "police_fire_and_ambulance_dispatchers",
+        "task": "task1",
+        "total": 56,
+        "max": 73,
+        "norm": 0.7671232876712328,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "police_fire_and_ambulance_dispatchers",
+        "task": "task2",
+        "total": 89,
+        "max": 114,
+        "norm": 0.7807017543859649,
+        "passed": 13,
+        "count": 16
+      },
+      {
+        "occ": "police_fire_and_ambulance_dispatchers",
+        "task": "task3",
+        "total": 77,
+        "max": 85,
+        "norm": 0.9058823529411765,
+        "passed": 9,
+        "count": 10
+      },
+      {
+        "occ": "producers",
+        "task": "task1",
+        "total": 54,
+        "max": 77,
+        "norm": 0.7012987012987013,
+        "passed": 7,
+        "count": 10
+      },
+      {
+        "occ": "producers",
+        "task": "task2",
+        "total": 61,
+        "max": 76,
+        "norm": 0.8026315789473685,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "purchasing_agents_except_wholesale_retail_and_farm_products",
+        "task": "task1",
+        "total": 66,
+        "max": 74,
+        "norm": 0.8918918918918919,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "purchasing_agents_except_wholesale_retail_and_farm_products",
+        "task": "task2",
+        "total": 66,
+        "max": 73,
+        "norm": 0.9041095890410958,
+        "passed": 9,
+        "count": 10
+      },
+      {
+        "occ": "reporters_and_correspondents",
+        "task": "task1",
+        "total": 44,
+        "max": 64,
+        "norm": 0.6875,
+        "passed": 6,
+        "count": 9
+      },
+      {
+        "occ": "reporters_and_correspondents",
+        "task": "task2",
+        "total": 23,
+        "max": 81,
+        "norm": 0.2839506172839506,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "reporters_and_correspondents",
+        "task": "task3",
+        "total": 10,
+        "max": 88,
+        "norm": 0.11363636363636363,
+        "passed": 1,
+        "count": 11
+      },
+      {
+        "occ": "sales_agents_securities_and_commodities",
+        "task": "task1",
+        "total": 68,
+        "max": 68,
+        "norm": 1.0,
+        "passed": 8,
+        "count": 8
+      },
+      {
+        "occ": "sales_agents_securities_and_commodities",
+        "task": "task2",
+        "total": 17,
+        "max": 77,
+        "norm": 0.22077922077922077,
+        "passed": 2,
+        "count": 10
+      },
+      {
+        "occ": "sales_representatives_wholesale_and_manufacturing_technical_and_scientific_products",
+        "task": "task1",
+        "total": 61,
+        "max": 79,
+        "norm": 0.7721518987341772,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "sales_representatives_wholesale_and_manufacturing_technical_and_scientific_products",
+        "task": "task2",
+        "total": 56,
+        "max": 80,
+        "norm": 0.7,
+        "passed": 7,
+        "count": 10
+      },
+      {
+        "occ": "secretaries_and_administrative_assistants_except_legal_medical_and_executive",
+        "task": "task1",
+        "total": 81,
+        "max": 81,
+        "norm": 1.0,
+        "passed": 10,
+        "count": 10
+      },
+      {
+        "occ": "secretaries_and_administrative_assistants_except_legal_medical_and_executive",
+        "task": "task2",
+        "total": 45,
+        "max": 73,
+        "norm": 0.6164383561643836,
+        "passed": 5,
+        "count": 9
+      },
+      {
+        "occ": "social_science_research_assistants",
+        "task": "task1",
+        "total": 49,
+        "max": 94,
+        "norm": 0.5212765957446809,
+        "passed": 6,
+        "count": 11
+      },
+      {
+        "occ": "sociology_teachers_postsecondary",
+        "task": "task1",
+        "total": 47,
+        "max": 74,
+        "norm": 0.6351351351351351,
+        "passed": 6,
+        "count": 9
+      },
+      {
+        "occ": "statisticians",
+        "task": "task1",
+        "total": 56,
+        "max": 71,
+        "norm": 0.7887323943661971,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "statisticians",
+        "task": "task2",
+        "total": 63,
+        "max": 71,
+        "norm": 0.8873239436619719,
+        "passed": 9,
+        "count": 10
+      },
+      {
+        "occ": "supply_chain_managers",
+        "task": "task1",
+        "total": 64,
+        "max": 91,
+        "norm": 0.7032967032967034,
+        "passed": 8,
+        "count": 11
+      },
+      {
+        "occ": "technical_writers",
+        "task": "task1",
+        "total": 64,
+        "max": 82,
+        "norm": 0.7804878048780488,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "training_and_development_specialists",
+        "task": "task1",
+        "total": 67,
+        "max": 74,
+        "norm": 0.9054054054054054,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "training_and_development_specialists",
+        "task": "task2",
+        "total": 59,
+        "max": 68,
+        "norm": 0.8676470588235294,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "web_administrators",
+        "task": "task1",
+        "total": 160,
+        "max": 160,
+        "norm": 1.0,
+        "passed": 19,
+        "count": 19
+      },
+      {
+        "occ": "web_administrators",
+        "task": "task2",
+        "total": 54,
+        "max": 85,
+        "norm": 0.6352941176470588,
+        "passed": 7,
+        "count": 11
+      }
+    ]
+  },
+  "easy/pagentv4": {
+    "summary": {
+      "n": 63,
+      "macro": 0.7681503274403656,
+      "micro": 0.7998272884283247,
+      "median": 0.8157894736842105,
+      "stdev": 0.21846590036758756,
+      "max": 1.0,
+      "min": 0.18181818181818182,
+      "total": 4631,
+      "maxsum": 5790,
+      "ge08": 34,
+      "mid": 21,
+      "lt05": 8,
+      "zero": 0
+    },
+    "rows": [
+      {
+        "occ": "biostatisticians",
+        "task": "task1",
+        "total": 80,
+        "max": 80,
+        "norm": 1.0,
+        "passed": 9,
+        "count": 9
+      },
+      {
+        "occ": "biostatisticians",
+        "task": "task2",
+        "total": 136,
+        "max": 145,
+        "norm": 0.9379310344827586,
+        "passed": 16,
+        "count": 17
+      },
+      {
+        "occ": "bookkeeping_accounting_and_auditing_clerks",
+        "task": "task1",
+        "total": 56,
+        "max": 72,
+        "norm": 0.7777777777777778,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "civil_engineers",
+        "task": "task1",
+        "total": 40,
+        "max": 72,
+        "norm": 0.5555555555555556,
+        "passed": 5,
+        "count": 9
+      },
+      {
+        "occ": "computer_and_information_research_scientists",
+        "task": "task1",
+        "total": 76,
+        "max": 84,
+        "norm": 0.9047619047619048,
+        "passed": 9,
+        "count": 10
+      },
+      {
+        "occ": "computer_and_information_systems_managers",
+        "task": "task1",
+        "total": 24,
+        "max": 78,
+        "norm": 0.3076923076923077,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "computer_and_information_systems_managers",
+        "task": "task2",
+        "total": 130,
+        "max": 147,
+        "norm": 0.8843537414965986,
+        "passed": 16,
+        "count": 18
+      },
+      {
+        "occ": "computer_user_support_specialists",
+        "task": "task1",
+        "total": 60,
+        "max": 75,
+        "norm": 0.8,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "computer_user_support_specialists",
+        "task": "task2",
+        "total": 70,
+        "max": 76,
+        "norm": 0.9210526315789473,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "court_clerks",
+        "task": "task1",
+        "total": 127,
+        "max": 134,
+        "norm": 0.9477611940298507,
+        "passed": 16,
+        "count": 17
+      },
+      {
+        "occ": "court_clerks",
+        "task": "task2",
+        "total": 166,
+        "max": 166,
+        "norm": 1.0,
+        "passed": 19,
+        "count": 19
+      },
+      {
+        "occ": "customer_service_representatives",
+        "task": "task1",
+        "total": 57,
+        "max": 67,
+        "norm": 0.8507462686567164,
+        "passed": 7,
+        "count": 8
+      },
+      {
+        "occ": "customer_service_representatives",
+        "task": "task2",
+        "total": 71,
+        "max": 71,
+        "norm": 1.0,
+        "passed": 9,
+        "count": 9
+      },
+      {
+        "occ": "data_entry_keyers",
+        "task": "task1",
+        "total": 61,
+        "max": 96,
+        "norm": 0.6354166666666666,
+        "passed": 7,
+        "count": 11
+      },
+      {
+        "occ": "data_entry_keyers",
+        "task": "task2",
+        "total": 182,
+        "max": 182,
+        "norm": 1.0,
+        "passed": 21,
+        "count": 21
+      },
+      {
+        "occ": "financial_managers_branch_or_department",
+        "task": "task1",
+        "total": 57,
+        "max": 70,
+        "norm": 0.8142857142857143,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "human_resources_specialists",
+        "task": "task1",
+        "total": 78,
+        "max": 86,
+        "norm": 0.9069767441860465,
+        "passed": 9,
+        "count": 10
+      },
+      {
+        "occ": "human_resources_specialists",
+        "task": "task2",
+        "total": 64,
+        "max": 78,
+        "norm": 0.8205128205128205,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "lawyers",
+        "task": "task1",
+        "total": 163,
+        "max": 163,
+        "norm": 1.0,
+        "passed": 18,
+        "count": 18
+      },
+      {
+        "occ": "lawyers",
+        "task": "task2",
+        "total": 144,
+        "max": 152,
+        "norm": 0.9473684210526315,
+        "passed": 17,
+        "count": 18
+      },
+      {
+        "occ": "licensing_examiners_and_inspectors",
+        "task": "task2",
+        "total": 89,
+        "max": 97,
+        "norm": 0.9175257731958762,
+        "passed": 10,
+        "count": 11
+      },
+      {
+        "occ": "licensing_examiners_and_inspectors",
+        "task": "task3",
+        "total": 16,
+        "max": 85,
+        "norm": 0.18823529411764706,
+        "passed": 2,
+        "count": 10
+      },
+      {
+        "occ": "management_analysts",
+        "task": "task1",
+        "total": 28,
+        "max": 77,
+        "norm": 0.36363636363636365,
+        "passed": 3,
+        "count": 9
+      },
+      {
+        "occ": "management_analysts",
+        "task": "task2",
+        "total": 44,
+        "max": 76,
+        "norm": 0.5789473684210527,
+        "passed": 5,
+        "count": 9
+      },
+      {
+        "occ": "mechanical_engineering_technicians",
+        "task": "task1",
+        "total": 62,
+        "max": 78,
+        "norm": 0.7948717948717948,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "mechanical_engineers",
+        "task": "task1",
+        "total": 25,
+        "max": 74,
+        "norm": 0.33783783783783783,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "mechanical_engineers",
+        "task": "task2",
+        "total": 61,
+        "max": 78,
+        "norm": 0.782051282051282,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "mechanical_engineers",
+        "task": "task3",
+        "total": 61,
+        "max": 74,
+        "norm": 0.8243243243243243,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "medical_and_health_services_managers",
+        "task": "task1",
+        "total": 148,
+        "max": 148,
+        "norm": 1.0,
+        "passed": 18,
+        "count": 18
+      },
+      {
+        "occ": "medical_secretaries",
+        "task": "task1",
+        "total": 72,
+        "max": 81,
+        "norm": 0.8888888888888888,
+        "passed": 10,
+        "count": 11
+      },
+      {
+        "occ": "online_merchants",
+        "task": "task1",
+        "total": 59,
+        "max": 64,
+        "norm": 0.921875,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "online_merchants",
+        "task": "task2",
+        "total": 173,
+        "max": 173,
+        "norm": 1.0,
+        "passed": 21,
+        "count": 21
+      },
+      {
+        "occ": "online_merchants",
+        "task": "task3",
+        "total": 166,
+        "max": 166,
+        "norm": 1.0,
+        "passed": 21,
+        "count": 21
+      },
+      {
+        "occ": "personal_financial_advisors",
+        "task": "task1",
+        "total": 45,
+        "max": 70,
+        "norm": 0.6428571428571429,
+        "passed": 5,
+        "count": 8
+      },
+      {
+        "occ": "personal_financial_advisors",
+        "task": "task2",
+        "total": 58,
+        "max": 74,
+        "norm": 0.7837837837837838,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "petroleum_engineers",
+        "task": "task1",
+        "total": 80,
+        "max": 80,
+        "norm": 1.0,
+        "passed": 9,
+        "count": 9
+      },
+      {
+        "occ": "petroleum_engineers",
+        "task": "task2",
+        "total": 43,
+        "max": 68,
+        "norm": 0.6323529411764706,
+        "passed": 5,
+        "count": 8
+      },
+      {
+        "occ": "police_fire_and_ambulance_dispatchers",
+        "task": "task1",
+        "total": 58,
+        "max": 73,
+        "norm": 0.7945205479452054,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "police_fire_and_ambulance_dispatchers",
+        "task": "task2",
+        "total": 93,
+        "max": 114,
+        "norm": 0.8157894736842105,
+        "passed": 13,
+        "count": 16
+      },
+      {
+        "occ": "police_fire_and_ambulance_dispatchers",
+        "task": "task3",
+        "total": 70,
+        "max": 85,
+        "norm": 0.8235294117647058,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "producers",
+        "task": "task1",
+        "total": 47,
+        "max": 77,
+        "norm": 0.6103896103896104,
+        "passed": 6,
+        "count": 10
+      },
+      {
+        "occ": "producers",
+        "task": "task2",
+        "total": 50,
+        "max": 76,
+        "norm": 0.6578947368421053,
+        "passed": 7,
+        "count": 10
+      },
+      {
+        "occ": "purchasing_agents_except_wholesale_retail_and_farm_products",
+        "task": "task1",
+        "total": 66,
+        "max": 74,
+        "norm": 0.8918918918918919,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "purchasing_agents_except_wholesale_retail_and_farm_products",
+        "task": "task2",
+        "total": 60,
+        "max": 73,
+        "norm": 0.821917808219178,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "reporters_and_correspondents",
+        "task": "task1",
+        "total": 38,
+        "max": 64,
+        "norm": 0.59375,
+        "passed": 5,
+        "count": 9
+      },
+      {
+        "occ": "reporters_and_correspondents",
+        "task": "task2",
+        "total": 39,
+        "max": 81,
+        "norm": 0.48148148148148145,
+        "passed": 5,
+        "count": 10
+      },
+      {
+        "occ": "reporters_and_correspondents",
+        "task": "task3",
+        "total": 16,
+        "max": 88,
+        "norm": 0.18181818181818182,
+        "passed": 2,
+        "count": 11
+      },
+      {
+        "occ": "sales_agents_securities_and_commodities",
+        "task": "task1",
+        "total": 59,
+        "max": 68,
+        "norm": 0.8676470588235294,
+        "passed": 7,
+        "count": 8
+      },
+      {
+        "occ": "sales_agents_securities_and_commodities",
+        "task": "task2",
+        "total": 17,
+        "max": 77,
+        "norm": 0.22077922077922077,
+        "passed": 2,
+        "count": 10
+      },
+      {
+        "occ": "sales_representatives_wholesale_and_manufacturing_technical_and_scientific_products",
+        "task": "task1",
+        "total": 70,
+        "max": 79,
+        "norm": 0.8860759493670886,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "sales_representatives_wholesale_and_manufacturing_technical_and_scientific_products",
+        "task": "task2",
+        "total": 62,
+        "max": 80,
+        "norm": 0.775,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "secretaries_and_administrative_assistants_except_legal_medical_and_executive",
+        "task": "task1",
+        "total": 81,
+        "max": 81,
+        "norm": 1.0,
+        "passed": 10,
+        "count": 10
+      },
+      {
+        "occ": "secretaries_and_administrative_assistants_except_legal_medical_and_executive",
+        "task": "task2",
+        "total": 28,
+        "max": 73,
+        "norm": 0.3835616438356164,
+        "passed": 3,
+        "count": 9
+      },
+      {
+        "occ": "social_science_research_assistants",
+        "task": "task1",
+        "total": 69,
+        "max": 94,
+        "norm": 0.7340425531914894,
+        "passed": 8,
+        "count": 11
+      },
+      {
+        "occ": "sociology_teachers_postsecondary",
+        "task": "task1",
+        "total": 49,
+        "max": 74,
+        "norm": 0.6621621621621622,
+        "passed": 6,
+        "count": 9
+      },
+      {
+        "occ": "statisticians",
+        "task": "task1",
+        "total": 56,
+        "max": 71,
+        "norm": 0.7887323943661971,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "statisticians",
+        "task": "task2",
+        "total": 71,
+        "max": 71,
+        "norm": 1.0,
+        "passed": 10,
+        "count": 10
+      },
+      {
+        "occ": "supply_chain_managers",
+        "task": "task1",
+        "total": 64,
+        "max": 91,
+        "norm": 0.7032967032967034,
+        "passed": 8,
+        "count": 11
+      },
+      {
+        "occ": "technical_writers",
+        "task": "task1",
+        "total": 82,
+        "max": 82,
+        "norm": 1.0,
+        "passed": 9,
+        "count": 9
+      },
+      {
+        "occ": "training_and_development_specialists",
+        "task": "task1",
+        "total": 49,
+        "max": 74,
+        "norm": 0.6621621621621622,
+        "passed": 6,
+        "count": 9
+      },
+      {
+        "occ": "training_and_development_specialists",
+        "task": "task2",
+        "total": 45,
+        "max": 68,
+        "norm": 0.6617647058823529,
+        "passed": 6,
+        "count": 9
+      },
+      {
+        "occ": "web_administrators",
+        "task": "task1",
+        "total": 160,
+        "max": 160,
+        "norm": 1.0,
+        "passed": 19,
+        "count": 19
+      },
+      {
+        "occ": "web_administrators",
+        "task": "task2",
+        "total": 60,
+        "max": 85,
+        "norm": 0.7058823529411765,
+        "passed": 8,
+        "count": 11
+      }
+    ]
+  },
+  "main/OpenCode": {
+    "summary": {
+      "n": 65,
+      "macro": 0.37638440727687517,
+      "micro": 0.3662222222222222,
+      "median": 0.3684210526315789,
+      "stdev": 0.19970176851757676,
+      "max": 0.8620689655172413,
+      "min": 0.0,
+      "total": 1648,
+      "maxsum": 4500,
+      "ge08": 1,
+      "mid": 17,
+      "lt05": 47,
+      "zero": 2
+    },
+    "rows": [
+      {
+        "occ": "biostatisticians",
+        "task": "task1",
+        "total": 6,
+        "max": 72,
+        "norm": 0.08333333333333333,
+        "passed": 1,
+        "count": 8
+      },
+      {
+        "occ": "biostatisticians",
+        "task": "task2",
+        "total": 30,
+        "max": 58,
+        "norm": 0.5172413793103449,
+        "passed": 4,
+        "count": 7
+      },
+      {
+        "occ": "bookkeeping_accounting_and_auditing_clerks",
+        "task": "task1",
+        "total": 22,
+        "max": 88,
+        "norm": 0.25,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "bookkeeping_accounting_and_auditing_clerks",
+        "task": "task2",
+        "total": 12,
+        "max": 52,
+        "norm": 0.23076923076923078,
+        "passed": 2,
+        "count": 8
+      },
+      {
+        "occ": "civil_engineers",
+        "task": "task1",
+        "total": 34,
+        "max": 50,
+        "norm": 0.68,
+        "passed": 5,
+        "count": 7
+      },
+      {
+        "occ": "civil_engineers",
+        "task": "task2",
+        "total": 50,
+        "max": 68,
+        "norm": 0.7352941176470589,
+        "passed": 7,
+        "count": 9
+      },
+      {
+        "occ": "civil_engineers",
+        "task": "task3",
+        "total": 28,
+        "max": 76,
+        "norm": 0.3684210526315789,
+        "passed": 4,
+        "count": 9
+      },
+      {
+        "occ": "computer_and_information_research_scientists",
+        "task": "task1",
+        "total": 12,
+        "max": 66,
+        "norm": 0.18181818181818182,
+        "passed": 2,
+        "count": 9
+      },
+      {
+        "occ": "computer_and_information_research_scientists",
+        "task": "task2",
+        "total": 10,
+        "max": 82,
+        "norm": 0.12195121951219512,
+        "passed": 1,
+        "count": 10
+      },
+      {
+        "occ": "computer_and_information_systems_managers",
+        "task": "task1",
+        "total": 12,
+        "max": 56,
+        "norm": 0.21428571428571427,
+        "passed": 2,
+        "count": 8
+      },
+      {
+        "occ": "computer_and_information_systems_managers",
+        "task": "task2",
+        "total": 0,
+        "max": 62,
+        "norm": 0.0,
+        "passed": 0,
+        "count": 7
+      },
+      {
+        "occ": "computer_user_support_specialists",
+        "task": "task1",
+        "total": 36,
+        "max": 56,
+        "norm": 0.6428571428571429,
+        "passed": 5,
+        "count": 8
+      },
+      {
+        "occ": "computer_user_support_specialists",
+        "task": "task2",
+        "total": 14,
+        "max": 82,
+        "norm": 0.17073170731707318,
+        "passed": 2,
+        "count": 10
+      },
+      {
+        "occ": "court_clerks",
+        "task": "task1",
+        "total": 28,
+        "max": 76,
+        "norm": 0.3684210526315789,
+        "passed": 4,
+        "count": 10
+      },
+      {
+        "occ": "customer_service_representatives",
+        "task": "task1",
+        "total": 28,
+        "max": 76,
+        "norm": 0.3684210526315789,
+        "passed": 4,
+        "count": 10
+      },
+      {
+        "occ": "data_entry_keyers",
+        "task": "task1",
+        "total": 56,
+        "max": 92,
+        "norm": 0.6086956521739131,
+        "passed": 8,
+        "count": 12
+      },
+      {
+        "occ": "data_entry_keyers",
+        "task": "task2",
+        "total": 44,
+        "max": 60,
+        "norm": 0.7333333333333333,
+        "passed": 6,
+        "count": 8
+      },
+      {
+        "occ": "financial_managers_branch_or_department",
+        "task": "task1",
+        "total": 24,
+        "max": 90,
+        "norm": 0.26666666666666666,
+        "passed": 3,
+        "count": 11
+      },
+      {
+        "occ": "financial_managers_branch_or_department",
+        "task": "task2",
+        "total": 40,
+        "max": 66,
+        "norm": 0.6060606060606061,
+        "passed": 5,
+        "count": 9
+      },
+      {
+        "occ": "human_resources_specialists",
+        "task": "task1",
+        "total": 10,
+        "max": 64,
+        "norm": 0.15625,
+        "passed": 1,
+        "count": 8
+      },
+      {
+        "occ": "lawyers",
+        "task": "task1",
+        "total": 24,
+        "max": 48,
+        "norm": 0.5,
+        "passed": 4,
+        "count": 8
+      },
+      {
+        "occ": "licensing_examiners_and_inspectors",
+        "task": "task1",
+        "total": 18,
+        "max": 72,
+        "norm": 0.25,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "management_analysts",
+        "task": "task1",
+        "total": 16,
+        "max": 88,
+        "norm": 0.18181818181818182,
+        "passed": 2,
+        "count": 10
+      },
+      {
+        "occ": "management_analysts",
+        "task": "task2",
+        "total": 18,
+        "max": 80,
+        "norm": 0.225,
+        "passed": 2,
+        "count": 9
+      },
+      {
+        "occ": "management_analysts",
+        "task": "task3",
+        "total": 12,
+        "max": 72,
+        "norm": 0.16666666666666666,
+        "passed": 2,
+        "count": 9
+      },
+      {
+        "occ": "mechanical_engineering_technicians",
+        "task": "task1",
+        "total": 50,
+        "max": 78,
+        "norm": 0.6410256410256411,
+        "passed": 7,
+        "count": 10
+      },
+      {
+        "occ": "mechanical_engineering_technicians",
+        "task": "task2",
+        "total": 8,
+        "max": 70,
+        "norm": 0.11428571428571428,
+        "passed": 1,
+        "count": 8
+      },
+      {
+        "occ": "mechanical_engineering_technicians",
+        "task": "task3",
+        "total": 50,
+        "max": 58,
+        "norm": 0.8620689655172413,
+        "passed": 8,
+        "count": 9
+      },
+      {
+        "occ": "mechanical_engineers",
+        "task": "task1",
+        "total": 28,
+        "max": 66,
+        "norm": 0.42424242424242425,
+        "passed": 4,
+        "count": 9
+      },
+      {
+        "occ": "medical_and_health_services_managers",
+        "task": "task1",
+        "total": 26,
+        "max": 74,
+        "norm": 0.35135135135135137,
+        "passed": 3,
+        "count": 8
+      },
+      {
+        "occ": "medical_and_health_services_managers",
+        "task": "task2",
+        "total": 6,
+        "max": 86,
+        "norm": 0.06976744186046512,
+        "passed": 1,
+        "count": 9
+      },
+      {
+        "occ": "medical_secretaries",
+        "task": "task1",
+        "total": 32,
+        "max": 78,
+        "norm": 0.41025641025641024,
+        "passed": 5,
+        "count": 10
+      },
+      {
+        "occ": "online_merchants",
+        "task": "task1",
+        "total": 42,
+        "max": 58,
+        "norm": 0.7241379310344828,
+        "passed": 6,
+        "count": 8
+      },
+      {
+        "occ": "online_merchants",
+        "task": "task2",
+        "total": 20,
+        "max": 54,
+        "norm": 0.37037037037037035,
+        "passed": 3,
+        "count": 7
+      },
+      {
+        "occ": "personal_financial_advisors",
+        "task": "task1",
+        "total": 34,
+        "max": 78,
+        "norm": 0.4358974358974359,
+        "passed": 4,
+        "count": 9
+      },
+      {
+        "occ": "petroleum_engineers",
+        "task": "task1",
+        "total": 0,
+        "max": 50,
+        "norm": 0.0,
+        "passed": 0,
+        "count": 6
+      },
+      {
+        "occ": "police_fire_and_ambulance_dispatchers",
+        "task": "task1",
+        "total": 46,
+        "max": 94,
+        "norm": 0.48936170212765956,
+        "passed": 5,
+        "count": 10
+      },
+      {
+        "occ": "producers",
+        "task": "task1",
+        "total": 16,
+        "max": 72,
+        "norm": 0.2222222222222222,
+        "passed": 2,
+        "count": 9
+      },
+      {
+        "occ": "purchasing_agents_except_wholesale_retail_and_farm_products",
+        "task": "task1",
+        "total": 18,
+        "max": 88,
+        "norm": 0.20454545454545456,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "purchasing_agents_except_wholesale_retail_and_farm_products",
+        "task": "task2",
+        "total": 40,
+        "max": 78,
+        "norm": 0.5128205128205128,
+        "passed": 5,
+        "count": 10
+      },
+      {
+        "occ": "purchasing_agents_except_wholesale_retail_and_farm_products",
+        "task": "task3",
+        "total": 16,
+        "max": 96,
+        "norm": 0.16666666666666666,
+        "passed": 2,
+        "count": 11
+      },
+      {
+        "occ": "reporters_and_correspondents",
+        "task": "task1",
+        "total": 44,
+        "max": 60,
+        "norm": 0.7333333333333333,
+        "passed": 6,
+        "count": 8
+      },
+      {
+        "occ": "sales_agents_securities_and_commodities",
+        "task": "task1",
+        "total": 36,
+        "max": 74,
+        "norm": 0.4864864864864865,
+        "passed": 4,
+        "count": 8
+      },
+      {
+        "occ": "sales_representatives_wholesale_and_manufacturing_technical_and_scientific_products",
+        "task": "task1",
+        "total": 26,
+        "max": 106,
+        "norm": 0.24528301886792453,
+        "passed": 3,
+        "count": 11
+      },
+      {
+        "occ": "sales_representatives_wholesale_and_manufacturing_technical_and_scientific_products",
+        "task": "task2",
+        "total": 26,
+        "max": 80,
+        "norm": 0.325,
+        "passed": 4,
+        "count": 10
+      },
+      {
+        "occ": "secretaries_and_administrative_assistants_except_legal_medical_and_executive",
+        "task": "task1",
+        "total": 30,
+        "max": 60,
+        "norm": 0.5,
+        "passed": 4,
+        "count": 7
+      },
+      {
+        "occ": "secretaries_and_administrative_assistants_except_legal_medical_and_executive",
+        "task": "task2",
+        "total": 16,
+        "max": 48,
+        "norm": 0.3333333333333333,
+        "passed": 2,
+        "count": 6
+      },
+      {
+        "occ": "social_science_research_assistants",
+        "task": "task1",
+        "total": 46,
+        "max": 66,
+        "norm": 0.696969696969697,
+        "passed": 7,
+        "count": 10
+      },
+      {
+        "occ": "social_science_research_assistants",
+        "task": "task2",
+        "total": 30,
+        "max": 68,
+        "norm": 0.4411764705882353,
+        "passed": 4,
+        "count": 9
+      },
+      {
+        "occ": "social_science_research_assistants",
+        "task": "task3",
+        "total": 26,
+        "max": 50,
+        "norm": 0.52,
+        "passed": 3,
+        "count": 6
+      },
+      {
+        "occ": "sociology_teachers_postsecondary",
+        "task": "task1",
+        "total": 22,
+        "max": 68,
+        "norm": 0.3235294117647059,
+        "passed": 3,
+        "count": 8
+      },
+      {
+        "occ": "sociology_teachers_postsecondary",
+        "task": "task2",
+        "total": 38,
+        "max": 66,
+        "norm": 0.5757575757575758,
+        "passed": 5,
+        "count": 8
+      },
+      {
+        "occ": "sociology_teachers_postsecondary",
+        "task": "task3",
+        "total": 30,
+        "max": 72,
+        "norm": 0.4166666666666667,
+        "passed": 4,
+        "count": 9
+      },
+      {
+        "occ": "statisticians",
+        "task": "task1",
+        "total": 26,
+        "max": 116,
+        "norm": 0.22413793103448276,
+        "passed": 3,
+        "count": 12
+      },
+      {
+        "occ": "statisticians",
+        "task": "task2",
+        "total": 30,
+        "max": 66,
+        "norm": 0.45454545454545453,
+        "passed": 4,
+        "count": 8
+      },
+      {
+        "occ": "statisticians",
+        "task": "task3",
+        "total": 22,
+        "max": 54,
+        "norm": 0.4074074074074074,
+        "passed": 3,
+        "count": 8
+      },
+      {
+        "occ": "supply_chain_managers",
+        "task": "task1",
+        "total": 6,
+        "max": 64,
+        "norm": 0.09375,
+        "passed": 1,
+        "count": 8
+      },
+      {
+        "occ": "supply_chain_managers",
+        "task": "task2",
+        "total": 6,
+        "max": 40,
+        "norm": 0.15,
+        "passed": 1,
+        "count": 6
+      },
+      {
+        "occ": "technical_writers",
+        "task": "task1",
+        "total": 32,
+        "max": 66,
+        "norm": 0.48484848484848486,
+        "passed": 5,
+        "count": 10
+      },
+      {
+        "occ": "technical_writers",
+        "task": "task2",
+        "total": 24,
+        "max": 60,
+        "norm": 0.4,
+        "passed": 4,
+        "count": 8
+      },
+      {
+        "occ": "technical_writers",
+        "task": "task3",
+        "total": 34,
+        "max": 84,
+        "norm": 0.40476190476190477,
+        "passed": 5,
+        "count": 12
+      },
+      {
+        "occ": "training_and_development_specialists",
+        "task": "task1",
+        "total": 18,
+        "max": 54,
+        "norm": 0.3333333333333333,
+        "passed": 3,
+        "count": 9
+      },
+      {
+        "occ": "training_and_development_specialists",
+        "task": "task2",
+        "total": 18,
+        "max": 44,
+        "norm": 0.4090909090909091,
+        "passed": 3,
+        "count": 6
+      },
+      {
+        "occ": "training_and_development_specialists",
+        "task": "task3",
+        "total": 28,
+        "max": 54,
+        "norm": 0.5185185185185185,
+        "passed": 4,
+        "count": 7
+      },
+      {
+        "occ": "web_administrators",
+        "task": "task1",
+        "total": 18,
+        "max": 50,
+        "norm": 0.36,
+        "passed": 3,
+        "count": 8
+      }
+    ]
+  },
+  "main/pagentv4": {
+    "summary": {
+      "n": 65,
+      "macro": 0.39864506869718264,
+      "micro": 0.3818263205013429,
+      "median": 0.40540540540540543,
+      "stdev": 0.23961639942940227,
+      "max": 1.0,
+      "min": 0.0,
+      "total": 1706,
+      "maxsum": 4468,
+      "ge08": 5,
+      "mid": 17,
+      "lt05": 43,
+      "zero": 2
+    },
+    "rows": [
+      {
+        "occ": "biostatisticians",
+        "task": "task1",
+        "total": 6,
+        "max": 72,
+        "norm": 0.08333333333333333,
+        "passed": 1,
+        "count": 8
+      },
+      {
+        "occ": "biostatisticians",
+        "task": "task2",
+        "total": 22,
+        "max": 58,
+        "norm": 0.3793103448275862,
+        "passed": 3,
+        "count": 7
+      },
+      {
+        "occ": "bookkeeping_accounting_and_auditing_clerks",
+        "task": "task1",
+        "total": 6,
+        "max": 88,
+        "norm": 0.06818181818181818,
+        "passed": 1,
+        "count": 10
+      },
+      {
+        "occ": "bookkeeping_accounting_and_auditing_clerks",
+        "task": "task2",
+        "total": 24,
+        "max": 52,
+        "norm": 0.46153846153846156,
+        "passed": 4,
+        "count": 8
+      },
+      {
+        "occ": "civil_engineers",
+        "task": "task1",
+        "total": 34,
+        "max": 50,
+        "norm": 0.68,
+        "passed": 5,
+        "count": 7
+      },
+      {
+        "occ": "civil_engineers",
+        "task": "task2",
+        "total": 44,
+        "max": 68,
+        "norm": 0.6470588235294118,
+        "passed": 6,
+        "count": 9
+      },
+      {
+        "occ": "civil_engineers",
+        "task": "task3",
+        "total": 14,
+        "max": 76,
+        "norm": 0.18421052631578946,
+        "passed": 2,
+        "count": 9
+      },
+      {
+        "occ": "computer_and_information_research_scientists",
+        "task": "task1",
+        "total": 12,
+        "max": 66,
+        "norm": 0.18181818181818182,
+        "passed": 2,
+        "count": 9
+      },
+      {
+        "occ": "computer_and_information_research_scientists",
+        "task": "task2",
+        "total": 16,
+        "max": 82,
+        "norm": 0.1951219512195122,
+        "passed": 2,
+        "count": 10
+      },
+      {
+        "occ": "computer_and_information_systems_managers",
+        "task": "task1",
+        "total": 26,
+        "max": 56,
+        "norm": 0.4642857142857143,
+        "passed": 4,
+        "count": 8
+      },
+      {
+        "occ": "computer_and_information_systems_managers",
+        "task": "task2",
+        "total": 8,
+        "max": 62,
+        "norm": 0.12903225806451613,
+        "passed": 1,
+        "count": 7
+      },
+      {
+        "occ": "computer_user_support_specialists",
+        "task": "task1",
+        "total": 44,
+        "max": 56,
+        "norm": 0.7857142857142857,
+        "passed": 6,
+        "count": 8
+      },
+      {
+        "occ": "computer_user_support_specialists",
+        "task": "task2",
+        "total": 14,
+        "max": 82,
+        "norm": 0.17073170731707318,
+        "passed": 2,
+        "count": 10
+      },
+      {
+        "occ": "court_clerks",
+        "task": "task1",
+        "total": 18,
+        "max": 76,
+        "norm": 0.23684210526315788,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "customer_service_representatives",
+        "task": "task1",
+        "total": 22,
+        "max": 76,
+        "norm": 0.2894736842105263,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "data_entry_keyers",
+        "task": "task1",
+        "total": 40,
+        "max": 82,
+        "norm": 0.4878048780487805,
+        "passed": 6,
+        "count": 12
+      },
+      {
+        "occ": "data_entry_keyers",
+        "task": "task2",
+        "total": 52,
+        "max": 52,
+        "norm": 1.0,
+        "passed": 7,
+        "count": 8
+      },
+      {
+        "occ": "financial_managers_branch_or_department",
+        "task": "task1",
+        "total": 24,
+        "max": 76,
+        "norm": 0.3157894736842105,
+        "passed": 3,
+        "count": 11
+      },
+      {
+        "occ": "financial_managers_branch_or_department",
+        "task": "task2",
+        "total": 28,
+        "max": 66,
+        "norm": 0.42424242424242425,
+        "passed": 4,
+        "count": 9
+      },
+      {
+        "occ": "human_resources_specialists",
+        "task": "task1",
+        "total": 40,
+        "max": 64,
+        "norm": 0.625,
+        "passed": 5,
+        "count": 8
+      },
+      {
+        "occ": "lawyers",
+        "task": "task1",
+        "total": 30,
+        "max": 48,
+        "norm": 0.625,
+        "passed": 5,
+        "count": 8
+      },
+      {
+        "occ": "licensing_examiners_and_inspectors",
+        "task": "task1",
+        "total": 24,
+        "max": 72,
+        "norm": 0.3333333333333333,
+        "passed": 4,
+        "count": 10
+      },
+      {
+        "occ": "management_analysts",
+        "task": "task1",
+        "total": 24,
+        "max": 88,
+        "norm": 0.2727272727272727,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "management_analysts",
+        "task": "task2",
+        "total": 8,
+        "max": 80,
+        "norm": 0.1,
+        "passed": 1,
+        "count": 9
+      },
+      {
+        "occ": "management_analysts",
+        "task": "task3",
+        "total": 20,
+        "max": 72,
+        "norm": 0.2777777777777778,
+        "passed": 3,
+        "count": 9
+      },
+      {
+        "occ": "mechanical_engineering_technicians",
+        "task": "task1",
+        "total": 38,
+        "max": 78,
+        "norm": 0.48717948717948717,
+        "passed": 5,
+        "count": 10
+      },
+      {
+        "occ": "mechanical_engineering_technicians",
+        "task": "task2",
+        "total": 14,
+        "max": 70,
+        "norm": 0.2,
+        "passed": 2,
+        "count": 8
+      },
+      {
+        "occ": "mechanical_engineering_technicians",
+        "task": "task3",
+        "total": 30,
+        "max": 58,
+        "norm": 0.5172413793103449,
+        "passed": 5,
+        "count": 9
+      },
+      {
+        "occ": "mechanical_engineers",
+        "task": "task1",
+        "total": 18,
+        "max": 66,
+        "norm": 0.2727272727272727,
+        "passed": 3,
+        "count": 9
+      },
+      {
+        "occ": "medical_and_health_services_managers",
+        "task": "task1",
+        "total": 46,
+        "max": 74,
+        "norm": 0.6216216216216216,
+        "passed": 5,
+        "count": 8
+      },
+      {
+        "occ": "medical_and_health_services_managers",
+        "task": "task2",
+        "total": 6,
+        "max": 86,
+        "norm": 0.06976744186046512,
+        "passed": 1,
+        "count": 9
+      },
+      {
+        "occ": "medical_secretaries",
+        "task": "task1",
+        "total": 26,
+        "max": 78,
+        "norm": 0.3333333333333333,
+        "passed": 4,
+        "count": 10
+      },
+      {
+        "occ": "online_merchants",
+        "task": "task1",
+        "total": 48,
+        "max": 58,
+        "norm": 0.8275862068965517,
+        "passed": 7,
+        "count": 8
+      },
+      {
+        "occ": "online_merchants",
+        "task": "task2",
+        "total": 28,
+        "max": 54,
+        "norm": 0.5185185185185185,
+        "passed": 4,
+        "count": 7
+      },
+      {
+        "occ": "personal_financial_advisors",
+        "task": "task1",
+        "total": 32,
+        "max": 78,
+        "norm": 0.41025641025641024,
+        "passed": 4,
+        "count": 9
+      },
+      {
+        "occ": "petroleum_engineers",
+        "task": "task1",
+        "total": 6,
+        "max": 50,
+        "norm": 0.12,
+        "passed": 1,
+        "count": 6
+      },
+      {
+        "occ": "police_fire_and_ambulance_dispatchers",
+        "task": "task1",
+        "total": 54,
+        "max": 94,
+        "norm": 0.574468085106383,
+        "passed": 6,
+        "count": 10
+      },
+      {
+        "occ": "producers",
+        "task": "task1",
+        "total": 30,
+        "max": 72,
+        "norm": 0.4166666666666667,
+        "passed": 4,
+        "count": 9
+      },
+      {
+        "occ": "purchasing_agents_except_wholesale_retail_and_farm_products",
+        "task": "task1",
+        "total": 18,
+        "max": 88,
+        "norm": 0.20454545454545456,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "purchasing_agents_except_wholesale_retail_and_farm_products",
+        "task": "task2",
+        "total": 50,
+        "max": 78,
+        "norm": 0.6410256410256411,
+        "passed": 6,
+        "count": 10
+      },
+      {
+        "occ": "purchasing_agents_except_wholesale_retail_and_farm_products",
+        "task": "task3",
+        "total": 0,
+        "max": 96,
+        "norm": 0.0,
+        "passed": 0,
+        "count": 11
+      },
+      {
+        "occ": "reporters_and_correspondents",
+        "task": "task1",
+        "total": 34,
+        "max": 60,
+        "norm": 0.5666666666666667,
+        "passed": 5,
+        "count": 8
+      },
+      {
+        "occ": "sales_agents_securities_and_commodities",
+        "task": "task1",
+        "total": 30,
+        "max": 74,
+        "norm": 0.40540540540540543,
+        "passed": 3,
+        "count": 8
+      },
+      {
+        "occ": "sales_representatives_wholesale_and_manufacturing_technical_and_scientific_products",
+        "task": "task1",
+        "total": 16,
+        "max": 106,
+        "norm": 0.1509433962264151,
+        "passed": 2,
+        "count": 11
+      },
+      {
+        "occ": "sales_representatives_wholesale_and_manufacturing_technical_and_scientific_products",
+        "task": "task2",
+        "total": 18,
+        "max": 80,
+        "norm": 0.225,
+        "passed": 3,
+        "count": 10
+      },
+      {
+        "occ": "secretaries_and_administrative_assistants_except_legal_medical_and_executive",
+        "task": "task1",
+        "total": 42,
+        "max": 60,
+        "norm": 0.7,
+        "passed": 5,
+        "count": 7
+      },
+      {
+        "occ": "secretaries_and_administrative_assistants_except_legal_medical_and_executive",
+        "task": "task2",
+        "total": 20,
+        "max": 48,
+        "norm": 0.4166666666666667,
+        "passed": 2,
+        "count": 6
+      },
+      {
+        "occ": "social_science_research_assistants",
+        "task": "task1",
+        "total": 54,
+        "max": 66,
+        "norm": 0.8181818181818182,
+        "passed": 8,
+        "count": 10
+      },
+      {
+        "occ": "social_science_research_assistants",
+        "task": "task2",
+        "total": 30,
+        "max": 68,
+        "norm": 0.4411764705882353,
+        "passed": 4,
+        "count": 9
+      },
+      {
+        "occ": "social_science_research_assistants",
+        "task": "task3",
+        "total": 26,
+        "max": 50,
+        "norm": 0.52,
+        "passed": 3,
+        "count": 6
+      },
+      {
+        "occ": "sociology_teachers_postsecondary",
+        "task": "task1",
+        "total": 6,
+        "max": 68,
+        "norm": 0.08823529411764706,
+        "passed": 1,
+        "count": 8
+      },
+      {
+        "occ": "sociology_teachers_postsecondary",
+        "task": "task2",
+        "total": 40,
+        "max": 66,
+        "norm": 0.6060606060606061,
+        "passed": 5,
+        "count": 8
+      },
+      {
+        "occ": "sociology_teachers_postsecondary",
+        "task": "task3",
+        "total": 38,
+        "max": 72,
+        "norm": 0.5277777777777778,
+        "passed": 5,
+        "count": 9
+      },
+      {
+        "occ": "statisticians",
+        "task": "task1",
+        "total": 10,
+        "max": 116,
+        "norm": 0.08620689655172414,
+        "passed": 1,
+        "count": 12
+      },
+      {
+        "occ": "statisticians",
+        "task": "task2",
+        "total": 48,
+        "max": 66,
+        "norm": 0.7272727272727273,
+        "passed": 6,
+        "count": 8
+      },
+      {
+        "occ": "statisticians",
+        "task": "task3",
+        "total": 22,
+        "max": 54,
+        "norm": 0.4074074074074074,
+        "passed": 3,
+        "count": 8
+      },
+      {
+        "occ": "supply_chain_managers",
+        "task": "task1",
+        "total": 6,
+        "max": 64,
+        "norm": 0.09375,
+        "passed": 1,
+        "count": 8
+      },
+      {
+        "occ": "supply_chain_managers",
+        "task": "task2",
+        "total": 0,
+        "max": 40,
+        "norm": 0.0,
+        "passed": 0,
+        "count": 6
+      },
+      {
+        "occ": "technical_writers",
+        "task": "task1",
+        "total": 60,
+        "max": 66,
+        "norm": 0.9090909090909091,
+        "passed": 9,
+        "count": 10
+      },
+      {
+        "occ": "technical_writers",
+        "task": "task2",
+        "total": 18,
+        "max": 60,
+        "norm": 0.3,
+        "passed": 3,
+        "count": 8
+      },
+      {
+        "occ": "technical_writers",
+        "task": "task3",
+        "total": 70,
+        "max": 84,
+        "norm": 0.8333333333333334,
+        "passed": 10,
+        "count": 12
+      },
+      {
+        "occ": "training_and_development_specialists",
+        "task": "task1",
+        "total": 18,
+        "max": 54,
+        "norm": 0.3333333333333333,
+        "passed": 3,
+        "count": 9
+      },
+      {
+        "occ": "training_and_development_specialists",
+        "task": "task2",
+        "total": 16,
+        "max": 44,
+        "norm": 0.36363636363636365,
+        "passed": 2,
+        "count": 6
+      },
+      {
+        "occ": "training_and_development_specialists",
+        "task": "task3",
+        "total": 28,
+        "max": 54,
+        "norm": 0.5185185185185185,
+        "passed": 4,
+        "count": 7
+      },
+      {
+        "occ": "web_administrators",
+        "task": "task1",
+        "total": 12,
+        "max": 50,
+        "norm": 0.24,
+        "passed": 2,
+        "count": 8
+      }
+    ]
+  }
+}

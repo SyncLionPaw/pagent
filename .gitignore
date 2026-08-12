@@ -55,3 +55,4 @@ debug
 artifacts/
 benchmarks/
 .trae
+job-bench-eval/

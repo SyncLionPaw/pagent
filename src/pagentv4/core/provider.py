@@ -50,13 +50,22 @@ class Provider:
         base_url: str | None = None,
         apikey: str | None = None,
         request_kwargs: Mapping[str, Any] | None = None,
+        max_retries: int | None = None,
     ) -> None:
         resolved_base_url = (base_url or self.BASE_URL).strip()
         resolved_apikey = must_apikey(self.API_KEY_ENV_VAR, apikey)
 
         self.base_url = resolved_base_url
         self.apikey = resolved_apikey
-        self.client = AsyncOpenAI(api_key=self.apikey, base_url=self.base_url)
+        client_kwargs: dict[str, Any] = {
+            "api_key": self.apikey,
+            "base_url": self.base_url,
+        }
+        # Under high concurrency the shared endpoint returns 429; let the SDK
+        # back off more times than its default of 2. None keeps SDK default.
+        if max_retries is not None:
+            client_kwargs["max_retries"] = max_retries
+        self.client = AsyncOpenAI(**client_kwargs)
         self.model_id = model_id
         self.request_kwargs = dict(request_kwargs) if request_kwargs is not None else {}
         check_run_kwargs(self.request_kwargs)

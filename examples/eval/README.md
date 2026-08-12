@@ -8,6 +8,7 @@
 | [gsm8k_compare.py](gsm8k_compare.py) | GSM8K 小子集：无工具 vs `calc` 工具对比 |
 | [swe_bench_run.py](swe_bench_run.py) | SWE-bench_Lite 冒烟测试：`CodeRunner` 作 coding agent（20 题，分层评测） |
 | [harbor_pagent.py](harbor_pagent.py) | Terminal-Bench 2.1：在任务容器内运行 pagentv4 local harness |
+| [aggregate_scores.py](aggregate_scores.py) · [plot_jobbench_leaderboard.py](plot_jobbench_leaderboard.py) | JobBench 判分聚合 + Main split 多语言排行榜图，见 [REPORT_jobbench_deepseek-v4-flash.md](REPORT_jobbench_deepseek-v4-flash.md) |
 
 ## API
 
