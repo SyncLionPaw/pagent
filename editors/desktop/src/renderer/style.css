@@ -426,7 +426,8 @@ input:focus-visible {
 
 
 .new-task-button {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     height: 36px;
     border: 0;
     border-radius: var(--radius-md);
@@ -1514,7 +1515,6 @@ input:focus-visible {
 
 /* 展开态底部动作、折叠态整条图标栏都去掉外圈底色，与右上角设置按钮一致：透明底、hover 仅变色。 */
 .left-footer-actions .icon-button,
-.collapse-right-button,
 .collapsed-expand,
 .collapsed-icon {
     background: transparent;
@@ -1524,7 +1524,6 @@ input:focus-visible {
 }
 
 .left-footer-actions .icon-button:hover,
-.collapse-right-button:hover,
 .collapsed-expand:hover,
 .collapsed-icon:hover {
     background: transparent;
@@ -3494,8 +3493,13 @@ input:focus-visible {
     height: 12px;
 }
 
+.left-topbar {
+    gap: 6px;
+}
+
 .right-topbar {
     justify-content: stretch;
+    gap: 6px;
     padding: 7px 8px;
 }
 
@@ -4277,28 +4281,8 @@ html[data-theme="light"] .artifact-preview-code .hljs-function .hljs-title {
     user-select: none;
 }
 
-.right-footer {
-    height: 36px;
-    min-height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
-    border-top: 1px solid var(--hairline);
-    background: var(--surface-inset);
-    padding: 0 8px 0 10px;
-}
-
-.collapse-right-button {
-    flex: none;
-}
-
 .collapsed-icon.user {
     padding: 0;
-}
-
-.collapsed-expand-bottom {
-    margin-top: auto;
 }
 
 @keyframes pulse {

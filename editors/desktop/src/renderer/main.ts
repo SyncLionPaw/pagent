@@ -958,6 +958,9 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
     <div class="desktop-shell ${platformClass(appInfo)}" data-shell>
       <div class="desktop-titlebar">
         <div class="titlebar-left">
+          <button class="titlebar-action" type="button" data-toggle-left title="折叠左栏" aria-label="折叠左栏">
+            ${renderIcon("panel-left-close")}
+          </button>
           <div class="titlebar-switch" data-titlebar-switch role="button" tabindex="0" title="切换主题" aria-label="切换主题">
             <div class="titlebar-switch-track">
               <div class="titlebar-switch-thumb" data-titlebar-switch-thumb></div>
@@ -983,12 +986,15 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
           <button class="titlebar-action title-settings-button" type="button" data-settings-open title="设置" aria-label="设置">
             ${renderIcon("settings")}
           </button>
+          <button class="titlebar-action" type="button" data-toggle-right title="折叠右栏" aria-label="折叠右栏">
+            ${renderIcon("panel-right-close")}
+          </button>
         </div>
       </div>
       <div class="desktop-workbench" data-workbench>
         <aside class="pane pane-left" data-left-pane>
           <div class="pane-expanded">
-            <div class="pane-topbar">
+            <div class="pane-topbar left-topbar">
               <button class="new-task-button" type="button" data-new-task>新建任务</button>
             </div>
             <div class="left-split" data-left-split>
@@ -1079,16 +1085,10 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
                 <button class="icon-button" type="button" data-theme-toggle title="切换主题">
                   ${renderIcon("moon")}
                 </button>
-                <button class="icon-button" type="button" data-collapse-left title="折叠左栏">
-                  ${renderIcon("panel-left-close")}
-                </button>
               </div>
             </div>
           </div>
           <div class="pane-collapsed">
-            <button class="collapsed-expand" type="button" data-expand-left title="展开左栏">
-              ${renderIcon("panel-left-open")}
-            </button>
             <button class="collapsed-icon" type="button" data-new-task title="新建任务">
               ${renderIcon("plus")}
             </button>
@@ -1291,12 +1291,6 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
                 <div class="terminal-panel" data-terminal-panel></div>
               </section>
             </div>
-
-            <div class="right-footer" data-right-footer>
-              <button class="icon-button collapse-right-button" type="button" data-collapse-right title="折叠右栏">
-                ${renderIcon("panel-right-close")}
-              </button>
-            </div>
           </div>
 
           <div class="pane-collapsed">
@@ -1305,9 +1299,6 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             </button>
             <button class="collapsed-icon" type="button" data-tab="sandbox" data-sandbox-tab title="沙箱">
               ${renderIcon("folder-tree")}
-            </button>
-            <button class="collapsed-expand collapsed-expand-bottom" type="button" data-expand-right title="展开右栏">
-              ${renderIcon("panel-right-open")}
             </button>
           </div>
         </aside>
@@ -1755,7 +1746,6 @@ async function start(): Promise<void> {
   const sandboxBackendIcon = findRequired<HTMLElement>("[data-sandbox-backend-icon]");
   const sandboxBackend = findRequired<HTMLElement>("[data-sandbox-backend]");
   const sandboxPill = findRequired<HTMLElement>("[data-sandbox-pill]");
-  const rightFooter = findRequired<HTMLElement>("[data-right-footer]");
   const threadMetaModal = findRequired<HTMLElement>("[data-thread-meta-modal]");
   const threadMetaBody = findRequired<HTMLElement>("[data-thread-meta-body]");
   const newSessionModal = findRequired<HTMLElement>("[data-new-session-modal]");
@@ -2047,6 +2037,21 @@ async function start(): Promise<void> {
       uiState.rightCollapsed ? "0px" : "6px",
     );
     historyDockButton.hidden = !uiState.sidebarDocked;
+    syncPaneToggleButtons();
+  }
+
+  function syncPaneToggleButtons(): void {
+    const leftToggle = findRequired<HTMLButtonElement>("[data-toggle-left]");
+    const rightToggle = findRequired<HTMLButtonElement>("[data-toggle-right]");
+    const leftHidden = uiState.leftCollapsed || uiState.sidebarDocked;
+    leftToggle.innerHTML = renderIcon(leftHidden ? "panel-left-open" : "panel-left-close");
+    leftToggle.title = leftHidden ? "展开左栏" : "折叠左栏";
+    leftToggle.setAttribute("aria-label", leftToggle.title);
+    rightToggle.innerHTML = renderIcon(
+      uiState.rightCollapsed ? "panel-right-open" : "panel-right-close",
+    );
+    rightToggle.title = uiState.rightCollapsed ? "展开右栏" : "折叠右栏";
+    rightToggle.setAttribute("aria-label", rightToggle.title);
   }
 
   function applyLeftSplitRatio(): void {
@@ -3348,7 +3353,6 @@ async function start(): Promise<void> {
     document.querySelectorAll<HTMLElement>("[data-tab]").forEach((node) => {
       node.classList.toggle("active", node.dataset.tab === uiState.activeTab);
     });
-    rightFooter.dataset.tab = uiState.activeTab;
     applyProjectPane();
   }
 
@@ -4315,22 +4319,14 @@ async function start(): Promise<void> {
     syncComposerDock();
   });
 
-  findRequired<HTMLElement>("[data-collapse-left]").addEventListener("click", () => {
-    uiState.leftCollapsed = true;
+  findRequired<HTMLElement>("[data-toggle-left]").addEventListener("click", () => {
+    uiState.leftCollapsed = !uiState.leftCollapsed;
     uiState.sidebarDocked = false;
     applyWorkbenchChrome();
+    syncComposerDock();
   });
-  findRequired<HTMLElement>("[data-expand-left]").addEventListener("click", () => {
-    uiState.leftCollapsed = false;
-    uiState.sidebarDocked = false;
-    applyWorkbenchChrome();
-  });
-  findRequired<HTMLElement>("[data-collapse-right]").addEventListener("click", () => {
-    uiState.rightCollapsed = true;
-    applyWorkbenchChrome();
-  });
-  findRequired<HTMLElement>("[data-expand-right]").addEventListener("click", () => {
-    uiState.rightCollapsed = false;
+  findRequired<HTMLElement>("[data-toggle-right]").addEventListener("click", () => {
+    uiState.rightCollapsed = !uiState.rightCollapsed;
     applyWorkbenchChrome();
   });
   findRequired<HTMLElement>("[data-open-latest]").addEventListener("click", () => {
@@ -4699,6 +4695,8 @@ async function start(): Promise<void> {
     applyRuntimeState(state);
     if (state.currentThreadId !== previousThreadId) {
       clearSandboxPanel();
+      // 会话确立后立即同步 backend，让 inplace 会话一进来就隐藏沙箱 Tab，无需先点沙箱。
+      void refreshSandboxStatus();
       void refreshSessions();
       void refreshArtifacts();
     }
@@ -4739,6 +4737,8 @@ async function start(): Promise<void> {
     refreshSessions(),
     refreshArtifacts(),
     ensureProjectPanelLoaded(),
+    // 冷启动即同步 backend，inplace 会话首屏就隐藏沙箱 Tab。
+    refreshSandboxStatus(),
     window.desktop.requestHistoryReplay(),
   ]);
 }
