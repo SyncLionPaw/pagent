@@ -53,6 +53,7 @@ debug
 # example runtime data
 .pagent/
 artifacts/
-benchmarks/
+# Only the repo-root runtime dir — do not ignore docs/public/benchmarks/
+/benchmarks/
 .trae
 job-bench-eval/
