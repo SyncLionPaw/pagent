@@ -36,15 +36,21 @@ from .message import (
     reply_text,
 )
 from .provider import (
+    PROVIDER_TYPES,
     DeepSeek,
     Kimi,
     LongCat,
     MiMo,
     Ollama,
     Provider,
+    ProviderKind,
     ProviderProtocol,
     Sglang,
     Vllm,
+    build_provider,
+    provider_api_key_env,
+    provider_base_url,
+    provider_requires_api_key,
 )
 from .tool import FunctionTool, ToolOutput, to_openai_tools, tool
 from .turn_result import TurnResult
@@ -64,7 +70,9 @@ __all__ = [
     "Messages",
     "MiMo",
     "Ollama",
+    "PROVIDER_TYPES",
     "Provider",
+    "ProviderKind",
     "ProviderProtocol",
     "ReasoningDelta",
     "RunBegin",
@@ -83,6 +91,10 @@ __all__ = [
     "TurnResult",
     "UserChunk",
     "Vllm",
+    "build_provider",
+    "provider_api_key_env",
+    "provider_base_url",
+    "provider_requires_api_key",
     "reply_text",
     "to_openai_tools",
     "tool",

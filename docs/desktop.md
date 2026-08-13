@@ -234,9 +234,13 @@ export DEEPSEEK_API_KEY=sk-...
 **Option 2 · Config file (recommended):** create `~/.pagent/pagent.toml`:
 
 ```toml
-[provider]
+[provider.deepseek]
+kind = "deepseek"
 api_key = "sk-..."
 model = "deepseek-v4-flash"
+
+[agent]
+provider = "deepseek"
 ```
 
 More providers: [Providers & API keys](./guide/providers).

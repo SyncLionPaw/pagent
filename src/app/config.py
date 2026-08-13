@@ -6,6 +6,12 @@ import tomllib
 from dataclasses import dataclass, replace
 from pathlib import Path
 
+from pagentv4.core import (
+    PROVIDER_TYPES,
+    provider_api_key_env,
+    provider_base_url,
+    provider_requires_api_key,
+)
 from pagentv4.ithread import SubAgentSpec
 from pagentv4.paths import (
     activate_home,
@@ -21,6 +27,28 @@ CONFIG_FILENAMES = ("pagent.toml",)
 USER_CONFIG_PATH = "~/.pagent/pagent.toml"
 # runner 进程自身跑在哪：local = 用户电脑（当前唯一支持）；cloud = 云端 pod（保留，未接线）。
 RUNNER_LOCATIONS = ("local", "cloud")
+DEFAULT_PROVIDER_NAME = "deepseek"
+DEFAULT_PROVIDER_KIND = "deepseek"
+DEFAULT_MODEL = "deepseek-v4-flash"
+
+
+@dataclass(frozen=True, slots=True)
+class ProviderConfig:
+    """一个命名 Provider；``kind`` 是构造具体 Provider 的判别字段。"""
+
+    kind: str
+    model: str
+    api_key: str | None = None
+    base_url: str | None = None
+
+    def resolved_api_key(self) -> str | None:
+        if self.api_key and self.api_key.strip():
+            return self.api_key.strip()
+        env = os.getenv(provider_api_key_env(self.kind))
+        return env.strip() if env and env.strip() else None
+
+    def resolved_base_url(self) -> str:
+        return provider_base_url(self.kind, self.base_url)
 
 
 @dataclass(slots=True)
@@ -30,6 +58,8 @@ class ReplConfig:
     model: str | None = None
     api_key: str | None = None
     provider_base_url: str | None = None
+    providers: dict[str, ProviderConfig] | None = None
+    agent_provider: str | None = None
     max_turns: int | None = None
     runner_location: str | None = None
     backend: str | None = None
@@ -51,13 +81,40 @@ class ReplConfig:
     assistant_label: str | None = None
     permission_mode: str | None = None
 
+    def resolved_provider_name(self) -> str:
+        if self.agent_provider:
+            return self.agent_provider
+        if self.providers:
+            if DEFAULT_PROVIDER_NAME in self.providers:
+                return DEFAULT_PROVIDER_NAME
+            if len(self.providers) == 1:
+                return next(iter(self.providers))
+            raise ValueError(
+                "agent.provider is required when multiple providers are configured"
+            )
+        return "default"
+
+    def resolved_provider(self) -> ProviderConfig:
+        if self.providers:
+            name = self.resolved_provider_name()
+            try:
+                return self.providers[name]
+            except KeyError as exc:
+                raise ValueError(
+                    f"agent.provider references unknown provider {name!r}"
+                ) from exc
+        return ProviderConfig(
+            kind=DEFAULT_PROVIDER_KIND,
+            model=self.model or DEFAULT_MODEL,
+            api_key=self.api_key,
+            base_url=self.provider_base_url,
+        )
+
     def resolved_api_key(self) -> str | None:
-        if self.api_key and self.api_key.strip():
-            return self.api_key.strip()
-        env = os.getenv("DEEPSEEK_API_KEY")
-        if env and env.strip():
-            return env.strip()
-        return None
+        return self.resolved_provider().resolved_api_key()
+
+    def requires_api_key(self) -> bool:
+        return provider_requires_api_key(self.resolved_provider().kind)
 
     def resolved_max_turns(self) -> int:
         return self.max_turns if self.max_turns is not None else 24
@@ -66,7 +123,35 @@ class ReplConfig:
         return self.runner_location if self.runner_location is not None else "local"
 
     def resolved_model(self) -> str:
-        return self.model or "deepseek-v4-flash"
+        return self.resolved_provider().model
+
+    def provider_for_thread(
+        self,
+        *,
+        provider_name: str,
+        provider_kind: str,
+        model: str,
+        base_url: str | None,
+    ) -> ProviderConfig:
+        """用 thread 冻结的身份字段配 Provider，凭据仍从全局配置或环境变量读取。"""
+        configured = (self.providers or {}).get(provider_name)
+        if configured is None and self.providers:
+            same_kind = [
+                provider
+                for provider in self.providers.values()
+                if provider.kind == provider_kind
+            ]
+            if len(same_kind) == 1:
+                configured = same_kind[0]
+        api_key = configured.api_key if configured is not None else None
+        if not self.providers and provider_kind == DEFAULT_PROVIDER_KIND:
+            api_key = self.api_key
+        return ProviderConfig(
+            kind=provider_kind,
+            model=model,
+            api_key=api_key,
+            base_url=base_url,
+        )
 
     def resolved_skill_roots(self) -> tuple[str, ...]:
         return self.skill_roots or ()
@@ -136,8 +221,11 @@ class ReplConfig:
             kwargs["ssh_host"] = self.ssh_host
         if self.ssh_workdir is not None:
             kwargs["ssh_workdir"] = self.ssh_workdir
-        if self.model is not None:
-            kwargs["model"] = self.model
+        provider = self.resolved_provider()
+        kwargs["provider_name"] = self.resolved_provider_name()
+        kwargs["provider_kind"] = provider.kind
+        kwargs["model"] = provider.model
+        kwargs["provider_base_url"] = provider.resolved_base_url()
         # SSOT：把 harness 工具白名单与 skills 目录冻结进新 thread.toml，
         # 让 [agent] tools / [agent] skills 成为运行时唯一事实来源。
         kwargs["agent_tools"] = self.resolved_agent_tools()
@@ -152,14 +240,92 @@ def load_toml(path: Path) -> dict:
         return tomllib.load(fp)
 
 
+def parse_provider_entry(name: str, payload: dict) -> ProviderConfig:
+    kind = payload.get("kind")
+    if not isinstance(kind, str) or not kind.strip():
+        raise ValueError(f"provider.{name}.kind must be a non-empty string")
+    kind = kind.strip().lower()
+    if kind not in PROVIDER_TYPES:
+        raise ValueError(
+            f"provider.{name}.kind must be one of {sorted(PROVIDER_TYPES)}"
+        )
+
+    model = payload.get("model")
+    if not isinstance(model, str) or not model.strip():
+        raise ValueError(f"provider.{name}.model must be a non-empty string")
+
+    api_key = payload.get("api_key")
+    if api_key is not None and not isinstance(api_key, str):
+        raise ValueError(f"provider.{name}.api_key must be a string")
+
+    base_url = payload.get("base_url")
+    if base_url is not None and not isinstance(base_url, str):
+        raise ValueError(f"provider.{name}.base_url must be a string")
+
+    return ProviderConfig(
+        kind=kind,
+        model=model.strip(),
+        api_key=api_key.strip() if api_key and api_key.strip() else None,
+        base_url=base_url.strip() if base_url and base_url.strip() else None,
+    )
+
+
+def parse_provider_block(
+    provider: dict,
+) -> tuple[
+    dict[str, ProviderConfig] | None,
+    str | None,
+    str | None,
+    str | None,
+]:
+    """解析新命名 Provider 池；旧单表返回后三个兼容字段。"""
+    legacy_keys = {"model", "api_key", "base_url"}
+    has_legacy = bool(provider.keys() & legacy_keys)
+    named = {name: value for name, value in provider.items() if name not in legacy_keys}
+    if has_legacy and named:
+        raise ValueError(
+            "[provider] legacy fields cannot be mixed with [provider.<name>] tables"
+        )
+
+    if not named:
+        model = provider.get("model")
+        if model is not None and not isinstance(model, str):
+            raise ValueError("provider.model must be a string")
+        api_key = provider.get("api_key")
+        if api_key is not None and not isinstance(api_key, str):
+            raise ValueError("provider.api_key must be a string")
+        base_url = provider.get("base_url")
+        if base_url is not None and not isinstance(base_url, str):
+            raise ValueError("provider.base_url must be a string")
+        return (
+            None,
+            model,
+            api_key.strip() if api_key and api_key.strip() else None,
+            base_url.strip() if base_url and base_url.strip() else None,
+        )
+
+    parsed: dict[str, ProviderConfig] = {}
+    for name, payload in named.items():
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError("provider name must be a non-empty string")
+        if not isinstance(payload, dict):
+            raise ValueError(f"provider.{name} must be a table")
+        parsed[name] = parse_provider_entry(name, payload)
+    return parsed, None, None, None
+
+
 def parse_repl_config(data: dict) -> ReplConfig:
     provider = data.get("provider", {})
+    if not isinstance(provider, dict):
+        raise ValueError("provider must be a table")
     sandbox = data.get("sandbox", {})
     sandbox_container = sandbox.get("container", {})
     sandbox_ssh = sandbox.get("ssh", {})
     project = data.get("project", {})
     skills = data.get("skills", {})
     agent = data.get("agent", {})
+    if not isinstance(agent, dict):
+        raise ValueError("agent must be a table")
     repl = data.get("repl", {})
     runner = data.get("runner", {})
     permission = data.get("permission", {})
@@ -181,21 +347,16 @@ def parse_repl_config(data: dict) -> ReplConfig:
                 "runner.location = 'cloud' 尚未支持；云端 pod 形态待实现，当前只支持 'local'"
             )
 
-    model = provider.get("model")
-    if model is not None and not isinstance(model, str):
-        raise ValueError("provider.model must be a string")
-
-    api_key = provider.get("api_key")
-    if api_key is not None and not isinstance(api_key, str):
-        raise ValueError("provider.api_key must be a string")
-    if api_key == "":
-        api_key = None
-
-    base_url = provider.get("base_url")
-    if base_url is not None and not isinstance(base_url, str):
-        raise ValueError("provider.base_url must be a string")
-    if base_url == "":
-        base_url = None
+    providers, model, api_key, base_url = parse_provider_block(provider)
+    agent_provider = agent.get("provider")
+    if agent_provider is not None and not isinstance(agent_provider, str):
+        raise ValueError("agent.provider must be a string")
+    if isinstance(agent_provider, str):
+        agent_provider = agent_provider.strip() or None
+    if providers and agent_provider and agent_provider not in providers:
+        raise ValueError(
+            f"agent.provider references unknown provider {agent_provider!r}"
+        )
 
     image = sandbox_container.get("image")
     if image == "":
@@ -302,6 +463,8 @@ def parse_repl_config(data: dict) -> ReplConfig:
         model=model,
         api_key=api_key,
         provider_base_url=base_url,
+        providers=providers,
+        agent_provider=agent_provider,
         max_turns=max_turns,
         runner_location=runner_location,
         backend=sandbox.get("backend"),
@@ -343,6 +506,13 @@ def merge_config(base: ReplConfig, override: ReplConfig) -> ReplConfig:
         if value is None:
             continue
         fields[name] = value
+    if override.providers is not None:
+        fields.update(model=None, api_key=None, provider_base_url=None)
+    elif any(
+        value is not None
+        for value in (override.model, override.api_key, override.provider_base_url)
+    ):
+        fields.update(providers=None, agent_provider=None)
     return replace(base, **fields)
 
 
@@ -393,16 +563,23 @@ def refresh_provider_from_disk(
     API Key 时，打开 runner 前调用本函数即可读到新 Key，无需重启进程。
     """
     fresh = load_config(workdir=workdir)
-    fields: dict = {}
-    if fresh.api_key:
-        fields["api_key"] = fresh.api_key
-    if fresh.model:
-        fields["model"] = fresh.model
-    if fresh.provider_base_url:
-        fields["provider_base_url"] = fresh.provider_base_url
-    if not fields:
-        return config
-    return replace(config, **fields)
+    if fresh.providers is not None:
+        return replace(
+            config,
+            providers=fresh.providers,
+            agent_provider=fresh.agent_provider,
+            model=None,
+            api_key=None,
+            provider_base_url=None,
+        )
+    return replace(
+        config,
+        providers=None,
+        agent_provider=None,
+        model=fresh.model,
+        api_key=fresh.api_key,
+        provider_base_url=fresh.provider_base_url,
+    )
 
 
 def build_parser() -> argparse.ArgumentParser:

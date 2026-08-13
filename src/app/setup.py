@@ -23,9 +23,13 @@ from pathlib import Path
 
 from pagentv4.paths import home_config_path
 
-from .config import ReplConfig, load_config
-
-DEFAULT_MODEL = "deepseek-v4-flash"
+from .config import (
+    DEFAULT_MODEL,
+    DEFAULT_PROVIDER_KIND,
+    DEFAULT_PROVIDER_NAME,
+    ReplConfig,
+    load_config,
+)
 
 
 @dataclass(slots=True)
@@ -33,12 +37,14 @@ class ProviderSetup:
     api_key: str
     model: str = DEFAULT_MODEL
     base_url: str | None = None
+    name: str = DEFAULT_PROVIDER_NAME
+    kind: str = DEFAULT_PROVIDER_KIND
 
 
 def needs_api_key(config: ReplConfig | None = None) -> bool:
     """当前合并配置下是否还没有可用的 API Key。"""
     cfg = config if config is not None else load_config()
-    return not cfg.resolved_api_key()
+    return cfg.requires_api_key() and not cfg.resolved_api_key()
 
 
 def toml_escape(value: str) -> str:
@@ -47,23 +53,42 @@ def toml_escape(value: str) -> str:
 
 def upsert_provider_field(text: str, field: str, value: str) -> str:
     """在 toml 文本里写入/更新 ``[provider].<field>``，尽量保留其它内容。"""
-    key_line = f'{field} = "{toml_escape(value)}"'
-    pattern = rf"(?m)^\s*{re.escape(field)}\s*=\s*.*$"
-    if re.search(pattern, text):
-        return re.sub(pattern, key_line, text, count=1)
-
-    provider = re.search(r"(?m)^\[provider\]\s*$", text)
-    if provider:
-        insert_at = provider.end()
-        return text[:insert_at] + "\n" + key_line + text[insert_at:]
-
-    suffix = "" if text.endswith("\n") or not text else "\n"
-    return text + suffix + f"\n[provider]\n{key_line}\n"
+    return upsert_section_field(text, "provider", field, value)
 
 
 def remove_provider_field(text: str, field: str) -> str:
     """删除 ``[provider]`` 下某字段行（用于清空可选的 base_url）。"""
-    return re.sub(rf"(?m)^\s*{re.escape(field)}\s*=\s*.*\n?", "", text)
+    return remove_section_field(text, "provider", field)
+
+
+def upsert_section_field(text: str, section: str, field: str, value: str) -> str:
+    """在指定 TOML section 内写入字段，保留其他 section 的同名字段。"""
+    key_line = f'{field} = "{toml_escape(value)}"'
+    section_pattern = rf"(?m)^\[{re.escape(section)}\]\s*$"
+    match = re.search(section_pattern, text)
+    if not match:
+        suffix = "" if text.endswith("\n") or not text else "\n"
+        return text + suffix + f"\n[{section}]\n{key_line}\n"
+
+    next_section = re.search(r"(?m)^\[", text[match.end() :])
+    end = match.end() + next_section.start() if next_section else len(text)
+    block = text[match.end() : end]
+    field_pattern = rf"(?m)^[ \t]*{re.escape(field)}[ \t]*=[ \t]*.*$"
+    if re.search(field_pattern, block):
+        block = re.sub(field_pattern, key_line, block, count=1)
+        return text[: match.end()] + block + text[end:]
+    return text[: match.end()] + "\n" + key_line + text[match.end() :]
+
+
+def remove_section_field(text: str, section: str, field: str) -> str:
+    match = re.search(rf"(?m)^\[{re.escape(section)}\]\s*$", text)
+    if not match:
+        return text
+    next_section = re.search(r"(?m)^\[", text[match.end() :])
+    end = match.end() + next_section.start() if next_section else len(text)
+    block = text[match.end() : end]
+    block = re.sub(rf"(?m)^[ \t]*{re.escape(field)}[ \t]*=[ \t]*.*\n?", "", block)
+    return text[: match.end()] + block + text[end:]
 
 
 # 兼容旧测试/调用名。
@@ -78,6 +103,8 @@ def write_user_provider(setup: ProviderSetup, *, cwd: str | Path | None = None) 
         raise ValueError("api_key 不能为空")
     model = (setup.model or DEFAULT_MODEL).strip() or DEFAULT_MODEL
     base_url = setup.base_url.strip() if setup.base_url else ""
+    name = setup.name.strip() or DEFAULT_PROVIDER_NAME
+    kind = setup.kind.strip().lower() or DEFAULT_PROVIDER_KIND
 
     path = home_config_path(cwd)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -87,16 +114,27 @@ def write_user_provider(setup: ProviderSetup, *, cwd: str | Path | None = None) 
         text = (
             "# pagent home 配置（与 threads/skills 同目录）\n"
             "# home = ./.pagent（项目）或 ~/.pagent（用户）\n"
-            "\n"
-            "[provider]\n"
         )
 
-    text = upsert_provider_field(text, "api_key", key)
-    text = upsert_provider_field(text, "model", model)
-    if base_url:
-        text = upsert_provider_field(text, "base_url", base_url)
+    # 已有旧配置继续写旧 [provider]，确保原文件可原地升级；新配置写命名分表。
+    legacy = bool(re.search(r"(?m)^\[provider\]\s*$", text))
+    if legacy:
+        text = upsert_provider_field(text, "api_key", key)
+        text = upsert_provider_field(text, "model", model)
+        if base_url:
+            text = upsert_provider_field(text, "base_url", base_url)
+        else:
+            text = remove_provider_field(text, "base_url")
     else:
-        text = remove_provider_field(text, "base_url")
+        section = f"provider.{name}"
+        text = upsert_section_field(text, section, "kind", kind)
+        text = upsert_section_field(text, section, "api_key", key)
+        text = upsert_section_field(text, section, "model", model)
+        if base_url:
+            text = upsert_section_field(text, section, "base_url", base_url)
+        else:
+            text = remove_section_field(text, section, "base_url")
+        text = upsert_section_field(text, "agent", "provider", name)
 
     path.write_text(text, encoding="utf-8")
     try:

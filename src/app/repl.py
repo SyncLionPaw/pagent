@@ -7,7 +7,13 @@ from datetime import datetime
 
 from prompt_toolkit.formatted_text import ANSI
 
-from pagentv4 import DeepSeek, Runner
+from pagentv4 import (
+    Runner,
+    Thread,
+    build_provider,
+    provider_api_key_env,
+    provider_requires_api_key,
+)
 
 from .clean import clean_pagent, format_clean_report
 from .config import (
@@ -44,24 +50,36 @@ def read_prompt_line(*, color: bool, user_label: str = "you") -> str:
 async def open_runner(config: ReplConfig) -> Runner:
     # Desktop / VS Code 可能在 wire 已启动后再写入 API Key；打开会话前从磁盘刷新。
     config = refresh_provider_from_disk(config)
-    api_key = config.resolved_api_key()
-    if not api_key:
+    thread_id = config.thread_id or f"thread-{datetime.now():%Y%m%d-%H%M%S}"
+    overrides = config.thread_overrides()
+    thread = Thread.open(thread_id, overrides=overrides)
+    provider_config = config.provider_for_thread(
+        provider_name=thread.spec.provider_name,
+        provider_kind=thread.spec.provider_kind,
+        model=thread.spec.model,
+        base_url=thread.spec.provider_base_url,
+    )
+    api_key = provider_config.resolved_api_key()
+    if not api_key and provider_requires_api_key(provider_config.kind):
+        env_name = provider_api_key_env(provider_config.kind)
         raise SystemExit(
             "需要 API Key：运行交互式 pagent 完成 setup，"
-            "或写入 ~/.pagent/pagent.toml，或 export DEEPSEEK_API_KEY"
+            f"或写入 ~/.pagent/pagent.toml，或 export {env_name}"
         )
 
-    thread_id = config.thread_id or f"thread-{datetime.now():%Y%m%d-%H%M%S}"
-    provider_kwargs = {"apikey": api_key}
-    if config.provider_base_url:
-        provider_kwargs["base_url"] = config.provider_base_url
-    provider = DeepSeek(config.resolved_model(), **provider_kwargs)
+    provider = build_provider(
+        provider_config.kind,
+        provider_config.model,
+        base_url=provider_config.base_url,
+        api_key=api_key,
+    )
     # 工具与 skills 不再从这里旁路注入：它们由 thread_overrides 冻结进 thread.toml 的
     # [agent] tools / [agent] skills，assemble_run_resources 从 spec 单一来源读取。
     return await Runner.create(
         thread_id,
         provider,
-        overrides=config.thread_overrides(),
+        overrides=overrides,
+        opened_thread=thread,
         extra_system=EXTRA_SYSTEM,
         max_turns=config.resolved_max_turns(),
         tool_hooks=build_app_tool_hooks(auto=config.permission_auto()),
@@ -278,7 +296,12 @@ def main(argv: list[str] | None = None) -> None:
     parser = build_parser()
     args = parser.parse_args(argv)
     config = config_from_args(args)
-    if not config.resolved_api_key() and not args.wire and not args.http:
+    if (
+        config.requires_api_key()
+        and not config.resolved_api_key()
+        and not args.wire
+        and not args.http
+    ):
         # 交互 REPL：缺 Key 时引导写入 ~/.pagent；--wire/--http 由宿主先做 setup。
         from .setup import interactive_setup
 

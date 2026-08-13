@@ -3,6 +3,7 @@ import asyncio
 import pytest
 
 from app import render
+from app.config import ProviderConfig, ReplConfig
 from app.render import (
     RenderState,
     emit_user_line,
@@ -15,6 +16,7 @@ from app.repl import (
     format_fatal_error,
     handle_command,
     handle_prefixed_command,
+    open_runner,
     read_prompt_line,
     say_goodbye,
     split_prefixed_command,
@@ -24,6 +26,51 @@ from pagentv4 import TextDelta, ToolCallBegin, ToolResult, TurnEnd
 
 class FakeRunner:
     sandbox = None
+
+
+@pytest.mark.asyncio
+async def test_open_runner_uses_frozen_thread_provider(monkeypatch):
+    captured: dict = {}
+    spec = type(
+        "Spec",
+        (),
+        {
+            "provider_name": "local",
+            "provider_kind": "ollama",
+            "model": "frozen-model",
+            "provider_base_url": "http://frozen.example/v1",
+        },
+    )()
+    thread = type("Thread", (), {"spec": spec})()
+
+    monkeypatch.setattr("app.repl.refresh_provider_from_disk", lambda config: config)
+    monkeypatch.setattr("app.repl.Thread.open", lambda *args, **kwargs: thread)
+
+    def fake_build_provider(kind, model, **kwargs):
+        captured.update(kind=kind, model=model, **kwargs)
+        return object()
+
+    async def fake_create(thread_id, provider, **kwargs):
+        captured["thread_id"] = thread_id
+        captured["provider"] = provider
+        captured["create_kwargs"] = kwargs
+        return "runner"
+
+    monkeypatch.setattr("app.repl.build_provider", fake_build_provider)
+    monkeypatch.setattr("app.repl.Runner.create", fake_create)
+
+    config = ReplConfig(
+        thread_id="existing",
+        providers={"local": ProviderConfig(kind="ollama", model="new-global-model")},
+        agent_provider="local",
+    )
+
+    assert await open_runner(config) == "runner"
+    assert captured["kind"] == "ollama"
+    assert captured["model"] == "frozen-model"
+    assert captured["base_url"] == "http://frozen.example/v1"
+    assert captured["api_key"] is None
+    assert captured["create_kwargs"]["opened_thread"] is thread
 
 
 class FakeSandboxCommands:

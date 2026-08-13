@@ -233,6 +233,7 @@ class Runner(BaseRunner):
         *,
         root: str | Path | None = None,
         overrides: dict | None = None,
+        opened_thread: Thread | None = None,
         extra_system: str = "",
         max_turns: int = 24,
         skill_roots: Sequence[str | Path] = (),
@@ -240,7 +241,11 @@ class Runner(BaseRunner):
         tool_hooks: ToolHooks | None = None,
     ) -> Runner:
         """创建完整 Runner：打开 thread、sandbox、conversation 和 skills。"""
-        thread = Thread.open(thread_id, root=root, overrides=overrides)
+        thread = opened_thread or Thread.open(thread_id, root=root, overrides=overrides)
+        if thread.id != thread_id:
+            raise ValueError(
+                f"opened_thread id {thread.id!r} does not match thread_id {thread_id!r}"
+            )
         run_state = RunState(phase="waking_sandbox")
         resources = await assemble_run_resources(
             thread,

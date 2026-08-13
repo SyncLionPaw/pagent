@@ -4,6 +4,7 @@ import pytest
 
 from app.config import (
     BUNDLED_CONFIG,
+    ProviderConfig,
     ReplConfig,
     build_parser,
     config_from_args,
@@ -68,7 +69,10 @@ def test_thread_overrides_from_config():
         "ssh_host": "pagent",
         "ssh_config": "~/.ssh/config",
         "ssh_workdir": "~/pagent",
+        "provider_name": "default",
+        "provider_kind": "deepseek",
         "model": "deepseek-v4-flash",
+        "provider_base_url": "https://api.deepseek.com",
         # project_path 留空 → 冻结成启动时的 cwd 绝对路径（thread.toml 写具体值）。
         "project_path": os.path.abspath(os.getcwd()),
         # SSOT：harness 工具白名单与 skills 目录冻结进 thread.toml。
@@ -111,6 +115,108 @@ def test_resolved_api_key_falls_back_to_env(monkeypatch):
     monkeypatch.setenv("DEEPSEEK_API_KEY", "from-env")
     config = ReplConfig()
     assert config.resolved_api_key() == "from-env"
+
+
+def test_parse_named_provider_pool(monkeypatch):
+    monkeypatch.setenv("MOONSHOT_API_KEY", "moonshot-env")
+    config = parse_repl_config(
+        {
+            "provider": {
+                "deepseek": {
+                    "kind": "deepseek",
+                    "model": "deepseek-v4-flash",
+                    "api_key": "deepseek-key",
+                },
+                "kimi": {"kind": "kimi", "model": "kimi-k2.5"},
+            },
+            "agent": {"provider": "kimi"},
+        }
+    )
+
+    assert config.resolved_provider_name() == "kimi"
+    assert config.resolved_model() == "kimi-k2.5"
+    assert config.resolved_api_key() == "moonshot-env"
+    assert config.thread_overrides()["provider_kind"] == "kimi"
+    assert (
+        config.thread_overrides()["provider_base_url"] == "https://api.moonshot.cn/v1"
+    )
+
+
+def test_named_provider_rejects_unknown_agent_reference():
+    with pytest.raises(ValueError, match="unknown provider"):
+        parse_repl_config(
+            {
+                "provider": {
+                    "deepseek": {
+                        "kind": "deepseek",
+                        "model": "deepseek-v4-flash",
+                    }
+                },
+                "agent": {"provider": "missing"},
+            }
+        )
+
+
+def test_named_and_legacy_provider_formats_cannot_mix():
+    with pytest.raises(ValueError, match="cannot be mixed"):
+        parse_repl_config(
+            {
+                "provider": {
+                    "model": "legacy",
+                    "deepseek": {
+                        "kind": "deepseek",
+                        "model": "deepseek-v4-flash",
+                    },
+                }
+            }
+        )
+
+
+def test_provider_for_thread_keeps_identity_and_reads_named_credential():
+    config = ReplConfig(
+        providers={
+            "primary": ProviderConfig(
+                kind="deepseek",
+                model="new-model",
+                api_key="stored-key",
+            )
+        },
+        agent_provider="primary",
+    )
+
+    provider = config.provider_for_thread(
+        provider_name="primary",
+        provider_kind="deepseek",
+        model="frozen-model",
+        base_url="https://frozen.example/v1",
+    )
+
+    assert provider.model == "frozen-model"
+    assert provider.base_url == "https://frozen.example/v1"
+    assert provider.resolved_api_key() == "stored-key"
+
+
+def test_provider_for_legacy_thread_uses_unique_same_kind_credential():
+    config = ReplConfig(
+        providers={
+            "deepseek": ProviderConfig(
+                kind="deepseek",
+                model="new-model",
+                api_key="stored-key",
+            )
+        },
+        agent_provider="deepseek",
+    )
+
+    provider = config.provider_for_thread(
+        provider_name="default",
+        provider_kind="deepseek",
+        model="legacy-model",
+        base_url="https://api.deepseek.com",
+    )
+
+    assert provider.model == "legacy-model"
+    assert provider.resolved_api_key() == "stored-key"
 
 
 def test_refresh_provider_from_disk_picks_up_new_key(tmp_path, monkeypatch):
@@ -250,7 +356,8 @@ def test_parse_repl_config():
         "skills": {"roots": ["./skills", "~/.agents/skills"]},
     }
     config = parse_repl_config(data)
-    assert config.model == "deepseek-v4-flash"
+    assert config.resolved_model() == "deepseek-v4-flash"
+    assert config.resolved_provider_name() == "default"
     assert config.api_key == "sk-test"
     assert config.provider_base_url == "https://api.example.com"
     assert config.max_turns == 16
@@ -302,7 +409,8 @@ def test_reference_template_parses_full_schema():
     template = BUNDLED_CONFIG.parent.parent / "template" / "pagent.toml"
     config = load_config_file(template)
     assert config.max_turns == 24
-    assert config.model == "deepseek-v4-flash"
+    assert config.resolved_model() == "deepseek-v4-flash"
+    assert config.resolved_provider_name() == "deepseek"
     assert config.backend == "local"
     assert config.command_policy == "workdir"
     assert config.image == "pagent:latest"

@@ -229,9 +229,13 @@ export DEEPSEEK_API_KEY=sk-...
 **方式二 · 配置文件（推荐）：** 新建 `~/.pagent/pagent.toml`：
 
 ```toml
-[provider]
+[provider.deepseek]
+kind = "deepseek"
 api_key = "sk-..."
 model = "deepseek-v4-flash"
+
+[agent]
+provider = "deepseek"
 ```
 
 更多模型见 [模型与 API Key](./guide/providers)。

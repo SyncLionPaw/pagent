@@ -1,4 +1,4 @@
-from app.config import ReplConfig
+from app.config import ProviderConfig, ReplConfig
 from app.setup import (
     DEFAULT_MODEL,
     ProviderSetup,
@@ -55,6 +55,10 @@ def test_write_user_provider_full(tmp_path, monkeypatch):
     )
     assert path == home / ".pagent" / "pagent.toml"
     text = path.read_text(encoding="utf-8")
+    assert "[provider.deepseek]" in text
+    assert 'kind = "deepseek"' in text
+    assert "[agent]" in text
+    assert 'provider = "deepseek"' in text
     assert 'api_key = "sk-test"' in text
     assert 'model = "my-model"' in text
     assert 'base_url = "https://example.com/v1"' in text
@@ -107,3 +111,35 @@ def test_upsert_provider_field_model():
 def test_needs_api_key():
     assert needs_api_key(ReplConfig()) is True
     assert needs_api_key(ReplConfig(api_key="sk-x")) is False
+    assert (
+        needs_api_key(
+            ReplConfig(
+                providers={"local": ProviderConfig(kind="ollama", model="qwen3:8b")},
+                agent_provider="local",
+            )
+        )
+        is False
+    )
+
+
+def test_write_user_provider_updates_named_template(tmp_path, monkeypatch):
+    home = tmp_path / "home"
+    cfg = home / ".pagent" / "pagent.toml"
+    cfg.parent.mkdir(parents=True)
+    cfg.write_text(
+        '[provider.deepseek]\nkind = "deepseek"\nmodel = "old"\n\n'
+        '[agent]\nprovider = "deepseek"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("HOME", str(home))
+
+    write_user_provider(
+        ProviderSetup(api_key="sk-new", model="new-model"),
+        cwd=tmp_path,
+    )
+
+    text = cfg.read_text(encoding="utf-8")
+    assert text.count("[provider.deepseek]") == 1
+    assert 'api_key = "sk-new"' in text
+    assert 'model = "new-model"' in text
+    assert "[provider]\n" not in text

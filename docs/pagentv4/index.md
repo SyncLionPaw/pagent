@@ -42,6 +42,32 @@ There are several layers inside `runtime/`:
 - [VS Code extension](/vscode)
 - [Sandbox](./sandbox)
 
+## Terminal app providers
+
+`uv run pagent` reads named providers from `~/.pagent/pagent.toml`. Define the
+providers you use, then select one for the main agent:
+
+```toml
+[provider.deepseek]
+kind = "deepseek"
+model = "deepseek-v4-flash"
+api_key = "" # falls back to DEEPSEEK_API_KEY
+
+[provider.local]
+kind = "ollama"
+model = "qwen3:8b"
+
+[agent]
+provider = "deepseek"
+```
+
+Available `kind` values are `openai`, `deepseek`, `kimi`, `mimo`, `longcat`,
+`ollama`, `vllm`, and `sglang`. Set `base_url` inside a provider block to
+override its built-in endpoint.
+
+When a thread is created, its provider name, kind, model, and base URL are
+saved in `thread.toml`. API keys stay in the global config or environment.
+
 ## Status
 
 New work should use `pagentv4` and `app` (terminal REPL). The top-level `pagent`

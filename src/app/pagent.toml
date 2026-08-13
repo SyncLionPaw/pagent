@@ -10,11 +10,12 @@
 location = "local" # runner 进程跑在哪：local = 用户电脑（默认，当前唯一支持）；cloud = 云端 pod（保留，未实现）
 max_turns = 24 # 单轮对话最大工具调用轮数
 
-[provider]
-# api_key 请写到当前 home 的 pagent.toml，勿提交进仓库；也可 export DEEPSEEK_API_KEY。
-api_key = ""
+[provider.deepseek]
+kind = "deepseek"
 model = "deepseek-v4-flash"
-# base_url = ""  # 可选，覆盖 DeepSeek 默认 endpoint
+# api_key 请写到当前 home 的 pagent.toml，勿提交进仓库；空值回退 DEEPSEEK_API_KEY。
+api_key = ""
+# base_url = ""  # 可选，覆盖 kind 内置的 endpoint
 
 [sandbox]
 backend = "local" # local（thread workspace）| inplace（直接改项目）| container | docker | podman | ssh
@@ -66,6 +67,8 @@ workdir = "~/pagent"
 roots = ["{pagent_home}/skills"]
 
 [agent]
+# 主 agent 使用哪个 [provider.<name>]。
+provider = "deepseek"
 # 主 agent 的进程内（harness）工具白名单，冻结进新建 thread.toml 的 [agent] tools。
 # 可选：web_search、fetch_url、delegate_to_subagent（后者还需至少配一个 [sub.*]）。
 # 删去不想启用的即可；给空表 = 不挂任何进程内工具。

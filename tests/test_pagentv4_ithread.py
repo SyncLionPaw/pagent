@@ -28,6 +28,9 @@ def test_thread_spec_defaults():
     assert spec.conversation_backend == "jsonl"
     assert spec.backend == "local"
     assert spec.model == "deepseek-v4-flash"
+    assert spec.provider_name == "default"
+    assert spec.provider_kind == "deepseek"
+    assert spec.provider_base_url == "https://api.deepseek.com"
     assert spec.extra == {}
 
 
@@ -53,13 +56,19 @@ def test_thread_spec_to_dict_roundtrip():
     original = ThreadSpec(
         backend="docker",
         image="test:1",
+        provider_name="work",
+        provider_kind="openai",
         model="gpt-5",
+        provider_base_url="https://gateway.example/v1",
         project_path="/tmp/demo-project",
     )
     restored = ThreadSpec.from_dict(original.to_dict())
     assert restored.backend == original.backend
     assert restored.image == original.image
     assert restored.model == original.model
+    assert restored.provider_name == original.provider_name
+    assert restored.provider_kind == original.provider_kind
+    assert restored.provider_base_url == original.provider_base_url
     assert restored.project_path == original.project_path
 
 

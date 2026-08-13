@@ -101,10 +101,14 @@ mkdir .pagent
 插件第一次配置 API Key 后，会写入 `pagent.toml`。也可以手动编辑：
 
 ```toml
-[provider]
+[provider.deepseek]
+kind = "deepseek"
 api_key = "sk-..."
 model = "deepseek-v4-flash"
 # base_url = "https://..."
+
+[agent]
+provider = "deepseek"
 
 [sandbox]
 backend = "local" # local | inplace | docker | podman | ssh

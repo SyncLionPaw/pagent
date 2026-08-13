@@ -7,7 +7,7 @@ TODO:
 
 import os
 from collections.abc import Mapping
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 from openai import AsyncOpenAI, AsyncStream
 from openai.types.chat import ChatCompletionChunk
@@ -42,7 +42,7 @@ class ProviderProtocol(Protocol):
 
 class Provider:
     API_KEY_ENV_VAR = "OPENAI_API_KEY"
-    BASE_URL = "https://api.openai.com"
+    BASE_URL = "https://api.openai.com/v1"
 
     def __init__(
         self,
@@ -127,3 +127,71 @@ class Vllm(Provider):
 class Sglang(Provider):
     API_KEY_ENV_VAR = "SGLANG_API_KEY"
     BASE_URL = "http://127.0.0.1:30000/v1"
+
+
+ProviderKind = Literal[
+    "openai",
+    "deepseek",
+    "kimi",
+    "mimo",
+    "longcat",
+    "ollama",
+    "vllm",
+    "sglang",
+]
+
+PROVIDER_TYPES: dict[str, type[Provider]] = {
+    "openai": Provider,
+    "deepseek": DeepSeek,
+    "kimi": Kimi,
+    "mimo": MiMo,
+    "longcat": LongCat,
+    "ollama": Ollama,
+    "vllm": Vllm,
+    "sglang": Sglang,
+}
+
+LOCAL_PROVIDER_KINDS = frozenset({"ollama", "vllm", "sglang"})
+
+
+def provider_type(kind: str) -> type[Provider]:
+    """返回 ``kind`` 对应的 OpenAI-compatible Provider 类型。"""
+    normalized = kind.strip().lower()
+    try:
+        return PROVIDER_TYPES[normalized]
+    except KeyError as exc:
+        raise ValueError(
+            f"unknown provider kind {kind!r}; expected one of {sorted(PROVIDER_TYPES)}"
+        ) from exc
+
+
+def provider_api_key_env(kind: str) -> str:
+    return provider_type(kind).API_KEY_ENV_VAR
+
+
+def provider_base_url(kind: str, override: str | None = None) -> str:
+    return (override or provider_type(kind).BASE_URL).strip()
+
+
+def provider_requires_api_key(kind: str) -> bool:
+    return kind.strip().lower() not in LOCAL_PROVIDER_KINDS
+
+
+def build_provider(
+    kind: str,
+    model: str,
+    *,
+    base_url: str | None = None,
+    api_key: str | None = None,
+    request_kwargs: Mapping[str, Any] | None = None,
+    max_retries: int | None = None,
+) -> Provider:
+    """按判别字段 ``kind`` 构造 Provider。"""
+    provider_cls = provider_type(kind)
+    return provider_cls(
+        model,
+        base_url=base_url,
+        apikey=api_key,
+        request_kwargs=request_kwargs,
+        max_retries=max_retries,
+    )

@@ -113,10 +113,14 @@ The extension writes `pagent.toml` after the first API key setup. You can also
 edit it manually:
 
 ```toml
-[provider]
+[provider.deepseek]
+kind = "deepseek"
 api_key = "sk-..."
 model = "deepseek-v4-flash"
 # base_url = "https://..."
+
+[agent]
+provider = "deepseek"
 
 [sandbox]
 backend = "local" # local | inplace | docker | podman | ssh

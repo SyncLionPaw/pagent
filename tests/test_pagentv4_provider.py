@@ -1,6 +1,16 @@
 import pytest
 
-from pagentv4 import Kimi, LongCat, MiMo, Ollama, Provider, Sglang, Vllm
+from pagentv4 import (
+    DeepSeek,
+    Kimi,
+    LongCat,
+    MiMo,
+    Ollama,
+    Provider,
+    Sglang,
+    Vllm,
+    build_provider,
+)
 
 
 def test_provider_uses_dummy_api_key_when_missing(monkeypatch):
@@ -9,6 +19,32 @@ def test_provider_uses_dummy_api_key_when_missing(monkeypatch):
     provider = Provider("test-model")
 
     assert provider.apikey == "not-needed"
+    assert provider.base_url == "https://api.openai.com/v1"
+
+
+@pytest.mark.parametrize(
+    ("kind", "expected_type"),
+    [
+        ("openai", Provider),
+        ("deepseek", DeepSeek),
+        ("kimi", Kimi),
+        ("mimo", MiMo),
+        ("longcat", LongCat),
+        ("ollama", Ollama),
+        ("vllm", Vllm),
+        ("sglang", Sglang),
+    ],
+)
+def test_build_provider_dispatches_by_kind(kind, expected_type):
+    provider = build_provider(kind, "test-model", api_key="key")
+
+    assert type(provider) is expected_type
+    assert provider.model_id == "test-model"
+
+
+def test_build_provider_rejects_unknown_kind():
+    with pytest.raises(ValueError, match="unknown provider kind"):
+        build_provider("missing", "test-model")
 
 
 def test_local_providers_use_dummy_api_key_when_missing(monkeypatch):

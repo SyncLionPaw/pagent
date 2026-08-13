@@ -21,11 +21,14 @@ def mask_api_key(api_key: str | None) -> str:
 
 def config_to_public_dict(config: ReplConfig) -> dict:
     """ReplConfig → 面向前端的字典。api_key 脱敏，附 configured 布尔位。"""
+    provider = config.resolved_provider()
     resolved_key = config.resolved_api_key()
     return {
         "provider": {
-            "model": config.resolved_model(),
-            "base_url": config.provider_base_url or "",
+            "name": config.resolved_provider_name(),
+            "kind": provider.kind,
+            "model": provider.model,
+            "base_url": provider.resolved_base_url(),
             "api_key_masked": mask_api_key(resolved_key),
             "api_key_configured": bool(resolved_key),
         },

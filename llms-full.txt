@@ -1316,9 +1316,13 @@ export DEEPSEEK_API_KEY=sk-...
 **Option 2 · Config file (recommended):** create `~/.pagent/pagent.toml`:
 
 ```toml
-[provider]
+[provider.deepseek]
+kind = "deepseek"
 api_key = "sk-..."
 model = "deepseek-v4-flash"
+
+[agent]
+provider = "deepseek"
 ```
 
 More providers: [Providers & API keys](./guide/providers).
@@ -1536,10 +1540,14 @@ The extension writes `pagent.toml` after the first API key setup. You can also
 edit it manually:
 
 ```toml
-[provider]
+[provider.deepseek]
+kind = "deepseek"
 api_key = "sk-..."
 model = "deepseek-v4-flash"
 # base_url = "https://..."
+
+[agent]
+provider = "deepseek"
 
 [sandbox]
 backend = "local" # local | inplace | docker | podman | ssh
@@ -1798,6 +1806,32 @@ There are several layers inside `runtime/`:
 - [Tools](./tools)
 - [VS Code extension](/vscode)
 - [Sandbox](./sandbox)
+
+## Terminal app providers
+
+`uv run pagent` reads named providers from `~/.pagent/pagent.toml`. Define the
+providers you use, then select one for the main agent:
+
+```toml
+[provider.deepseek]
+kind = "deepseek"
+model = "deepseek-v4-flash"
+api_key = "" # falls back to DEEPSEEK_API_KEY
+
+[provider.local]
+kind = "ollama"
+model = "qwen3:8b"
+
+[agent]
+provider = "deepseek"
+```
+
+Available `kind` values are `openai`, `deepseek`, `kimi`, `mimo`, `longcat`,
+`ollama`, `vllm`, and `sglang`. Set `base_url` inside a provider block to
+override its built-in endpoint.
+
+When a thread is created, its provider name, kind, model, and base URL are
+saved in `thread.toml`. API keys stay in the global config or environment.
 
 ## Status
 

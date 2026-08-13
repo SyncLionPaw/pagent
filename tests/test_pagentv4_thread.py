@@ -84,6 +84,40 @@ def test_thread_open_resume_fills_missing_project_path(tmp_path):
     assert payload["project"]["path"] == str(project)
 
 
+def test_thread_open_resume_backfills_provider_identity(tmp_path):
+    thread_dir = tmp_path / "demo"
+    thread_dir.mkdir()
+    (thread_dir / "thread.toml").write_text(
+        '[agent]\nmodel = "legacy-model"\n\n'
+        '[sandbox]\nbackend = "local"\n\n'
+        "[lock]\nschema_version = 1\n",
+        encoding="utf-8",
+    )
+
+    thread = Thread.open(
+        "demo",
+        root=tmp_path,
+        overrides={
+            "provider_name": "primary",
+            "provider_kind": "kimi",
+            "provider_base_url": "https://api.moonshot.cn/v1",
+            "model": "new-model",
+        },
+    )
+
+    assert thread.spec.provider_name == "primary"
+    assert thread.spec.provider_kind == "kimi"
+    assert thread.spec.provider_base_url == "https://api.moonshot.cn/v1"
+    assert thread.spec.model == "legacy-model"
+    assert thread.spec.schema_version == 2
+    assert thread.ignored_overrides == ("model",)
+    payload = tomllib.loads((thread_dir / "thread.toml").read_text())
+    assert payload["agent"]["provider"] == "primary"
+    assert payload["agent"]["provider_kind"] == "kimi"
+    assert payload["agent"]["base_url"] == "https://api.moonshot.cn/v1"
+    assert payload["lock"]["schema_version"] == 2
+
+
 def test_thread_open_resume_matching_overrides_no_warning(tmp_path):
     Thread.open(
         "demo",

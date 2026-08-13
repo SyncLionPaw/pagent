@@ -55,7 +55,7 @@ def toml_field(section: str, key: str, default):
 SUB_SECTION = "sub"
 
 # thread.toml 结构版本；随 spec 落盘到 [lock] schema_version，供后续迁移识别。
-THREAD_SCHEMA_VERSION = 1
+THREAD_SCHEMA_VERSION = 2
 
 
 @dataclass
@@ -137,7 +137,11 @@ class ThreadSpec:
     ssh_config: str = toml_field("ssh", "config", "~/.ssh/config")
     ssh_workdir: str = toml_field("ssh", "workdir", "~/pagent")
 
+    # Provider 身份随 thread 冻结；API Key 始终从全局配置或环境变量读取，不落盘。
+    provider_name: str = toml_field("agent", "provider", "default")
+    provider_kind: str = toml_field("agent", "provider_kind", "deepseek")
     model: str = toml_field("agent", "model", "deepseek-v4-flash")
+    provider_base_url: str = toml_field("agent", "base_url", "https://api.deepseek.com")
     system: str = toml_field("agent", "system", "")
     # 主 agent 的进程内（harness）工具白名单：thread.toml 里 [agent] tools 列了哪些，
     # 主 agent 就挂哪些。识别的名字：web_search / fetch_url / delegate_to_subagent。

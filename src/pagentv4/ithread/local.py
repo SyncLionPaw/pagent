@@ -39,6 +39,7 @@ from . import (
     METAINFO_FILENAME,
     SPEC_FILENAME,
     SUB_SECTION,
+    THREAD_SCHEMA_VERSION,
     WORKSPACES_DIRNAME,
     ThreadSpec,
     validate_thread_id,
@@ -252,6 +253,23 @@ class Thread:
             # resume 时补写迟到的自描述字段：老 thread.toml 没有 [lock] 段，或
             # project_path 首次绑定，都在这里回填一次并落盘（唯一事实来源随之补全）。
             backfilled = normalize_inplace_tools(existing)
+            agent_payload = payload.get("agent", {})
+            provider_fields = {
+                "provider_name": "provider",
+                "provider_kind": "provider_kind",
+                "provider_base_url": "base_url",
+            }
+            if not isinstance(agent_payload, dict):
+                agent_payload = {}
+            if any(key not in agent_payload for key in provider_fields.values()):
+                for field_name in provider_fields:
+                    if field_name in provided:
+                        setattr(existing, field_name, provided.pop(field_name))
+                existing.schema_version = THREAD_SCHEMA_VERSION
+                backfilled = True
+            if existing.schema_version < THREAD_SCHEMA_VERSION:
+                existing.schema_version = THREAD_SCHEMA_VERSION
+                backfilled = True
             if existing.project_path is None and isinstance(
                 provided.get("project_path"), str
             ):

@@ -21,12 +21,24 @@ location = "local" # runner 进程跑在哪：local = 用户电脑（默认，�
 max_turns = 24 # 单轮对话最大工具调用轮数。默认 24
 # cloud = 云端 pod（保留，未实现；设了会报错）
 
-# ── [provider] LLM 接入 ───────────────────────────────
-[provider]
-model = "deepseek-v4-flash" # 模型 id。默认 deepseek-v4-flash
-# api_key 请写到生效 home 的 pagent.toml，勿提交进仓库；也可 export DEEPSEEK_API_KEY。
-api_key = "" # 空串按未设处理，回退环境变量 DEEPSEEK_API_KEY
-# base_url = ""                   # 可选，覆盖 DeepSeek 默认 endpoint
+# ── [provider.<name>] LLM 接入 ────────────────────────
+# kind 可选：openai / deepseek / kimi / mimo / longcat / ollama / vllm / sglang。
+# 可并列定义多个命名 provider，由 [agent] provider 选择。
+[provider.deepseek]
+kind = "deepseek"
+model = "deepseek-v4-flash"
+# api_key 请写到生效 home 的 pagent.toml，勿提交进仓库；空值回退 kind 对应的环境变量。
+api_key = ""
+# base_url = ""                   # 可选，覆盖 kind 内置的 endpoint
+#
+# [provider.local]
+# kind = "ollama"
+# model = "qwen3:8b"
+#
+# [provider.openai]
+# kind = "openai"
+# model = "gpt-5"
+# api_key = ""                    # 空值回退 OPENAI_API_KEY
 
 # ── [sandbox] 工具执行环境 ────────────────────────────
 [sandbox]
@@ -83,6 +95,8 @@ roots = ["{pagent_home}/skills"]
 
 # ── [agent] 主 agent 进程内工具 ───────────────────────
 [agent]
+# 主 agent 使用哪个 [provider.<name>]；新建 thread 时冻结 name/kind/model/base_url。
+provider = "deepseek"
 # harness 工具白名单，冻结进新建 thread.toml 的 [agent] tools（运行时唯一事实来源）。
 # 可选：web_search、fetch_url、delegate_to_subagent（后者还需至少配一个 [sub.*]）。
 # 删去不想启用的即可；给空表 = 不挂任何进程内工具。
