@@ -36,7 +36,8 @@
 
 ## 再現
 
-図は `examples/eval/jobbench_scores.json` から生成します：
+図は `examples/eval/jobbench_scores.json` から生成し、`examples/eval/` と
+`docs/public/benchmarks/`（VitePress サイト資産）の両方に書き出します：
 
 ```bash
 uv run python examples/eval/aggregate_scores.py --json examples/eval/jobbench_scores.json

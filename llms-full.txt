@@ -517,7 +517,8 @@ into that ranking (judge differs, so this is illustrative):
 
 ## Reproduce
 
-Figures are generated from `examples/eval/jobbench_scores.json`:
+Figures are generated from `examples/eval/jobbench_scores.json` and written to
+both `examples/eval/` and `docs/public/benchmarks/` (VitePress site assets):
 
 ```bash
 uv run python examples/eval/aggregate_scores.py --json examples/eval/jobbench_scores.json

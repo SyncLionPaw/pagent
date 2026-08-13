@@ -33,7 +33,8 @@
 
 ## 复现
 
-图从 `examples/eval/jobbench_scores.json` 生成：
+图从 `examples/eval/jobbench_scores.json` 生成，并写入 `examples/eval/` 与
+`docs/public/benchmarks/`（VitePress 站点资源）：
 
 ```bash
 uv run python examples/eval/aggregate_scores.py --json examples/eval/jobbench_scores.json

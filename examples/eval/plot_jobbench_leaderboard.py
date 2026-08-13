@@ -18,9 +18,12 @@ deepseek-v4-flash 当选手、deepseek-v4-pro 当裁判（成本考虑），与�
 
 用法:
     uv run python examples/eval/plot_jobbench_leaderboard.py
+
+输出同时写入 examples/eval/ 与 docs/public/benchmarks/。
 """
 
 import json
+import shutil
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -28,6 +31,8 @@ from matplotlib import font_manager
 
 HERE = Path(__file__).parent
 SCORES_FILE = HERE / "jobbench_scores.json"
+# VitePress serves docs/public/ at site root (/benchmarks/...).
+DOCS_BENCH = HERE.parents[1] / "docs" / "public" / "benchmarks"
 
 # Arial Unicode 覆盖中日英，统一用它避免缺字
 FONT_PATH = "/System/Library/Fonts/Supplemental/Arial Unicode.ttf"
@@ -299,6 +304,8 @@ def render_leaderboard(lang, cfg, score_oc, score_pg):
     out = HERE / cfg["out"]
     fig.savefig(out, dpi=170, facecolor=BG)
     plt.close(fig)
+    DOCS_BENCH.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(out, DOCS_BENCH / out.name)
     print(
         f"[{lang}] leaderboard: {out.name}  (OpenCode={score_oc:.1f}, pagentv4={score_pg:.1f})"
     )
@@ -475,6 +482,8 @@ def render_compare(lang, cfg, data):
     out = HERE / cfg["out"]
     fig.savefig(out, dpi=170, facecolor=BG)
     plt.close(fig)
+    DOCS_BENCH.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(out, DOCS_BENCH / out.name)
     print(
         f"[{lang}] compare: {out.name}  "
         f"easy(oc={oc_micro[0]:.1f},pg={pg_micro[0]:.1f}) "
