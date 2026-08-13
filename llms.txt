@@ -14,6 +14,7 @@ This file helps LLMs and coding agents find pagent documentation. Prefer **agent
 - [Tools](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/guide/tools.md): @tool, tool loop
 - [Built-in tools](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/guide/defaults.md): DEFAULT_TOOLS=[clock, region]; also web_search, bash, readfile
 - [Memory helper](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/guide/memory.md): pagent.memory.Memory (experimental)
+- [Benchmarks](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/benchmarks.md): JobBench results — OpenCode vs pagentv4 harness on deepseek-v4-flash
 - [Events](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/events.md): RunBegin, TextDelta, ToolCallBegin, RunEnd, sequences
 - [Wire protocol](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/wire.md): JSON-RPC 2.0 NDJSON for browsers and non-Python clients
 - [Reasoning streams](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/reasoning.md): reasoning_content, ReasoningDelta

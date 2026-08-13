@@ -19,6 +19,7 @@ const SOURCES = [
   "guide/tools.md",
   "guide/defaults.md",
   "guide/memory.md",
+  "benchmarks.md",
   "events.md",
   "wire.md",
   "reasoning.md",

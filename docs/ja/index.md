@@ -34,6 +34,27 @@ features:
     details: OpenAI、DeepSeek、Ollama、vLLM、SGLang など /v1/chat/completions 互換サーバーに対応。
 ---
 
+## 同じモデル、より良い harness
+
+[JobBench](https://job-bench.github.io/) では、pagentv4 の inplace harness が
+両 split で公式 OpenCode harness を上回ります——同一プレイヤー
+（`deepseek-v4-flash`）・同一審査で、harness のみ変更。
+
+<div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start;">
+  <a href="./benchmarks" style="flex:1 1 300px;">
+    <img src="/benchmarks/jobbench_harness_compare_ja.png" alt="JobBench における OpenCode と pagentv4 の比較——micro スコアで pagentv4 が Easy で +4.5、Main で +1.6 リード" style="width:100%; border-radius:8px;">
+  </a>
+  <a href="./benchmarks" style="flex:1 1 300px;">
+    <img src="/benchmarks/jobbench_leaderboard_ja.png" alt="JobBench Main split リーダーボード——deepseek-v4-flash が pagentv4 で 38.2、GPT-5.5 と Claude Sonnet 4.6 の間" style="width:100%; border-radius:8px;">
+  </a>
+</div>
+
+[ベンチマークの詳細 →](./benchmarks)
+
+**この harness を試す？** 同じ pagentv4 コアで、好きな入口を選べます（以下は英語ページ）：
+
+[ターミナル CLI（`uv run pagent`）→](/pagentv4/) · [デスクトップ →](/desktop) · [VS Code 拡張 →](/vscode) · [Web UI →](/web)
+
 ## 25 行足らずで Agent が動く
 
 プロバイダのタブを選び、API Key を設定、`demo.py` で `python demo.py`。モデルが `@tool` を呼び、答えは `result.content`。
