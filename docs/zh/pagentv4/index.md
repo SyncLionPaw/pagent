@@ -36,6 +36,7 @@ skills/     SKILL.md 发现与按需加载
 - [工具](./tools)
 - [VS Code 插件](/zh/vscode)
 - [Sandbox](./sandbox)
+- [怎么选沙箱后端](./backends)（`local` / `inplace` / `docker` / `ssh`）
 
 ## 终端应用的 Provider 配置
 

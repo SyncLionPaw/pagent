@@ -30,6 +30,7 @@ This file helps LLMs and coding agents find pagent documentation. Prefer **agent
 - [pagentv4 tools](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/pagentv4/tools.md): @tool, ToolOutput, sandbox tools, skills
 - [pagentv4 events](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/pagentv4/events.md): Event stream and Runner.arun() projections
 - [pagentv4 sandbox](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/pagentv4/sandbox.md): Companion computer, backends, Runner.session()
+- [pagentv4 backends](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/pagentv4/backends.md): local vs inplace vs docker vs ssh — which directory each mode touches
 
 ## Human site
 
@@ -44,6 +45,7 @@ This file helps LLMs and coding agents find pagent documentation. Prefer **agent
 - [简体中文快速开始](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/zh/guide/quick-start.md)
 - [简体中文 pagentv4 概览](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/zh/pagentv4/index.md)
 - [简体中文 pagentv4 快速开始](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/zh/pagentv4/quick-start.md)
+- [简体中文怎么选沙箱后端](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/zh/pagentv4/backends.md)
 - [日本語](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/ja/guide/quick-start.md)
 - [四川话](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/docs/sc/guide/quick-start.md)
 - [README](https://raw.githubusercontent.com/SyncLionPaw/pagent/main/README.md)

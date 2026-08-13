@@ -85,6 +85,7 @@ finally:
 
 See [Sandbox](./sandbox) for backends
 (`local`, `inplace`, `docker`, `podman`, `ssh`).
+They are four siblings, not flavors of inplace — [Choose a backend](./backends).
 
 ## Streaming modes
 

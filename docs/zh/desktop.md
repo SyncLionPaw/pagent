@@ -114,9 +114,12 @@ xattr -cr "/Applications/pagent Desktop.app"
 
 | 选项 | 说明 | 适合谁 |
 | --- | --- | --- |
-| **本机** | 直接在你的 Mac 上跑，无需 Docker | 绝大多数人（默认） |
-| **容器** | 在 Docker/Podman 容器里跑，更隔离 | 需要环境隔离、装了 Docker |
-| **远程** | 通过 SSH 在另一台服务器上跑 | 进阶用户 |
+| **本机** | 本机上的独立 workspace，无需 Docker | 绝大多数人（默认） |
+| **直接编辑** | 原地改所选**项目目录** | 像 coding CLI 一样改 git 仓库 |
+| **容器** | 命令在 Docker/Podman 里跑，文件仍在 thread workspace | 需要 Linux 镜像 |
+| **远程** | SSH 到另一台机器 | GPU / 超算 / 远端工具链 |
+
+这四种是并列后端，不是 inplace 的四种写法。对照见 [怎么选沙箱后端](/zh/pagentv4/backends)。
 
 ::: tip 想稍后再配？
 向导底部有 **稍后配置** 可以跳过部分步骤。但**发消息前必须有 API Key**，否则发送后会报错。

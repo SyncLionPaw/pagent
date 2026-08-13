@@ -118,9 +118,12 @@ The "sandbox" is where the AI does its work. Pick **本机** (Local — recommen
 
 | Option | What it means | For whom |
 | --- | --- | --- |
-| **本机** (Local) | Runs directly on your Mac, no Docker | Almost everyone (default) |
-| **容器** (Container) | Runs inside a Docker/Podman container, more isolated | Need isolation, have Docker |
-| **远程** (Remote) | Runs on another machine over SSH | Advanced users |
+| **本机** (Local) | Isolated scratch workspace on this Mac, no Docker | Almost everyone (default) |
+| **直接编辑** (inplace) | Edits the selected **项目目录** in place | Coding a git repo like a CLI |
+| **容器** (Container) | Commands inside Docker/Podman; files stay in the thread workspace | Need a Linux image |
+| **远程** (Remote) | SSH to another machine | GPU / HPC / remote toolchain |
+
+These four are separate backends, not variants of inplace. Full map: [Choose a backend](/pagentv4/backends).
 
 ::: tip Want to configure later?
 The wizard has **稍后配置** (Set up later) at the bottom to skip some steps. But you **must have an API key before sending a message**, or you'll get an error.

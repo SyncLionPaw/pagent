@@ -135,6 +135,9 @@ workdir = "~/pagent"
 mode = "prompt" # prompt | auto
 ```
 
+`local`, `inplace`, `docker`, and `ssh` are four separate backends — not four
+kinds of inplace. See [Choose a backend](/pagentv4/backends).
+
 You can also provide the API key with an environment variable:
 
 ```bash

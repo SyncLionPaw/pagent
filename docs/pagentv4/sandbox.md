@@ -37,6 +37,8 @@ Flow:
 
 ## Backends
 
+These four are **siblings**, not flavors of `inplace`. Full comparison: [Choose a backend](./backends).
+
 | `backend=` | Notes |
 |------------|-------|
 | `"local"` | Default. Thread workspace under `~/.pagent/threads/<thread_id>/workspaces/main/` |

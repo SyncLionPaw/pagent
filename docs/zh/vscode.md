@@ -123,6 +123,8 @@ workdir = "~/pagent"
 mode = "prompt" # prompt | auto
 ```
 
+`local`、`inplace`、`docker`、`ssh` 是四种并列后端，不是 inplace 的四种写法。对照见 [怎么选沙箱后端](/zh/pagentv4/backends)。
+
 也可以通过环境变量提供 API Key：
 
 ```bash

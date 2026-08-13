@@ -33,6 +33,8 @@ finally:
 
 ## 后端
 
+这四种是**并列选项**，不是 inplace 的四种写法。对照与选型见 [怎么选沙箱后端](./backends)。
+
 | `backend=` | 说明 |
 |------------|------|
 | `"local"` | 默认。thread workspace 在 `~/.pagent/threads/<thread_id>/workspaces/main/` |

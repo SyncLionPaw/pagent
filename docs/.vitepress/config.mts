@@ -108,6 +108,7 @@ export default withMermaid(
                 { text: "Web app", link: "/web" },
                 { text: "VS Code extension", link: "/vscode" },
                 { text: "Sandbox", link: "/pagentv4/sandbox" },
+                { text: "Choose a backend", link: "/pagentv4/backends" },
               ],
             },
             {
@@ -200,6 +201,7 @@ export default withMermaid(
                 { text: "Web 端", link: "/zh/web" },
                 { text: "VS Code 插件", link: "/zh/vscode" },
                 { text: "Sandbox", link: "/zh/pagentv4/sandbox" },
+                { text: "怎么选沙箱后端", link: "/zh/pagentv4/backends" },
               ],
             },
             {

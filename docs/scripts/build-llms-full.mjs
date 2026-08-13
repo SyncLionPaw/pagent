@@ -35,6 +35,7 @@ const SOURCES = [
   "pagentv4/tools.md",
   "pagentv4/events.md",
   "pagentv4/sandbox.md",
+  "pagentv4/backends.md",
 ];
 
 function stripLanguageLine(text) {

@@ -82,7 +82,7 @@ finally:
 ```
 
 后端选项见 [Sandbox](./sandbox)
-（`local`、`inplace`、`docker`、`podman`、`ssh`）。
+（`local`、`inplace`、`docker`、`podman`、`ssh`）。四种是并列后端，选型见 [怎么选沙箱后端](./backends)。
 
 ## 轻量内存循环：`VanillaRunner`
 

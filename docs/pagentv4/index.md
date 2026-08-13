@@ -41,6 +41,7 @@ There are several layers inside `runtime/`:
 - [Tools](./tools)
 - [VS Code extension](/vscode)
 - [Sandbox](./sandbox)
+- [Choose a backend](./backends) (`local` / `inplace` / `docker` / `ssh`)
 
 ## Terminal app providers
 
