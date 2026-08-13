@@ -1,15 +1,18 @@
 import { CheckCircle2, CircleAlert, X } from "lucide-react";
 import { useEffect, useState } from "react";
-import type { AppSettings, EnvironmentCheck } from "../api/types";
+import type { AppSettings, EnvironmentCheck, ProviderOption } from "../api/types";
 import { formatBytes } from "../lib/format";
 
 export type ConfigSnapshot = {
   provider?: {
+    name?: string;
+    kind?: string;
     model?: string;
     base_url?: string;
     api_key_configured?: boolean;
     api_key_masked?: string;
   };
+  providers?: ProviderOption[];
   sandbox?: Record<string, unknown>;
   runner?: Record<string, unknown>;
   permission?: Record<string, unknown>;

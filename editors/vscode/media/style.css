@@ -462,6 +462,32 @@ body {
   font-size: 13px;
 }
 
+.provider-switch {
+  max-width: 148px;
+  height: 26px;
+  padding: 0 22px 0 7px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--vscode-descriptionForeground);
+  font: 600 10px/1 var(--vscode-font-family);
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+
+.provider-switch:hover:not(:disabled),
+.provider-switch:focus-visible {
+  border-color: var(--vscode-input-border, var(--vscode-panel-border));
+  background: var(--vscode-toolbar-hoverBackground);
+  color: var(--vscode-foreground);
+  outline: none;
+}
+
+.provider-switch:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
 /* 操作按钮通用样式：26px 方形圆角，图标居中。斜杠按钮弱化（透明底），
  * primary（发送）用主色块。 */
 .composer-btn {

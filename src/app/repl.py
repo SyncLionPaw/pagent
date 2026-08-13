@@ -13,6 +13,7 @@ from pagentv4 import (
     build_provider,
     provider_api_key_env,
     provider_requires_api_key,
+    resolve_active_provider_identity,
 )
 
 from .clean import clean_pagent, format_clean_report
@@ -53,11 +54,16 @@ async def open_runner(config: ReplConfig) -> Runner:
     thread_id = config.thread_id or f"thread-{datetime.now():%Y%m%d-%H%M%S}"
     overrides = config.thread_overrides()
     thread = Thread.open(thread_id, overrides=overrides)
+    messages = thread.load_messages()
+    active_provider = resolve_active_provider_identity(
+        thread.spec.provider_identity(),
+        messages.data,
+    )
     provider_config = config.provider_for_thread(
-        provider_name=thread.spec.provider_name,
-        provider_kind=thread.spec.provider_kind,
-        model=thread.spec.model,
-        base_url=thread.spec.provider_base_url,
+        provider_name=active_provider.name,
+        provider_kind=active_provider.kind,
+        model=active_provider.model,
+        base_url=active_provider.base_url,
     )
     api_key = provider_config.resolved_api_key()
     if not api_key and provider_requires_api_key(provider_config.kind):
@@ -80,6 +86,7 @@ async def open_runner(config: ReplConfig) -> Runner:
         provider,
         overrides=overrides,
         opened_thread=thread,
+        opened_messages=messages,
         extra_system=EXTRA_SYSTEM,
         max_turns=config.resolved_max_turns(),
         tool_hooks=build_app_tool_hooks(auto=config.permission_auto()),

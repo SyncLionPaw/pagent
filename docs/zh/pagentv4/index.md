@@ -62,6 +62,10 @@ provider = "deepseek"
 新建 thread 时，Provider 名称、kind、model 和 base URL 会写入 `thread.toml`。
 API Key 继续保存在全局配置或环境变量中。
 
+配置两个及以上 Provider 后，Desktop、Web 和 VS Code 的聊天界面会显示模型选择器。
+切换从下一条消息生效，当前会话上下文会继续保留。handoff 记录保存在 thread 中，
+恢复会话后会继续使用最后选择的 Provider。
+
 ## 状态说明
 
 新工作请使用 `pagentv4` 与 `app`（终端 REPL）。顶层 `pagent` 包仍保留较旧的

@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Protocol, runtime_checkable
 
 from ..conversation import ConversationStore
-from ..core.message import Messages
+from ..core.message import Messages, ProviderIdentity
 from ..sandbox import Sandbox
 
 THREAD_ID_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.\-]{0,127}$")
@@ -171,6 +171,15 @@ class ThreadSpec:
             name: sub if isinstance(sub, SubAgentSpec) else SubAgentSpec.from_dict(sub)
             for name, sub in self.subs.items()
         }
+
+    def provider_identity(self) -> ProviderIdentity:
+        """返回 thread.toml 冻结的初始 Provider 身份。"""
+        return ProviderIdentity(
+            name=self.provider_name,
+            kind=self.provider_kind,
+            model=self.model,
+            base_url=self.provider_base_url,
+        )
 
     @classmethod
     def section_bindings(cls) -> list[tuple[str, str, str]]:

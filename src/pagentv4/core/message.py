@@ -1,7 +1,9 @@
 from typing import Annotated, Literal, Union
 from uuid import uuid4
 
-from pydantic import BaseModel, Field, HttpUrl, model_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
+
+from .provider import ProviderKind
 
 
 class ImageUrl(BaseModel):
@@ -59,6 +61,38 @@ class ThinkingChunk(BaseModel):
     text: str
 
 
+class ProviderIdentity(BaseModel):
+    """一次 handoff 中可持久化的 Provider 身份；不包含凭据。"""
+
+    name: str = Field(min_length=1)
+    kind: ProviderKind
+    model: str = Field(min_length=1)
+    base_url: str = Field(min_length=1)
+
+    @field_validator("name", "kind", "model", "base_url")
+    @classmethod
+    def normalize_required_text(cls, value: str) -> str:
+        normalized = value.strip()
+        if normalized:
+            return normalized
+        raise ValueError("provider identity fields must be non-empty")
+
+
+class ProviderHandoff(BaseModel):
+    """对话中一次 Provider 切换；按消息顺序从 previous 切到 current。"""
+
+    type: Literal["provider_handoff"] = "provider_handoff"
+    previous: ProviderIdentity
+    current: ProviderIdentity
+    reason: str = ""
+
+    @model_validator(mode="after")
+    def provider_changes(self) -> "ProviderHandoff":
+        if self.previous != self.current:
+            return self
+        raise ValueError("provider handoff target must differ from current provider")
+
+
 # User-side input parts (one Message row = one chunk; merged on export).
 UserChunk = Annotated[
     Union[TextChunk, ImageUrl, AudioUrl],
@@ -75,8 +109,8 @@ AssistantChunk = Annotated[
 class Message(BaseModel):
     message_id: str | None = None
     turn_id: int | None = None
-    role: Literal["system", "user", "assistant", "tool"]
-    content: Union[UserChunk, AssistantChunk, ToolResult]
+    role: Literal["system", "user", "assistant", "tool", "control"]
+    content: Union[UserChunk, AssistantChunk, ToolResult, ProviderHandoff]
 
     @model_validator(mode="after")
     def content_matches_role(self) -> "Message":
@@ -92,6 +126,10 @@ class Message(BaseModel):
             raise ValueError("assistant message must be text, thinking, or tool call")
         if self.role == "tool" and not isinstance(c, ToolResult):
             raise ValueError("tool message must be tool_result")
+        if self.role == "control" and not isinstance(c, ProviderHandoff):
+            raise ValueError("control message must be provider_handoff")
+        if self.role != "control" and isinstance(c, ProviderHandoff):
+            raise ValueError("provider_handoff content requires control role")
         if self.role == "system" and self.turn_id is None:
             self.turn_id = 0
         return self
@@ -177,6 +215,30 @@ class Message(BaseModel):
             payload["turn_id"] = turn_id
         return cls.model_validate(payload)
 
+    @classmethod
+    def provider_handoff(
+        cls,
+        previous: ProviderIdentity,
+        current: ProviderIdentity,
+        *,
+        reason: str = "",
+        message_id: str | None = None,
+        turn_id: int | None = None,
+    ) -> "Message":
+        payload = {
+            "role": "control",
+            "content": ProviderHandoff(
+                previous=previous,
+                current=current,
+                reason=reason,
+            ),
+        }
+        if message_id is not None:
+            payload["message_id"] = message_id
+        if turn_id is not None:
+            payload["turn_id"] = turn_id
+        return cls.model_validate(payload)
+
     def __str__(self):
         short_id = self.message_id[:8] if self.message_id else "-"
         return (
@@ -220,6 +282,28 @@ def reply_text(messages: list[Message]) -> str:
     )
 
 
+def resolve_active_provider_identity(
+    initial: ProviderIdentity,
+    messages: list[Message],
+) -> ProviderIdentity:
+    """从 thread 初始 Provider 和 handoff 消息恢复当前 Provider。"""
+    current = initial
+    for message in messages:
+        if message.role != "control":
+            continue
+        handoff = message.content
+        if not isinstance(handoff, ProviderHandoff):
+            continue
+        if handoff.previous != current:
+            identifier = message.message_id or "<unknown>"
+            raise ValueError(
+                f"provider handoff chain mismatch at message {identifier}: "
+                f"expected previous {current.name!r}, got {handoff.previous.name!r}"
+            )
+        current = handoff.current
+    return current
+
+
 def compact_text(text: str, limit: int = 120) -> str:
     one_line = text.replace("\n", "\\n")
     if len(one_line) <= limit:
@@ -243,6 +327,10 @@ def describe_content(content) -> str:
         )
     if isinstance(content, ToolResult):
         return f"tool_result, {content.tool_call_id!r}, {compact_text(content.text)!r}"
+    if isinstance(content, ProviderHandoff):
+        return (
+            f"provider_handoff, {content.previous.name!r} -> {content.current.name!r}"
+        )
     return repr(content)
 
 
@@ -431,6 +519,10 @@ class Messages(BaseModel):
 
         while i < len(data):
             msg = data[i]
+
+            if msg.role == "control" and isinstance(msg.content, ProviderHandoff):
+                i += 1
+                continue
 
             if msg.role == "system" and isinstance(msg.content, TextChunk):
                 out.append({"role": "system", "content": msg.content.text})

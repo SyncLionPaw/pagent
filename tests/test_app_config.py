@@ -219,6 +219,34 @@ def test_provider_for_legacy_thread_uses_unique_same_kind_credential():
     assert provider.resolved_api_key() == "stored-key"
 
 
+def test_provider_for_legacy_thread_matches_model_with_multiple_same_kind():
+    config = ReplConfig(
+        providers={
+            "deepseek": ProviderConfig(
+                kind="deepseek",
+                model="deepseek-v4-flash",
+                api_key="flash-key",
+            ),
+            "deepseek_pro": ProviderConfig(
+                kind="deepseek",
+                model="deepseek-v4-pro",
+                api_key="pro-key",
+            ),
+        },
+        agent_provider="deepseek",
+    )
+
+    provider = config.provider_for_thread(
+        provider_name="default",
+        provider_kind="deepseek",
+        model="deepseek-v4-flash",
+        base_url="https://api.deepseek.com",
+    )
+
+    assert provider.model == "deepseek-v4-flash"
+    assert provider.resolved_api_key() == "flash-key"
+
+
 def test_refresh_provider_from_disk_picks_up_new_key(tmp_path, monkeypatch):
     home = tmp_path / "home" / ".pagent"
     home.mkdir(parents=True)

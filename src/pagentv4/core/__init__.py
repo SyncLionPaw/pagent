@@ -29,11 +29,14 @@ from .message import (
     ImageUrl,
     Message,
     Messages,
+    ProviderHandoff,
+    ProviderIdentity,
     TextChunk,
     ThinkingChunk,
     ToolCall,
     UserChunk,
     reply_text,
+    resolve_active_provider_identity,
 )
 from .provider import (
     PROVIDER_TYPES,
@@ -72,6 +75,8 @@ __all__ = [
     "Ollama",
     "PROVIDER_TYPES",
     "Provider",
+    "ProviderHandoff",
+    "ProviderIdentity",
     "ProviderKind",
     "ProviderProtocol",
     "ReasoningDelta",
@@ -96,6 +101,7 @@ __all__ = [
     "provider_base_url",
     "provider_requires_api_key",
     "reply_text",
+    "resolve_active_provider_identity",
     "to_openai_tools",
     "tool",
 ]

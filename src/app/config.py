@@ -110,6 +110,18 @@ class ReplConfig:
             base_url=self.provider_base_url,
         )
 
+    def provider_named(self, name: str) -> ProviderConfig:
+        """按配置名取 Provider；旧单表配置使用其隐式名称 ``default``。"""
+        normalized = name.strip()
+        if self.providers:
+            try:
+                return self.providers[normalized]
+            except KeyError as exc:
+                raise ValueError(f"unknown provider {normalized!r}") from exc
+        if normalized == self.resolved_provider_name():
+            return self.resolved_provider()
+        raise ValueError(f"unknown provider {normalized!r}")
+
     def resolved_api_key(self) -> str | None:
         return self.resolved_provider().resolved_api_key()
 
@@ -136,13 +148,24 @@ class ReplConfig:
         """用 thread 冻结的身份字段配 Provider，凭据仍从全局配置或环境变量读取。"""
         configured = (self.providers or {}).get(provider_name)
         if configured is None and self.providers:
-            same_kind = [
+            same_identity = [
                 provider
                 for provider in self.providers.values()
                 if provider.kind == provider_kind
+                and provider.model == model
+                and provider.resolved_base_url().rstrip("/")
+                == (base_url or provider.resolved_base_url()).rstrip("/")
             ]
-            if len(same_kind) == 1:
-                configured = same_kind[0]
+            if len(same_identity) == 1:
+                configured = same_identity[0]
+            else:
+                same_kind = [
+                    provider
+                    for provider in self.providers.values()
+                    if provider.kind == provider_kind
+                ]
+                if len(same_kind) == 1:
+                    configured = same_kind[0]
         api_key = configured.api_key if configured is not None else None
         if not self.providers and provider_kind == DEFAULT_PROVIDER_KIND:
             api_key = self.api_key

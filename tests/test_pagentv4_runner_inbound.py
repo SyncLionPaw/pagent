@@ -1,6 +1,14 @@
 import pytest
 
-from pagentv4 import FunctionTool, RunEnd, Runner, ToolCallBegin, TurnEnd
+from pagentv4 import (
+    FunctionTool,
+    ProviderHandoff,
+    ProviderIdentity,
+    RunEnd,
+    Runner,
+    ToolCallBegin,
+    TurnEnd,
+)
 
 
 class FakeStreamChunk:
@@ -29,6 +37,15 @@ class FakeProvider:
                 yield chunk
 
         return stream()
+
+
+def local_provider_identity() -> ProviderIdentity:
+    return ProviderIdentity(
+        name="local",
+        kind="ollama",
+        model="qwen3:8b",
+        base_url="http://127.0.0.1:11434/v1",
+    )
 
 
 async def open_runner(tmp_path, monkeypatch, provider, *, tools=(), max_turns=24):
@@ -188,5 +205,112 @@ async def test_runner_exposes_inbound_mailbox(tmp_path, monkeypatch):
         assert runner.inbound is not None
         runner.steer("queued")
         assert runner.inbound.pending() == 1
+    finally:
+        await runner.close()
+
+
+@pytest.mark.asyncio
+async def test_runner_handoff_persists_and_switches_provider(tmp_path, monkeypatch):
+    original = FakeProvider([])
+    replacement = FakeProvider([[FakeStreamChunk(content="from replacement")]])
+    runner = await open_runner(tmp_path, monkeypatch, original)
+    try:
+        identity = local_provider_identity()
+        message = runner.handoff(replacement, identity, reason="use local model")
+
+        assert runner.agent.provider is replacement
+        assert runner.active_provider_identity == identity
+        assert message.role == "control"
+        assert isinstance(message.content, ProviderHandoff)
+        assert message.content.reason == "use local model"
+
+        persisted = runner.thread.load_messages()
+        assert persisted.data[-1] == message
+
+        texts = [text async for text in runner.run("continue", return_type="text")]
+        assert texts == ["from replacement"]
+    finally:
+        await runner.close()
+
+
+@pytest.mark.asyncio
+async def test_runner_handoff_restores_active_provider(tmp_path, monkeypatch):
+    runner = await open_runner(tmp_path, monkeypatch, FakeProvider([]))
+    root = runner.thread.root.parent
+    identity = local_provider_identity()
+    runner.handoff(FakeProvider([]), identity)
+    await runner.close()
+
+    resumed = await Runner.create(
+        "test",
+        FakeProvider([]),
+        root=root,
+        overrides={"backend": "local"},
+    )
+    try:
+        assert resumed.active_provider_identity == identity
+        assert isinstance(resumed.messages.data[-1].content, ProviderHandoff)
+    finally:
+        await resumed.close()
+
+
+@pytest.mark.asyncio
+async def test_runner_handoff_rejects_active_run(tmp_path, monkeypatch):
+    runner = await open_runner(tmp_path, monkeypatch, FakeProvider([]))
+    try:
+        runner.run_state.phase = "generating"
+
+        with pytest.raises(RuntimeError, match="generating"):
+            runner.handoff(FakeProvider([]), local_provider_identity())
+
+        assert not any(
+            isinstance(message.content, ProviderHandoff)
+            for message in runner.messages.data
+        )
+    finally:
+        await runner.close()
+
+
+@pytest.mark.asyncio
+async def test_runner_handoff_waits_for_run_teardown(tmp_path, monkeypatch):
+    runner = await open_runner(
+        tmp_path,
+        monkeypatch,
+        FakeProvider([[FakeStreamChunk(content="done")]]),
+    )
+    try:
+        async for event in runner.run("start"):
+            if not isinstance(event, RunEnd):
+                continue
+            assert runner.run_state.phase == "ended"
+            with pytest.raises(RuntimeError, match="run is in progress"):
+                runner.handoff(FakeProvider([]), local_provider_identity())
+
+        identity = local_provider_identity()
+        runner.handoff(FakeProvider([]), identity)
+        assert runner.active_provider_identity == identity
+    finally:
+        await runner.close()
+
+
+@pytest.mark.asyncio
+async def test_runner_handoff_rolls_back_when_persistence_fails(tmp_path, monkeypatch):
+    original = FakeProvider([])
+    replacement = FakeProvider([])
+    runner = await open_runner(tmp_path, monkeypatch, original)
+
+    def fail_flush():
+        raise OSError("disk full")
+
+    monkeypatch.setattr(runner, "flush_conversation", fail_flush)
+    try:
+        with pytest.raises(OSError, match="disk full"):
+            runner.handoff(replacement, local_provider_identity())
+
+        assert runner.agent.provider is original
+        assert not any(
+            isinstance(message.content, ProviderHandoff)
+            for message in runner.messages.data
+        )
     finally:
         await runner.close()

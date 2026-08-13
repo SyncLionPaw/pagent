@@ -19,7 +19,13 @@ from pathlib import Path
 from ..conversation import ConversationStore
 from ..core.agent import Agent
 from ..core.events import RunEnd, ToolCallBegin, ToolResult, TurnEnd
-from ..core.message import Message, Messages, ToolCall
+from ..core.message import (
+    Message,
+    Messages,
+    ProviderIdentity,
+    ToolCall,
+    resolve_active_provider_identity,
+)
 from ..core.provider import ProviderProtocol
 from ..core.tool import FunctionTool, ToolOutput
 from ..sandbox import Sandbox
@@ -60,6 +66,7 @@ class Runner(BaseRunner):
         inbound: InboundMailbox | None = None,
         checkpoint_policy: CheckpointPolicy | None = None,
         tool_hooks: ToolHooks | None = None,
+        active_provider_identity: ProviderIdentity | None = None,
     ):
         super().__init__(
             agent,
@@ -73,6 +80,79 @@ class Runner(BaseRunner):
         self.inbound = inbound or InboundMailbox()
         self.checkpoint_policy = checkpoint_policy or CheckpointPolicy()
         self.tool_hooks = tool_hooks
+        self.active_provider_identity = (
+            active_provider_identity
+            if active_provider_identity is not None
+            else resolve_active_provider_identity(
+                thread.spec.provider_identity(),
+                self.messages.data,
+            )
+        )
+        self.closed = False
+        self.run_in_progress = False
+
+    @staticmethod
+    def validate_provider_identity(
+        provider: ProviderProtocol,
+        identity: ProviderIdentity,
+    ) -> None:
+        model_id = getattr(provider, "model_id", None)
+        if isinstance(model_id, str) and model_id != identity.model:
+            raise ValueError(
+                f"provider model {model_id!r} does not match identity "
+                f"model {identity.model!r}"
+            )
+
+        base_url = getattr(provider, "base_url", None)
+        if not isinstance(base_url, str):
+            return
+        if base_url.rstrip("/") == identity.base_url.rstrip("/"):
+            return
+        raise ValueError(
+            f"provider base_url {base_url!r} does not match identity "
+            f"base_url {identity.base_url!r}"
+        )
+
+    def handoff(
+        self,
+        provider: ProviderProtocol,
+        identity: ProviderIdentity,
+        *,
+        reason: str = "",
+    ) -> Message:
+        """在 turn 边界切换主 Agent Provider，并持久化 handoff 控制消息。"""
+        if self.closed:
+            raise RuntimeError("cannot handoff a closed runner")
+        if self.run_in_progress:
+            raise RuntimeError("cannot handoff while a run is in progress")
+        if self.run_state.active:
+            raise RuntimeError(
+                f"cannot handoff while runner phase is {self.run_state.phase!r}"
+            )
+        if len(self.frames) != 1:
+            raise RuntimeError("cannot handoff while a sub-agent frame is active")
+
+        self.validate_provider_identity(provider, identity)
+        message = Message.provider_handoff(
+            self.active_provider_identity,
+            identity,
+            reason=reason,
+            turn_id=self.messages.max_turn_id(),
+        )
+        self.messages += message
+        try:
+            self.flush_conversation()
+        except Exception:
+            self.messages.data.pop()
+            raise
+
+        self.agent.provider = provider
+        self.active_provider_identity = identity
+        return message
+
+    async def close(self) -> None:
+        self.closed = True
+        await super().close()
 
     def steer(self, text: str) -> None:
         self.inbound.steer(text)
@@ -206,6 +286,7 @@ class Runner(BaseRunner):
         turn_id: int,
         **run_kwargs,
     ) -> AsyncGenerator:
+        self.run_in_progress = True
         try:
             async for event in run_event_loop(
                 self,
@@ -224,6 +305,8 @@ class Runner(BaseRunner):
             self.messages.complete_orphan_tool_results(text="已取消：任务被中断")
             self.flush_conversation()
             self.run_state.phase = "ended"
+        finally:
+            self.run_in_progress = False
 
     @classmethod
     async def create(
@@ -234,6 +317,7 @@ class Runner(BaseRunner):
         root: str | Path | None = None,
         overrides: dict | None = None,
         opened_thread: Thread | None = None,
+        opened_messages: Messages | None = None,
         extra_system: str = "",
         max_turns: int = 24,
         skill_roots: Sequence[str | Path] = (),
@@ -256,7 +340,13 @@ class Runner(BaseRunner):
         )
         store = thread.open_store()
         conversation_id = thread.messages_conversation_id
-        messages = thread.load_messages()
+        messages = (
+            opened_messages if opened_messages is not None else thread.load_messages()
+        )
+        active_provider_identity = resolve_active_provider_identity(
+            thread.spec.provider_identity(),
+            messages.data,
+        )
 
         runner = cls(
             thread=thread,
@@ -272,6 +362,7 @@ class Runner(BaseRunner):
             skills=resources.skills,
             conversation_id=conversation_id,
             tool_hooks=tool_hooks,
+            active_provider_identity=active_provider_identity,
         )
         runner.run_state = run_state
         return runner

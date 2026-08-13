@@ -8,6 +8,7 @@ import type {
   ArtifactSummary,
   EnvironmentCheck,
   NewSessionOptions,
+  ProviderIdentity,
   ResetSessionOptions,
   RuntimeState,
   SandboxStatus,
@@ -66,6 +67,7 @@ const CHAT_METHODS = new Set([
   "SubagentEvent",
   "SlashResult",
   "HistoryReplay",
+  "ProviderHandoff",
   "Error",
   "RunEnd",
 ]);
@@ -118,6 +120,7 @@ export default function App() {
   const [lastError, setLastError] = useState("");
   const [environment, setEnvironment] = useState<EnvironmentCheck>();
   const [configSnapshot, setConfigSnapshot] = useState<ConfigSnapshot>();
+  const [activeProvider, setActiveProvider] = useState<ProviderIdentity>();
   const [settings, setSettings] = useState<AppSettings>();
   const [newSessionOptions, setNewSessionOptions] = useState<NewSessionOptions>();
   const [newSessionOpen, setNewSessionOpen] = useState(false);
@@ -538,7 +541,24 @@ export default function App() {
       return;
     }
     if (event.method === "ConfigSnapshot") {
-      setConfigSnapshot(event.params as ConfigSnapshot);
+      const snapshot = event.params as ConfigSnapshot;
+      setConfigSnapshot(snapshot);
+      setActiveProvider((current) => current ?? readProviderIdentity(snapshot.provider));
+      return;
+    }
+    if (event.method === "ProviderState") {
+      setActiveProvider(readProviderIdentity(event.params.provider));
+      return;
+    }
+    if (event.method === "ProviderHandoff") {
+      const provider = readProviderIdentity(event.params.current);
+      setActiveProvider(provider);
+      if (provider) {
+        toast(`已切换到 ${provider.model}`, {
+          description: provider.name,
+          type: "success",
+        });
+      }
       return;
     }
     if (event.method === "EnvironmentCheck") {
@@ -686,6 +706,40 @@ export default function App() {
           setChatEvents((events) => [...events, { method: "HistoryLoading", params: {} }]);
         }
         sendCommand(withProject({ cmd: "delete_thread", thread_id: threadId }));
+      },
+    });
+  };
+
+  const handoffProvider = (providerName: string) => {
+    const provider = configSnapshot?.providers?.find((item) => item.name === providerName);
+    if (
+      !provider ||
+      (provider.name === activeProvider?.name &&
+        provider.kind === activeProvider.kind &&
+        provider.model === activeProvider.model &&
+        provider.base_url === activeProvider.base_url)
+    ) {
+      return;
+    }
+    if (running) {
+      toast("任务运行期间无法切换模型", { type: "warning" });
+      return;
+    }
+    if (provider.api_key_required && !provider.api_key_configured) {
+      toast(`${provider.name} 缺少 API Key`, { type: "warning" });
+      return;
+    }
+    setConfirm({
+      options: {
+        title: "切换模型",
+        message: `下一条消息将由 ${provider.model} 处理，当前会话上下文会继续保留。`,
+        confirmText: "切换",
+        cancelText: "取消",
+        tone: "primary",
+      },
+      onConfirm: () => {
+        setConfirm(undefined);
+        sendCommand({ cmd: "handoff_provider", provider: provider.name });
       },
     });
   };
@@ -880,6 +934,8 @@ export default function App() {
               slashCommands={slashCommands}
               projectFiles={projectFiles}
               sandboxFiles={sandboxFiles}
+              providers={configSnapshot?.providers ?? []}
+              activeProvider={activeProvider}
               isMobile={isMobile}
               sidebarDocked={isMobile ? mobileDrawer !== "left" : sidebarDocked}
               onOpenSessions={() => openMobileDrawer("left")}
@@ -904,6 +960,7 @@ export default function App() {
               onComposingChange={setComposing}
               onHistoryDock={openSessions}
               onRingReady={handleRingReady}
+              onHandoffProvider={handoffProvider}
             />
             <div className="pane-resizer" data-resizer="right" onPointerDown={startResize("right")} />
             <RightPane
@@ -1026,6 +1083,21 @@ function flattenSandboxTree(nodes: SandboxTreeNode[]): string[] {
 function readString(params: Record<string, unknown>, key: string): string {
   const value = params[key];
   return typeof value === "string" ? value : "";
+}
+
+function readProviderIdentity(raw: unknown): ProviderIdentity | undefined {
+  if (typeof raw !== "object" || raw === null) {
+    return undefined;
+  }
+  const provider = raw as Record<string, unknown>;
+  const name = readString(provider, "name");
+  const kind = readString(provider, "kind");
+  const model = readString(provider, "model");
+  const baseUrl = readString(provider, "base_url");
+  if (!name || !kind || !model || !baseUrl) {
+    return undefined;
+  }
+  return { name, kind, model, base_url: baseUrl };
 }
 
 function readBoolean(params: Record<string, unknown>, camelKey: string, snakeKey: string): boolean {

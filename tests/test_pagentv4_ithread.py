@@ -32,6 +32,7 @@ def test_thread_spec_defaults():
     assert spec.provider_kind == "deepseek"
     assert spec.provider_base_url == "https://api.deepseek.com"
     assert spec.extra == {}
+    assert spec.provider_identity().model == "deepseek-v4-flash"
 
 
 def test_thread_spec_from_dict_flattens_sections():

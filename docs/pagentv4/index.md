@@ -68,6 +68,11 @@ override its built-in endpoint.
 When a thread is created, its provider name, kind, model, and base URL are
 saved in `thread.toml`. API keys stay in the global config or environment.
 
+When two or more providers are configured, Desktop, Web, and VS Code show a
+model selector in the chat UI. Switching applies to the next message and keeps
+the current conversation context. The handoff is recorded in the thread, so a
+resumed conversation continues with the last selected provider.
+
 ## Status
 
 New work should use `pagentv4` and `app` (terminal REPL). The top-level `pagent`

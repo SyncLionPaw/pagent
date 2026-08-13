@@ -3348,6 +3348,12 @@ input:focus-visible {
     flex-shrink: 0;
 }
 
+.provider-picker {
+    position: relative;
+    display: inline-flex;
+    min-width: 0;
+}
+
 .composer-model {
     display: inline-flex;
     height: 24px;
@@ -3357,12 +3363,26 @@ input:focus-visible {
     gap: 5px;
     flex: 0 1 auto;
     padding: 0 7px 0 5px;
+    border: 0;
     border-radius: var(--radius-sm);
     background: color-mix(in srgb, var(--primary) 7%, transparent);
     color: var(--text-secondary);
     font-size: 10px;
+    font-family: inherit;
     font-weight: 540;
     line-height: 1;
+    cursor: pointer;
+}
+
+.composer-model:hover:not(:disabled),
+.provider-picker.is-open .composer-model {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+}
+
+.composer-model:disabled {
+    cursor: default;
+    opacity: 0.62;
 }
 
 .composer-model-icon {
@@ -3384,6 +3404,132 @@ input:focus-visible {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.composer-model-chevron {
+    display: inline-flex;
+    flex: none;
+    color: var(--text-tertiary);
+    transition: transform 120ms ease;
+}
+
+.composer-model-chevron .desktop-icon {
+    width: 11px;
+    height: 11px;
+}
+
+.provider-picker.is-open .composer-model-chevron {
+    transform: rotate(180deg);
+}
+
+.provider-menu {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 40;
+    display: grid;
+    gap: 3px;
+    width: max-content;
+    min-width: 260px;
+    max-width: min(340px, calc(100vw - 32px));
+    max-height: 280px;
+    overflow: auto;
+    padding: 6px;
+    border: 1px solid color-mix(in srgb, var(--hairline) 72%, transparent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 97%, transparent);
+    box-shadow:
+        0 18px 44px rgb(0 0 0 / 28%),
+        0 3px 12px rgb(0 0 0 / 18%);
+    backdrop-filter: blur(18px);
+    overscroll-behavior: contain;
+}
+
+.provider-menu[hidden] {
+    display: none;
+}
+
+.provider-menu-option {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) 18px;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    align-items: center;
+    padding: 7px 9px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.provider-menu-option:hover:not(:disabled) {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--text-tertiary) 10%, transparent);
+}
+
+.provider-menu-option.is-active {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.provider-menu-option:disabled,
+.provider-menu-option.is-unavailable {
+    cursor: default;
+    opacity: 0.52;
+}
+
+.provider-menu-icon {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--primary) 9%, transparent);
+    color: var(--primary);
+}
+
+.provider-menu-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.provider-menu-copy {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.provider-menu-model,
+.provider-menu-meta {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.provider-menu-model {
+    font-size: 12px;
+    font-weight: 620;
+    letter-spacing: -0.01em;
+}
+
+.provider-menu-meta {
+    color: var(--text-tertiary);
+    font-size: 10px;
+}
+
+.provider-menu-check {
+    display: grid;
+    place-items: center;
+    color: var(--primary);
+}
+
+.provider-menu-check .desktop-icon {
+    width: 14px;
+    height: 14px;
 }
 
 .composer-floating .composer-btn {

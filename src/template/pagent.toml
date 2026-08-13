@@ -12,9 +12,6 @@
 #   默认 = 启动 pagent 时的当前工作目录（cwd）；用 [project.local] path 或 --project 显式绑定。
 #   注意它与 pagent home 无关：--dev 只改数据根，不改 host_root。
 #
-# 注：运行时真正加载的包内默认层当前是 src/app/pagent.toml；本文件是收拢中的
-# 全字段模板，后续 breaking change 会把运行时默认迁到 src/template/ 下统一。
-
 # ── [runner] 循环控制 ─────────────────────────────────
 [runner]
 location = "local" # runner 进程跑在哪：local = 用户电脑（默认，当前唯一支持）
@@ -30,6 +27,11 @@ model = "deepseek-v4-flash"
 # api_key 请写到生效 home 的 pagent.toml，勿提交进仓库；空值回退 kind 对应的环境变量。
 api_key = ""
 # base_url = ""                   # 可选，覆盖 kind 内置的 endpoint
+
+[provider.deepseek_pro]
+api_key = "" # 空值同样回退 DEEPSEEK_API_KEY
+kind = "deepseek"
+model = "deepseek-v4-pro"
 #
 # [provider.local]
 # kind = "ollama"

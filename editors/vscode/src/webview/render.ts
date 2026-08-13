@@ -232,6 +232,11 @@ export class ChatRenderer {
       this.replayHistory(params.messages);
       return;
     }
+    if (method === "ProviderHandoff") {
+      this.finishAssistantTurn();
+      this.showProviderHandoff(params.current);
+      return;
+    }
     if (method === "Error") {
       this.finishActivityStack();
       this.showError(readString(params, "message") || "未知错误");
@@ -349,6 +354,9 @@ export class ChatRenderer {
           readString(record, "content"),
           true,
         );
+      } else if (kind === "provider_handoff") {
+        this.finishAssistantTurn();
+        this.showProviderHandoff(record.current);
       }
     }
     this.settlePendingToolCards("已中断", false);
@@ -360,6 +368,17 @@ export class ChatRenderer {
     this.forceScrollToBottom();
     this.root.classList.add("history-entering");
     setTimeout(() => this.root.classList.remove("history-entering"), 180);
+  }
+
+  private showProviderHandoff(raw: unknown): void {
+    if (typeof raw !== "object" || raw === null) {
+      return;
+    }
+    const provider = raw as Record<string, unknown>;
+    const label = readString(provider, "model") || readString(provider, "name");
+    if (label) {
+      this.showNotice(`已切换到 ${label}`);
+    }
   }
 
   /** 回放一条完整文本气泡（user 或 assistant），一次性定稿，不走打字机。

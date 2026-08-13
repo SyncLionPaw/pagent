@@ -17,6 +17,11 @@ model = "deepseek-v4-flash"
 api_key = ""
 # base_url = ""  # 可选，覆盖 kind 内置的 endpoint
 
+[provider.deepseek_pro]
+api_key = "" # 空值同样回退 DEEPSEEK_API_KEY
+kind = "deepseek"
+model = "deepseek-v4-pro"
+
 [sandbox]
 backend = "local" # local（thread workspace）| inplace（直接改项目）| container | docker | podman | ssh
 command_policy = "workdir" # open | workdir — workdir 拦截 run_command 里的越界路径；所有后端通用
@@ -40,11 +45,11 @@ tools = [
 # 再把 image 改成 pagent:browser。
 [sandbox.container]
 container_ttl = 300 # 秒；容器主进程 sleep <ttl>，到期 --rm 自清理；0 或不设则用 sleep infinity
-image = "pagent:latest" 
+image = "pagent:latest"
 
 # backend = ssh 时读此块。
 [sandbox.ssh]
-config_path = "~/.ssh/config" 
+config_path = "~/.ssh/config"
 host = "machine_root" # ~/.ssh/config 里的 Host 别名
 # 远端工作目录：在登录家目录下建 pagent/，agent 只能操作该目录（会自动 mkdir）
 workdir = "~/pagent"

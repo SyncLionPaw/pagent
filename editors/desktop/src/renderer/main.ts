@@ -74,6 +74,15 @@ type ThemeMode = "dark" | "light";
 type PanelTab = "project" | "sandbox" | "terminal";
 type ProjectPane = "files" | "artifacts";
 type ActivityState = "running" | "sleeping" | "error";
+type ProviderOption = {
+  name: string;
+  kind: string;
+  model: string;
+  base_url: string;
+  api_key_configured: boolean;
+  api_key_required: boolean;
+};
+type ProviderIdentity = Pick<ProviderOption, "name" | "kind" | "model" | "base_url">;
 type TerminalEntryKind = "command" | "stdout" | "stderr" | "status";
 type CapabilityKind = "skills" | "tools" | "sandbox" | "artifacts";
 type MarketplaceCategory = "development" | "office" | "research";
@@ -1143,16 +1152,29 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
               <textarea id="prompt" placeholder="给 pagent 下达任务，输入 @ 引用文件"></textarea>
               <div class="composer-actions">
                 <div class="composer-actions-start">
-                  <span
-                    class="composer-model"
-                    data-composer-model
-                    title="当前模型：${escapeHtml(runtime.model)}"
-                  >
-                    <span class="composer-model-icon" data-composer-model-icon aria-hidden="true">
-                      ${renderModelProviderIcon(runtime.model)}
-                    </span>
-                    <span class="composer-model-name" data-composer-model-name>${escapeHtml(runtime.model)}</span>
-                  </span>
+                  <div class="provider-picker" data-provider-picker>
+                    <button
+                      type="button"
+                      class="composer-model"
+                      data-composer-model
+                      title="当前模型：${escapeHtml(runtime.model)}"
+                      aria-haspopup="listbox"
+                      aria-expanded="false"
+                    >
+                      <span class="composer-model-icon" data-composer-model-icon aria-hidden="true">
+                        ${renderModelProviderIcon(runtime.model)}
+                      </span>
+                      <span class="composer-model-name" data-composer-model-name>${escapeHtml(runtime.model)}</span>
+                      <span class="composer-model-chevron" aria-hidden="true">${renderIcon("chevron-down")}</span>
+                    </button>
+                    <div
+                      class="provider-menu"
+                      data-provider-menu
+                      role="listbox"
+                      aria-label="选择模型"
+                      hidden
+                    ></div>
+                  </div>
                   <button
                     type="button"
                     class="composer-btn skills-button"
@@ -1732,9 +1754,11 @@ async function start(): Promise<void> {
     "[data-message-shortcut-preview]",
   );
   const promptInput = findRequired<HTMLTextAreaElement>("#prompt");
-  const composerModel = findRequired<HTMLElement>("[data-composer-model]");
+  const providerPicker = findRequired<HTMLElement>("[data-provider-picker]");
+  const composerModel = findRequired<HTMLButtonElement>("[data-composer-model]");
   const composerModelIcon = findRequired<HTMLElement>("[data-composer-model-icon]");
   const composerModelName = findRequired<HTMLElement>("[data-composer-model-name]");
+  const providerMenu = findRequired<HTMLElement>("[data-provider-menu]");
   const mentionPopup = findRequired<HTMLElement>("[data-mention-popup]");
   const sendMessageButton = findRequired<HTMLButtonElement>("[data-send-message]");
   const composerHint = findRequired<HTMLElement>("[data-composer-hint]");
@@ -1815,6 +1839,9 @@ async function start(): Promise<void> {
     leftSplitRatio: readStoredLeftSplitRatio(),
     rightWidth: RIGHT_PANE_WIDTH_PX,
     activityState: "sleeping" as ActivityState,
+    providers: [] as ProviderOption[],
+    activeProvider: undefined as ProviderIdentity | undefined,
+    providerSwitching: false,
     terminalEntries: [] as TerminalEntry[],
     expandedTree: new Set<string>(),
     expandedProjectTree: new Set<string>(),
@@ -2582,6 +2609,97 @@ async function start(): Promise<void> {
     }
   });
 
+  function setProviderMenuOpen(open: boolean): void {
+    const next = open && !composerModel.disabled;
+    providerMenu.hidden = !next;
+    providerPicker.classList.toggle("is-open", next);
+    composerModel.setAttribute("aria-expanded", String(next));
+    if (next) {
+      window.requestAnimationFrame(() => {
+        const option =
+          providerMenu.querySelector<HTMLButtonElement>(
+            ".provider-menu-option.is-active:not(:disabled)",
+          ) ??
+          providerMenu.querySelector<HTMLButtonElement>(
+            ".provider-menu-option:not(:disabled)",
+          );
+        option?.focus();
+      });
+    }
+  }
+
+  async function handoffToProvider(target: ProviderOption): Promise<void> {
+    if (target === configuredProviderForActive()) {
+      return;
+    }
+    const confirmed = await openConfirm({
+      title: "切换模型",
+      message: `下一条消息将由 ${target.model} 处理，当前会话上下文会继续保留。`,
+      confirmText: "切换",
+      cancelText: "取消",
+      tone: "primary",
+    });
+    if (!confirmed) {
+      return;
+    }
+    uiState.providerSwitching = true;
+    applyProviderSelector();
+    window.setTimeout(() => {
+      if (!uiState.providerSwitching) {
+        return;
+      }
+      uiState.providerSwitching = false;
+      applyProviderSelector();
+    }, 8000);
+    try {
+      await window.desktop.sendWireCommand({
+        cmd: "handoff_provider",
+        provider: target.name,
+      });
+    } catch (error) {
+      uiState.providerSwitching = false;
+      applyProviderSelector();
+      toast("模型切换失败", {
+        description: error instanceof Error ? error.message : String(error),
+        type: "error",
+      });
+    }
+  }
+
+  composerModel.addEventListener("click", () => {
+    setProviderMenuOpen(providerMenu.hidden);
+  });
+  providerMenu.addEventListener("click", (event) => {
+    const option = (event.target as HTMLElement).closest<HTMLElement>(
+      "[data-provider-name]",
+    );
+    if (!option) {
+      return;
+    }
+    const target = uiState.providers.find(
+      (provider) => provider.name === option.dataset.providerName,
+    );
+    setProviderMenuOpen(false);
+    if (target) {
+      if (target === configuredProviderForActive()) {
+        composerModel.focus();
+        return;
+      }
+      void handoffToProvider(target);
+    }
+  });
+  document.addEventListener("pointerdown", (event) => {
+    if (!providerPicker.contains(event.target as Node)) {
+      setProviderMenuOpen(false);
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !providerMenu.hidden) {
+      setProviderMenuOpen(false);
+      composerModel.focus();
+    }
+  });
+
   function syncNewSessionDraftFromDom(): void {
     const projectInput = newSessionBody.querySelector<HTMLInputElement>("[data-project-path]");
     if (projectInput) {
@@ -2802,6 +2920,129 @@ async function start(): Promise<void> {
     await refreshArtifacts();
   }
 
+  function readProviderIdentity(raw: unknown): ProviderIdentity | undefined {
+    if (typeof raw !== "object" || raw === null) {
+      return undefined;
+    }
+    const provider = raw as Record<string, unknown>;
+    const name = String(provider.name ?? "").trim();
+    const kind = String(provider.kind ?? "").trim();
+    const model = String(provider.model ?? "").trim();
+    const baseUrl = String(provider.base_url ?? "").trim();
+    if (!name || !kind || !model || !baseUrl) {
+      return undefined;
+    }
+    return { name, kind, model, base_url: baseUrl };
+  }
+
+  function readProviderOptions(raw: unknown): ProviderOption[] {
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return raw.flatMap((item) => {
+      const identity = readProviderIdentity(item);
+      if (!identity || typeof item !== "object" || item === null) {
+        return [];
+      }
+      const provider = item as Record<string, unknown>;
+      return [{
+        ...identity,
+        api_key_configured: provider.api_key_configured === true,
+        api_key_required: provider.api_key_required === true,
+      }];
+    });
+  }
+
+  function configuredProviderForActive(): ProviderOption | undefined {
+    const active = uiState.activeProvider;
+    if (!active) {
+      return undefined;
+    }
+    const exact = uiState.providers.find(
+      (provider) =>
+        provider.name === active.name &&
+        provider.kind === active.kind &&
+        provider.model === active.model &&
+        provider.base_url === active.base_url,
+    );
+    if (exact || uiState.providers.some((provider) => provider.name === active.name)) {
+      return exact;
+    }
+    const aliases = uiState.providers.filter(
+      (provider) =>
+        provider.kind === active.kind &&
+        provider.model === active.model &&
+        provider.base_url.replace(/\/+$/, "") === active.base_url.replace(/\/+$/, ""),
+    );
+    return aliases.length === 1 ? aliases[0] : undefined;
+  }
+
+  function applyProviderSelector(): void {
+    const active = uiState.activeProvider;
+    const activeConfigured = configuredProviderForActive();
+    const model = active?.model || uiState.runtime.model;
+    composerModelIcon.innerHTML = renderModelProviderIcon(model);
+    composerModelName.textContent = model;
+    composerModel.title = active
+      ? `当前模型：${active.model}（${active.name}）`
+      : `当前模型：${model}`;
+
+    const items: string[] = [];
+    if (active && !activeConfigured) {
+      items.push(`
+        <div class="provider-menu-option is-active is-unavailable" role="option" aria-selected="true">
+          <span class="provider-menu-icon">${renderModelProviderIcon(active.model)}</span>
+          <span class="provider-menu-copy">
+            <span class="provider-menu-model">${escapeHtml(active.model)}</span>
+            <span class="provider-menu-meta">当前会话 · 配置已移除</span>
+          </span>
+          <span class="provider-menu-check">${renderIcon("check")}</span>
+        </div>
+      `);
+    }
+    for (const provider of uiState.providers) {
+      const selected = provider === activeConfigured;
+      const unavailable = provider.api_key_required && !provider.api_key_configured;
+      const meta = unavailable
+        ? `${provider.name} · 缺少 API Key`
+        : `${provider.name} · ${provider.kind}`;
+      items.push(`
+        <button
+          type="button"
+          class="provider-menu-option${selected ? " is-active" : ""}"
+          role="option"
+          aria-selected="${selected}"
+          data-provider-name="${escapeHtml(provider.name)}"
+          ${unavailable ? "disabled" : ""}
+        >
+          <span class="provider-menu-icon">${renderModelProviderIcon(provider.model)}</span>
+          <span class="provider-menu-copy">
+            <span class="provider-menu-model">${escapeHtml(provider.model)}</span>
+            <span class="provider-menu-meta">${escapeHtml(meta)}</span>
+          </span>
+          <span class="provider-menu-check">${selected ? renderIcon("check") : ""}</span>
+        </button>
+      `);
+    }
+    providerMenu.innerHTML = items.join("");
+    syncProviderSelectorState();
+  }
+
+  function syncProviderSelectorState(): void {
+    const activeConfigured = configuredProviderForActive();
+    composerModel.disabled =
+      uiState.activityState === "running" ||
+      uiState.providerSwitching ||
+      !uiState.providers.some(
+        (provider) =>
+          provider !== activeConfigured &&
+          (!provider.api_key_required || provider.api_key_configured),
+      );
+    if (composerModel.disabled) {
+      setProviderMenuOpen(false);
+    }
+  }
+
   function applyActivityState(): void {
     const running = uiState.activityState === "running";
     sendMessageButton.disabled = false;
@@ -2811,7 +3052,7 @@ async function start(): Promise<void> {
     sendMessageButton.innerHTML = running
       ? renderIcon("square")
       : renderIcon("arrow-up");
-
+    syncProviderSelectorState();
   }
 
   function applyHeader(): void {
@@ -3509,9 +3750,7 @@ async function start(): Promise<void> {
 
   function applyRuntimeState(state: RuntimeState): void {
     uiState.runtime = state;
-    composerModelIcon.innerHTML = renderModelProviderIcon(state.model);
-    composerModelName.textContent = state.model;
-    composerModel.title = `当前模型：${state.model}`;
+    applyProviderSelector();
     if (state.status === "error") {
       uiState.activityState = "error";
     } else if (uiState.activityState === "error" && !state.lastError) {
@@ -3698,6 +3937,31 @@ async function start(): Promise<void> {
     }
 
     contextUsageRing.handleWireEvent(event);
+    if (event.method === "ConfigSnapshot") {
+      uiState.providers = readProviderOptions(event.params.providers);
+      if (!uiState.activeProvider) {
+        uiState.activeProvider = readProviderIdentity(event.params.provider);
+      }
+      applyProviderSelector();
+    }
+    if (event.method === "ProviderState" || event.method === "ProviderHandoff") {
+      const raw =
+        event.method === "ProviderState"
+          ? event.params.provider
+          : event.params.current;
+      const provider = readProviderIdentity(raw);
+      if (provider) {
+        uiState.activeProvider = provider;
+        uiState.providerSwitching = false;
+        applyProviderSelector();
+        if (event.method === "ProviderHandoff") {
+          toast(`已切换到 ${provider.model}`, {
+            description: provider.name,
+            type: "success",
+          });
+        }
+      }
+    }
     if (
       event.method === "RunBegin" ||
       event.method === "ReasoningDelta" ||
@@ -3727,6 +3991,10 @@ async function start(): Promise<void> {
       void window.desktop.sendWireCommand({ cmd: "capabilities" });
     } else if (event.method === "Error") {
       uiState.activityState = "error";
+      if (event.params.where === "handoff_provider") {
+        uiState.providerSwitching = false;
+        applyProviderSelector();
+      }
       const message = String(event.params.message ?? "").trim();
       if (message) {
         setComposerHint(message);

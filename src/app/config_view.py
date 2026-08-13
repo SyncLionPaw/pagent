@@ -6,7 +6,9 @@ wire / http 的 ``get_config`` 命令用它下发配置快照，前端据此渲�
 
 from __future__ import annotations
 
-from .config import ReplConfig
+from pagentv4 import provider_requires_api_key
+
+from .config import ProviderConfig, ReplConfig
 
 
 def mask_api_key(api_key: str | None) -> str:
@@ -19,19 +21,29 @@ def mask_api_key(api_key: str | None) -> str:
     return "*" * (len(key) - 4) + key[-4:]
 
 
+def provider_to_public_dict(name: str, provider: ProviderConfig) -> dict:
+    resolved_key = provider.resolved_api_key()
+    return {
+        "name": name,
+        "kind": provider.kind,
+        "model": provider.model,
+        "base_url": provider.resolved_base_url(),
+        "api_key_masked": mask_api_key(resolved_key),
+        "api_key_configured": bool(resolved_key),
+        "api_key_required": provider_requires_api_key(provider.kind),
+    }
+
+
 def config_to_public_dict(config: ReplConfig) -> dict:
     """ReplConfig → 面向前端的字典。api_key 脱敏，附 configured 布尔位。"""
+    provider_name = config.resolved_provider_name()
     provider = config.resolved_provider()
-    resolved_key = config.resolved_api_key()
+    providers = config.providers or {provider_name: provider}
     return {
-        "provider": {
-            "name": config.resolved_provider_name(),
-            "kind": provider.kind,
-            "model": provider.model,
-            "base_url": provider.resolved_base_url(),
-            "api_key_masked": mask_api_key(resolved_key),
-            "api_key_configured": bool(resolved_key),
-        },
+        "provider": provider_to_public_dict(provider_name, provider),
+        "providers": [
+            provider_to_public_dict(name, item) for name, item in providers.items()
+        ],
         "sandbox": {
             "backend": config.backend or "",
             "image": config.image or "",

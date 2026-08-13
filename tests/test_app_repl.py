@@ -21,7 +21,15 @@ from app.repl import (
     say_goodbye,
     split_prefixed_command,
 )
-from pagentv4 import TextDelta, ToolCallBegin, ToolResult, TurnEnd
+from pagentv4 import (
+    Message,
+    Messages,
+    ProviderIdentity,
+    TextDelta,
+    ToolCallBegin,
+    ToolResult,
+    TurnEnd,
+)
 
 
 class FakeRunner:
@@ -29,19 +37,34 @@ class FakeRunner:
 
 
 @pytest.mark.asyncio
-async def test_open_runner_uses_frozen_thread_provider(monkeypatch):
+async def test_open_runner_uses_provider_from_handoff_history(monkeypatch):
     captured: dict = {}
+    initial = ProviderIdentity(
+        name="deepseek",
+        kind="deepseek",
+        model="initial-model",
+        base_url="https://api.deepseek.com",
+    )
+    active = ProviderIdentity(
+        name="local",
+        kind="ollama",
+        model="frozen-model",
+        base_url="http://frozen.example/v1",
+    )
+    messages = Messages()
+    messages += Message.provider_handoff(initial, active)
     spec = type(
         "Spec",
         (),
         {
-            "provider_name": "local",
-            "provider_kind": "ollama",
-            "model": "frozen-model",
-            "provider_base_url": "http://frozen.example/v1",
+            "provider_identity": lambda self: initial,
         },
     )()
-    thread = type("Thread", (), {"spec": spec})()
+    thread = type(
+        "Thread",
+        (),
+        {"spec": spec, "load_messages": lambda self: messages},
+    )()
 
     monkeypatch.setattr("app.repl.refresh_provider_from_disk", lambda config: config)
     monkeypatch.setattr("app.repl.Thread.open", lambda *args, **kwargs: thread)
@@ -71,6 +94,7 @@ async def test_open_runner_uses_frozen_thread_provider(monkeypatch):
     assert captured["base_url"] == "http://frozen.example/v1"
     assert captured["api_key"] is None
     assert captured["create_kwargs"]["opened_thread"] is thread
+    assert captured["create_kwargs"]["opened_messages"] is messages
 
 
 class FakeSandboxCommands:

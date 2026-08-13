@@ -24,6 +24,8 @@
     {"cmd": "list_threads"}                       列出当前 pagent home 下可恢复会话
     {"cmd": "delete_thread", "thread_id": "..."}  软删除：metainfo 打 deleted_at，列表隐藏
     {"cmd": "cancel"}                             取消当前运行中的 Agent 任务
+    {"cmd": "get_config"}                         获取脱敏 Provider 列表
+    {"cmd": "handoff_provider", "provider": "..."}  下一轮切换到指定 Provider
 
 reset 与 resume 换 runner 后都补发一条 ``HistoryReplay`` 控制事件：空数组表示新会话
 （前端清屏），非空则携带该 thread 的历史消息，前端逐条重建气泡/思考/工具卡。
@@ -48,7 +50,15 @@ import tomllib
 from dataclasses import fields, replace
 from datetime import datetime
 
-from pagentv4 import ToolCallBegin
+from pagentv4 import (
+    ProviderHandoff,
+    ProviderIdentity,
+    ToolCallBegin,
+    build_provider,
+    provider_api_key_env,
+    provider_requires_api_key,
+    resolve_active_provider_identity,
+)
 from pagentv4.adapters.acp import encode_event_line, json_value
 from pagentv4.core.context_limit import DEFAULT_CONTEXT_LIMIT, resolve_context_limit
 from pagentv4.core.message import TextChunk, ThinkingChunk, ToolCall, ToolResult
@@ -68,13 +78,21 @@ from .tool_permit import needs_tool_permit, summarize_tool_args
 from .transport import active_sink
 
 
-def thread_context_limit(thread) -> int:
-    """从 thread spec 的 model 名推断上下文窗口上限。"""
-    spec = getattr(thread, "spec", None)
-    model = getattr(spec, "model", None) if spec is not None else None
-    if isinstance(model, str) and model.strip():
-        return resolve_context_limit(model)
-    return DEFAULT_CONTEXT_LIMIT
+def active_provider_for_thread(thread, messages=None) -> ProviderIdentity:
+    resolved_messages = messages if messages is not None else thread.load_messages()
+    return resolve_active_provider_identity(
+        thread.spec.provider_identity(),
+        resolved_messages.data,
+    )
+
+
+def thread_context_limit(thread, messages=None) -> int:
+    """从 thread 当前 Provider 的 model 推断上下文窗口上限。"""
+    try:
+        identity = active_provider_for_thread(thread, messages)
+    except (AttributeError, ValueError):
+        return DEFAULT_CONTEXT_LIMIT
+    return resolve_context_limit(identity.model)
 
 
 def log(text: str) -> None:
@@ -198,6 +216,15 @@ def history_message_items(messages) -> list[dict]:
                     "content": content.text,
                 }
             )
+        elif isinstance(content, ProviderHandoff):
+            out.append(
+                {
+                    "kind": "provider_handoff",
+                    "previous": provider_identity_params(content.previous),
+                    "current": provider_identity_params(content.current),
+                    "reason": content.reason,
+                }
+            )
     return out
 
 
@@ -243,7 +270,7 @@ def emit_history_replay(runner) -> None:
     """
     metainfo = runner.thread.load_metainfo()
     usage = metainfo.get("usage")
-    limit = thread_context_limit(runner.thread)
+    limit = thread_context_limit(runner.thread, runner.messages)
     emit_history_replay_payload(
         thread_id=runner.thread.id,
         title=metainfo.get("title", ""),
@@ -252,6 +279,7 @@ def emit_history_replay(runner) -> None:
         usage=usage if isinstance(usage, dict) else None,
         context_limit=limit,
     )
+    emit_provider_state(runner.active_provider_identity)
 
 
 def emit_thread_history_replay(thread, project_path: str | None = None) -> None:
@@ -267,7 +295,8 @@ def emit_thread_history_replay(thread, project_path: str | None = None) -> None:
             close()
     metainfo = thread.load_metainfo()
     usage = metainfo.get("usage")
-    limit = thread_context_limit(thread)
+    active_provider = active_provider_for_thread(thread, messages)
+    limit = resolve_context_limit(active_provider.model)
     emit_history_replay_payload(
         thread_id=thread.id,
         title=metainfo.get("title", ""),
@@ -276,6 +305,7 @@ def emit_thread_history_replay(thread, project_path: str | None = None) -> None:
         usage=usage if isinstance(usage, dict) else None,
         context_limit=limit,
     )
+    emit_provider_state(active_provider)
 
 
 def emit_current_thread(runner) -> None:
@@ -683,6 +713,37 @@ def emit_slash_commands() -> None:
     emit_line(slash_commands_line())
 
 
+def provider_identity_params(identity: ProviderIdentity) -> dict:
+    return {
+        "name": identity.name,
+        "kind": identity.kind,
+        "model": identity.model,
+        "base_url": identity.base_url,
+    }
+
+
+def emit_provider_state(identity: ProviderIdentity) -> None:
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "ProviderState",
+        "params": {"provider": provider_identity_params(identity)},
+    }
+    emit_line(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
+def emit_provider_handoff(handoff: ProviderHandoff) -> None:
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "ProviderHandoff",
+        "params": {
+            "previous": provider_identity_params(handoff.previous),
+            "current": provider_identity_params(handoff.current),
+            "reason": handoff.reason,
+        },
+    }
+    emit_line(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
 def emit_config_snapshot(config: ReplConfig) -> None:
     """下发脱敏后的配置快照，供前端渲染设置面板。api_key 从不原样下发。"""
     payload = {
@@ -902,7 +963,7 @@ async def run_user_turn(
             touch_thread_usage(
                 runner.thread,
                 last_usage,
-                context_limit=thread_context_limit(runner.thread),
+                context_limit=thread_context_limit(runner.thread, runner.messages),
             )
         state["turn"] = None
         if generate_title and completed:
@@ -1221,6 +1282,54 @@ async def handle_command(command: dict, runner, config: ReplConfig, state: dict)
     if opened_runner:
         state["thread_id"] = runner.thread.id
         emit_current_thread(runner)
+
+    if cmd == "handoff_provider":
+        if turn_active(state):
+            emit_error(
+                "助手正在运行，当前无法切换模型。请等待完成或先停止任务。",
+                where="handoff_provider",
+            )
+            return runner
+        provider_name = command.get("provider")
+        if not (isinstance(provider_name, str) and provider_name.strip()):
+            emit_error("缺少 provider", where="handoff_provider")
+            return runner
+        provider_name = provider_name.strip()
+        try:
+            fresh_config = refresh_provider_from_disk(config)
+            target = fresh_config.provider_named(provider_name)
+            api_key = target.resolved_api_key()
+            if not api_key and provider_requires_api_key(target.kind):
+                env_name = provider_api_key_env(target.kind)
+                raise ValueError(
+                    f"Provider {provider_name!r} 缺少 API Key；请配置或设置 {env_name}"
+                )
+            identity = ProviderIdentity(
+                name=provider_name,
+                kind=target.kind,
+                model=target.model,
+                base_url=target.resolved_base_url(),
+            )
+            provider = build_provider(
+                target.kind,
+                target.model,
+                base_url=target.base_url,
+                api_key=api_key,
+            )
+            reason = command.get("reason")
+            message = runner.handoff(
+                provider,
+                identity,
+                reason=reason.strip() if isinstance(reason, str) else "",
+            )
+        except (Exception, SystemExit) as exc:
+            log(f"[wire] handoff_provider failed: {exc}")
+            emit_error(format_exc(exc), where="handoff_provider")
+            return runner
+        emit_provider_handoff(message.content)
+        emit_provider_state(identity)
+        log(f"[wire] handoff_provider：已切换到 {provider_name}")
+        return runner
 
     if cmd == "user":
         text = command.get("text", "")

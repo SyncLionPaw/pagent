@@ -17,6 +17,8 @@ export type ViewToHost =
   | { type: "requestRuntimeOptions" }
   // 请求后端当前支持的 slash 命令；hover 菜单打开前按需同步。
   | { type: "requestSlashCommands" }
+  // 在当前 thread 的 turn 边界切换 Provider。
+  | { type: "handoffProvider"; provider: string }
   // 批准一次挂起的工具调用（危险工具在执行前弹审批）。
   | { type: "permit"; toolCallId: string }
   // 拒绝一次挂起的工具调用；reason 会作为 tool result 回给模型。

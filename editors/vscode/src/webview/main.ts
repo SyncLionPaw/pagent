@@ -359,6 +359,9 @@ if (app) {
             <i class="codicon codicon-device-desktop"></i>
             <span>LOCAL</span>
           </button>
+          <select id="provider-select" class="provider-switch" aria-label="当前模型"
+            title="切换当前会话使用的模型">
+          </select>
           <button id="yolo" type="button" class="composer-btn yolo-btn"
             title="自动审批：关闭（点击开启 YOLO 模式）" aria-label="YOLO 模式">
           </button>
@@ -379,6 +382,7 @@ if (app) {
   const sendBtn = document.getElementById("send") as HTMLButtonElement;
   const slashBtn = document.getElementById("slash") as HTMLButtonElement;
   const modeBtn = document.getElementById("sandbox-mode") as HTMLButtonElement;
+  const providerSelect = document.getElementById("provider-select") as HTMLSelectElement;
   const yoloBtn = document.getElementById("yolo") as HTMLButtonElement;
   const slashMenu = document.getElementById("slash-menu") as HTMLDivElement;
   const modeMenuEl = document.getElementById("mode-menu") as HTMLDivElement;
@@ -390,6 +394,65 @@ if (app) {
   let modeSwitching = false;
   let historyLoading = false;
   let taskRunning = false;
+  let providerSwitching = false;
+  let activeProviderName = "";
+  let activeProviderModel = "";
+  let activeProviderIdentityKey = "";
+  let activeProviderRuntimeKey = "";
+  let selectedProviderIdentityKey = "";
+
+  const providerIdentity = (raw: unknown) => {
+    if (typeof raw !== "object" || raw === null) {
+      return undefined;
+    }
+    const provider = raw as Record<string, unknown>;
+    const name = typeof provider.name === "string" ? provider.name : "";
+    const kind = typeof provider.kind === "string" ? provider.kind : "";
+    const model = typeof provider.model === "string" ? provider.model : "";
+    const baseUrl = typeof provider.base_url === "string" ? provider.base_url : "";
+    if (!name || !kind || !model || !baseUrl) {
+      return undefined;
+    }
+    return {
+      name,
+      model,
+      key: JSON.stringify([name, kind, model, baseUrl.replace(/\/+$/, "")]),
+      runtimeKey: JSON.stringify([kind, model, baseUrl.replace(/\/+$/, "")]),
+    };
+  };
+
+  const syncProviderSelection = () => {
+    providerSelect.querySelector('option[value="__active__"]')?.remove();
+    let matching = Array.from(providerSelect.options).find(
+      (option) => option.dataset.identity === activeProviderIdentityKey,
+    );
+    if (
+      !matching &&
+      !Array.from(providerSelect.options).some((option) => option.value === activeProviderName)
+    ) {
+      const aliases = Array.from(providerSelect.options).filter(
+        (option) => option.dataset.runtime === activeProviderRuntimeKey,
+      );
+      matching = aliases.length === 1 ? aliases[0] : undefined;
+    }
+    if (matching) {
+      selectedProviderIdentityKey = matching.dataset.identity ?? "";
+      providerSelect.value = matching.value;
+      return;
+    }
+    if (!activeProviderName) {
+      selectedProviderIdentityKey = "";
+      providerSelect.value = "";
+      return;
+    }
+    selectedProviderIdentityKey = activeProviderIdentityKey;
+    const activeOption = new Option(
+      `${activeProviderModel || activeProviderName} · 当前会话`,
+      "__active__",
+    );
+    providerSelect.prepend(activeOption);
+    providerSelect.value = "__active__";
+  };
 
   // 斜杠方框图标（与命令卡同款内联 SVG），放进斜杠按钮。
   slashBtn.innerHTML =
@@ -439,6 +502,16 @@ if (app) {
     input.disabled = historyLoading;
     slashBtn.disabled = historyLoading;
     modeBtn.disabled = historyLoading || modeSwitching;
+    providerSelect.disabled =
+      historyLoading ||
+      taskRunning ||
+      providerSwitching ||
+      !Array.from(providerSelect.options).some(
+        (option) =>
+          option.dataset.identity !== selectedProviderIdentityKey &&
+          option.value !== "__active__" &&
+          !option.disabled,
+      );
     yoloBtn.disabled = historyLoading || modeSwitching;
     if (taskRunning) {
       sendBtn.disabled = historyLoading;
@@ -568,6 +641,29 @@ if (app) {
     }
   });
 
+  providerSelect.addEventListener("change", () => {
+    const provider = providerSelect.value;
+    if (!provider || provider === "__active__") {
+      return;
+    }
+    const label = providerSelect.selectedOptions[0]?.textContent || provider;
+    if (!window.confirm(`切换到 ${label}？当前会话上下文会继续保留。`)) {
+      syncProviderSelection();
+      return;
+    }
+    providerSwitching = true;
+    syncSendState();
+    vscodeApi.postMessage({ type: "handoffProvider", provider });
+    setTimeout(() => {
+      if (!providerSwitching) {
+        return;
+      }
+      providerSwitching = false;
+      syncProviderSelection();
+      syncSendState();
+    }, 8000);
+  });
+
   // YOLO 按钮：切换自动审批。
   yoloBtn.addEventListener("click", () => {
     yoloEnabled = !yoloEnabled;
@@ -603,11 +699,72 @@ if (app) {
       if (wireEvent.method === "RunBegin") {
         taskRunning = true;
         syncSendState();
-      } else if (wireEvent.method === "RunEnd" || wireEvent.method === "Error") {
+      } else if (wireEvent.method === "RunEnd") {
         taskRunning = false;
+        syncSendState();
+      } else if (wireEvent.method === "Error") {
+        taskRunning = false;
+        if (message.params.where === "handoff_provider") {
+          providerSwitching = false;
+          syncProviderSelection();
+        }
         syncSendState();
       } else if (wireEvent.method === "HistoryReplay" && message.params.thread_id) {
         taskRunning = false;
+        syncSendState();
+      } else if (wireEvent.method === "ConfigSnapshot") {
+        const providers = Array.isArray(message.params.providers)
+          ? message.params.providers
+          : [];
+        providerSelect.replaceChildren();
+        for (const raw of providers) {
+          if (typeof raw !== "object" || raw === null) {
+            continue;
+          }
+          const item = raw as Record<string, unknown>;
+          const name = typeof item.name === "string" ? item.name : "";
+          const model = typeof item.model === "string" ? item.model : name;
+          if (!name) {
+            continue;
+          }
+          const option = document.createElement("option");
+          option.value = name;
+          option.textContent = `${model} · ${name}`;
+          const identity = providerIdentity(item);
+          option.dataset.identity = identity?.key ?? "";
+          option.dataset.runtime = identity?.runtimeKey ?? "";
+          option.disabled =
+            item.api_key_required === true && item.api_key_configured !== true;
+          providerSelect.appendChild(option);
+        }
+        if (!activeProviderName) {
+          const configured = providerIdentity(message.params.provider);
+          if (configured) {
+            activeProviderName = configured.name;
+            activeProviderModel = configured.model;
+            activeProviderIdentityKey = configured.key;
+            activeProviderRuntimeKey = configured.runtimeKey;
+          }
+        }
+        syncProviderSelection();
+        syncSendState();
+      } else if (
+        wireEvent.method === "ProviderState" ||
+        wireEvent.method === "ProviderHandoff"
+      ) {
+        const raw =
+          wireEvent.method === "ProviderState"
+            ? message.params.provider
+            : message.params.current;
+        const provider = providerIdentity(raw);
+        if (provider) {
+          activeProviderName = provider.name;
+          activeProviderModel = provider.model;
+          activeProviderIdentityKey = provider.key;
+          activeProviderRuntimeKey = provider.runtimeKey;
+          syncProviderSelection();
+        }
+        providerSwitching = false;
         syncSendState();
       }
       contextUsageRing.handleWireEvent(wireEvent);

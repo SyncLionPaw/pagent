@@ -128,6 +128,17 @@ export type WireEvent = {
   params: Record<string, unknown>;
 };
 
+export type ProviderOption = {
+  name: string;
+  kind: string;
+  model: string;
+  base_url: string;
+  api_key_configured: boolean;
+  api_key_required: boolean;
+};
+
+export type ProviderIdentity = Pick<ProviderOption, "name" | "kind" | "model" | "base_url">;
+
 export type ProviderSetupInput = {
   apiKey: string;
   model: string;

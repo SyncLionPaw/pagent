@@ -1019,6 +1019,7 @@ function ensureBridge(): AgentTransport | undefined {
     features: { subagent_events: true },
   });
   nextBridge.send({ cmd: "commands" });
+  nextBridge.send({ cmd: "get_config" });
   nextBridge.send({ cmd: "capabilities" });
   return nextBridge;
 }

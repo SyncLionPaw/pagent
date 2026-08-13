@@ -4,6 +4,7 @@ import {
   ArrowUp,
   Box,
   BrainCircuit,
+  Check,
   ChevronDown,
   ChevronRight,
   CircleAlert,
@@ -51,6 +52,7 @@ type DesktopIconName =
   | "arrow-up"
   | "box"
   | "brain-circuit"
+  | "check"
   | "chevron-down"
   | "chevron-right"
   | "circle-alert"
@@ -95,6 +97,7 @@ const iconRegistry: Record<DesktopIconName, IconNode> = {
   "arrow-up": ArrowUp,
   box: Box,
   "brain-circuit": BrainCircuit,
+  check: Check,
   "chevron-down": ChevronDown,
   "chevron-right": ChevronRight,
   "circle-alert": CircleAlert,

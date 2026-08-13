@@ -1,6 +1,7 @@
 import json
 
 from app import wire
+from pagentv4 import ProviderIdentity
 from pagentv4.ithread import METAINFO_FILENAME
 from pagentv4.runtime.thread import Thread
 
@@ -49,10 +50,10 @@ def test_touch_thread_usage_writes_metainfo(tmp_path, monkeypatch):
 
 
 def test_emit_thread_history_replay_includes_usage(monkeypatch):
-    captured: dict = {}
+    captured: list[dict] = []
 
     def fake_emit(line: str):
-        captured.update(json.loads(line.rstrip()))
+        captured.append(json.loads(line.rstrip()))
 
     monkeypatch.setattr(wire, "emit_line", fake_emit)
 
@@ -61,6 +62,15 @@ def test_emit_thread_history_replay_includes_usage(monkeypatch):
 
         class spec:
             model = "deepseek-chat"
+
+            @staticmethod
+            def provider_identity():
+                return ProviderIdentity(
+                    name="deepseek",
+                    kind="deepseek",
+                    model="deepseek-chat",
+                    base_url="https://api.deepseek.com",
+                )
 
         def load_metainfo(self):
             return {
@@ -75,15 +85,16 @@ def test_emit_thread_history_replay_includes_usage(monkeypatch):
 
     wire.emit_thread_history_replay(FakeThread())
 
-    assert captured["params"]["usage"]["prompt_tokens"] == 99
-    assert captured["params"]["context_limit"] == 64_000
+    assert captured[0]["params"]["usage"]["prompt_tokens"] == 99
+    assert captured[0]["params"]["context_limit"] == 64_000
+    assert captured[1]["method"] == "ProviderState"
 
 
 def test_emit_history_replay_includes_usage(monkeypatch):
-    captured: dict = {}
+    captured: list[dict] = []
 
     def fake_emit(line: str):
-        captured.update(json.loads(line.rstrip()))
+        captured.append(json.loads(line.rstrip()))
 
     monkeypatch.setattr(wire, "emit_line", fake_emit)
 
@@ -95,6 +106,15 @@ def test_emit_history_replay_includes_usage(monkeypatch):
             model = "deepseek-v4-flash"
             project_path = ""
 
+            @staticmethod
+            def provider_identity():
+                return ProviderIdentity(
+                    name="deepseek",
+                    kind="deepseek",
+                    model="deepseek-v4-flash",
+                    base_url="https://api.deepseek.com",
+                )
+
         def load_metainfo(self):
             return {
                 "title": "hello",
@@ -104,9 +124,11 @@ def test_emit_history_replay_includes_usage(monkeypatch):
     class FakeRunner:
         thread = FakeThread()
         messages = type("M", (), {"data": []})()
+        active_provider_identity = FakeThread.spec.provider_identity()
 
     wire.emit_history_replay(FakeRunner())
 
-    assert captured["method"] == "HistoryReplay"
-    assert captured["params"]["usage"]["prompt_tokens"] == 42
-    assert captured["params"]["context_limit"] == 128_000
+    assert captured[0]["method"] == "HistoryReplay"
+    assert captured[0]["params"]["usage"]["prompt_tokens"] == 42
+    assert captured[0]["params"]["context_limit"] == 128_000
+    assert captured[1]["method"] == "ProviderState"

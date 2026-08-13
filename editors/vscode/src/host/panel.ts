@@ -146,6 +146,7 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     // 展开聊天时若无 Key，立刻弹出 setup（不必等用户发第一条消息）。
     void this.ensureSetup();
     this.bridge?.send({ cmd: "commands" });
+    this.bridge?.send({ cmd: "get_config" });
   }
 
   /** 解绑一个 webview；集合空了才停子进程与主题监听，避免僵尸进程/泄漏。 */
@@ -190,6 +191,13 @@ export class ChatViewProvider implements vscode.WebviewViewProvider {
     if (message.type === "requestSlashCommands") {
       void this.withBridge((bridge) => {
         bridge.send({ cmd: "commands" });
+      });
+      return;
+    }
+    if (message.type === "handoffProvider") {
+      this.bridge?.send({
+        cmd: "handoff_provider",
+        provider: message.provider,
       });
       return;
     }

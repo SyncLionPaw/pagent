@@ -7,12 +7,14 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 import pytest
 
 from app import wire
-from app.config import ReplConfig
+from app.config import ProviderConfig, ReplConfig
 from app.setup import ProviderSetup, write_user_provider
+from pagentv4 import Message, ProviderIdentity
 
 
 @pytest.fixture
@@ -38,6 +40,31 @@ async def test_get_config_emits_redacted_snapshot(lines):
     assert provider["api_key_configured"] is True
     assert provider["api_key_masked"].endswith("1234")
     assert "sk-secret" not in provider["api_key_masked"]
+    assert len(events[0]["params"]["providers"]) == 1
+    assert events[0]["params"]["providers"][0]["api_key_required"] is True
+
+
+@pytest.mark.asyncio
+async def test_get_config_lists_named_providers(lines, monkeypatch):
+    config = ReplConfig(
+        providers={
+            "deepseek": ProviderConfig(
+                kind="deepseek",
+                model="deepseek-v4-flash",
+                api_key="sk-secret",
+            ),
+            "local": ProviderConfig(kind="ollama", model="qwen3:8b"),
+        },
+        agent_provider="deepseek",
+    )
+    monkeypatch.setattr(wire, "load_config", lambda: config)
+
+    await wire.handle_command({"cmd": "get_config"}, None, config, {"turn": None})
+
+    providers = parsed(lines)[0]["params"]["providers"]
+    assert [provider["name"] for provider in providers] == ["deepseek", "local"]
+    assert providers[1]["api_key_required"] is False
+    assert providers[1]["api_key_configured"] is False
 
 
 @pytest.mark.asyncio
@@ -103,3 +130,105 @@ async def test_environment_check_emits_snapshot(lines):
     assert event["method"] == "EnvironmentCheck"
     assert "api_key_configured" in event["params"]
     assert "container_runtime" in event["params"]
+
+
+@pytest.mark.asyncio
+async def test_handoff_provider_switches_runner_and_emits_state(lines, monkeypatch):
+    config = ReplConfig(
+        providers={
+            "deepseek": ProviderConfig(
+                kind="deepseek",
+                model="deepseek-v4-flash",
+                api_key="sk-deepseek",
+            ),
+            "local": ProviderConfig(
+                kind="ollama",
+                model="qwen3:8b",
+                base_url="http://127.0.0.1:11434/v1",
+            ),
+        },
+        agent_provider="deepseek",
+    )
+    initial = ProviderIdentity(
+        name="deepseek",
+        kind="deepseek",
+        model="deepseek-v4-flash",
+        base_url="https://api.deepseek.com",
+    )
+    captured: dict = {}
+
+    class FakeRunner:
+        active_provider_identity = initial
+
+        def handoff(self, provider, identity, *, reason=""):
+            captured.update(provider=provider, identity=identity, reason=reason)
+            self.active_provider_identity = identity
+            return Message.provider_handoff(initial, identity, reason=reason)
+
+    monkeypatch.setattr(wire, "refresh_provider_from_disk", lambda current: config)
+    monkeypatch.setattr(
+        wire,
+        "build_provider",
+        lambda *args, **kwargs: SimpleNamespace(args=args, kwargs=kwargs),
+    )
+
+    runner = FakeRunner()
+    returned = await wire.handle_command(
+        {
+            "cmd": "handoff_provider",
+            "provider": "local",
+            "reason": "use local",
+        },
+        runner,
+        config,
+        {"turn": None},
+    )
+
+    assert returned is runner
+    assert captured["identity"].name == "local"
+    assert captured["reason"] == "use local"
+    assert [event["method"] for event in parsed(lines)] == [
+        "ProviderHandoff",
+        "ProviderState",
+    ]
+    assert parsed(lines)[-1]["params"]["provider"]["model"] == "qwen3:8b"
+
+
+@pytest.mark.asyncio
+async def test_handoff_provider_rejects_missing_api_key(lines, monkeypatch):
+    config = ReplConfig(
+        providers={
+            "kimi": ProviderConfig(kind="kimi", model="kimi-k2.5"),
+        },
+        agent_provider="kimi",
+    )
+    monkeypatch.delenv("MOONSHOT_API_KEY", raising=False)
+    monkeypatch.setattr(wire, "refresh_provider_from_disk", lambda current: config)
+
+    runner = SimpleNamespace()
+    await wire.handle_command(
+        {"cmd": "handoff_provider", "provider": "kimi"},
+        runner,
+        config,
+        {"turn": None},
+    )
+
+    event = parsed(lines)[0]
+    assert event["method"] == "Error"
+    assert event["params"]["where"] == "handoff_provider"
+
+
+@pytest.mark.asyncio
+async def test_handoff_provider_rejects_active_turn(lines):
+    active_task = SimpleNamespace(done=lambda: False)
+
+    await wire.handle_command(
+        {"cmd": "handoff_provider", "provider": "local"},
+        SimpleNamespace(),
+        ReplConfig(),
+        {"turn": active_task},
+    )
+
+    event = parsed(lines)[0]
+    assert event["method"] == "Error"
+    assert event["params"]["where"] == "handoff_provider"
