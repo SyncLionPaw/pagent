@@ -3,11 +3,11 @@
 pagentv5 提供三种便捷 Agent。`BaseAgent` 继承 `Runner`，
 `SandboxWorker` 和 `LocalCodeAgent` 继承 `BaseAgent`，并根据用途装配不同资源。
 
-| SDK | 文件能力 | 适用场景 |
+| SDK | 持有资源 | 适用场景 |
 |---|---|---|
-| `BaseAgent` | 仅显式传入的工具 | 对话、业务函数工具 |
-| `SandboxWorker` | 独立 Sandbox 工作根 | 生成文件、执行命令、隔离工作区 |
-| `LocalCodeAgent` | 直接读写 `project_path` | 编辑本地代码项目 |
+| `BaseAgent` | Session、显式传入的工具 | 对话、业务函数工具 |
+| `SandboxWorker` | Session、独立 Sandbox 工作根 | 生成文件、执行命令、隔离工作区 |
+| `LocalCodeAgent` | Session、读写 UserDir | 编辑本地代码项目 |
 
 ## BaseAgent
 
@@ -25,7 +25,29 @@ answer = await agent.ask("解释尾递归。")
 await agent.close()
 ```
 
-实例会保留多次 `run()` 的消息历史。`clear()` 清空历史并保留 system message。
+Agent 默认持有 memory Session，会保留实例内多次 `run()` 的消息历史。`clear()`
+清空 Session 并保留 system message。
+
+## Session
+
+传入 `SessionConfig` 可以跨进程恢复对话：
+
+```python
+from pagentv5 import BaseAgent, SessionConfig
+
+agent = BaseAgent(
+    "deepseek-v4-flash",
+    session=SessionConfig(
+        storage="jsonl",
+        session_id="my-agent",
+    ),
+)
+```
+
+`storage` 支持 `memory`、`jsonl` 和 `sqlite`。相对路径默认解析到 pagent 用户目录；
+也可以通过 `session_base_path` 指定基准目录。Agent 接受已打开的 `Session` 实例，
+并在 `close()` 时关闭它。Runner 在每次运行前读取 Session，运行结束后保存完整
+Provider transcript。
 
 ## LocalCodeAgent
 

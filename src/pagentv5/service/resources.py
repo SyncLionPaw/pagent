@@ -235,26 +235,19 @@ class ResourceService:
         if task_id in self.run_tasks:
             raise RuntimeError(f"task {task_id!r} already has a run in progress")
 
-        messages = list(task.session.messages)
-        if isinstance(input, str):
-            messages.append({"role": "user", "content": input})
-        else:
-            messages.extend(input)
-
         runner = Runner(
             task.create_provider(api_key=api_key),
             tools=task.tools(),
             event_types=event_types,
+            session=task.session,
         )
         current = asyncio.current_task()
         if current is not None:
             self.run_tasks[task_id] = current
         try:
-            async for event in runner.run(messages, **request_kwargs):
+            async for event in runner.run(input, **request_kwargs):
                 yield event
         finally:
-            if isinstance(runner.last_input, list):
-                task.session.replace(runner.last_input)
             self.run_tasks.pop(task_id, None)
 
     def cancel_run(self, task_id: str) -> bool:

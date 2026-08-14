@@ -19,6 +19,7 @@ from pagentv5.provider import (
 )
 from pagentv5.sandbox import PodmanBackend
 from pagentv5.sdk.agent import parse_sandbox
+from pagentv5.session import SessionConfig
 
 
 def usage() -> Usage:
@@ -71,6 +72,54 @@ async def test_base_agent_projects_text_and_keeps_conversation():
         {"role": "user", "content": "next"},
     ]
     await agent.close()
+
+
+@pytest.mark.asyncio
+async def test_base_agent_restores_persistent_session(tmp_path: Path):
+    config = SessionConfig(
+        storage="jsonl",
+        session_id="sdk-session",
+        root="sessions",
+    )
+    first_provider = SequencedProvider(
+        [
+            [
+                TextDelta(content_index=0, delta="first answer"),
+                ResponseEnd(stop_reason="stop", usage=usage()),
+            ]
+        ]
+    )
+    first = BaseAgent(
+        "test-model",
+        provider=first_provider,
+        session=config,
+        session_base_path=tmp_path,
+    )
+    assert await first.ask("first question") == "first answer"
+    await first.close()
+
+    second_provider = SequencedProvider(
+        [
+            [
+                TextDelta(content_index=0, delta="second answer"),
+                ResponseEnd(stop_reason="stop", usage=usage()),
+            ]
+        ]
+    )
+    second = BaseAgent(
+        "test-model",
+        provider=second_provider,
+        session=config,
+        session_base_path=tmp_path,
+    )
+    assert await second.ask("second question") == "second answer"
+
+    assert second_provider.inputs[0] == [
+        {"role": "user", "content": "first question"},
+        {"role": "assistant", "content": "first answer"},
+        {"role": "user", "content": "second question"},
+    ]
+    await second.close()
 
 
 @pytest.mark.asyncio

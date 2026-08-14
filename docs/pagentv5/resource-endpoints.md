@@ -30,8 +30,9 @@ pagentv5 将 Task、Session、Sandbox、UserDir 的实现放在传输层下面�
 | `run.start` | `ResourceService.run` | `RunnerEvent` 异步流 |
 | `run.cancel` | `ResourceService.cancel_run` | 是否找到活动运行 |
 
-`run.start` 会从 Task 取得 Provider 配置、Sandbox/UserDir 投影工具和 Session
-历史。运行结束后，Runner 的完整 Provider 输入会写回 Session。
+`run.start` 会从 Task 取得 Provider 配置、Sandbox/UserDir 投影工具，并把 Task 的
+Session 注入 Runner。Runner 在运行前组合 Session 历史，运行结束后提交完整
+Provider transcript。
 
 ## Existing Wire commands
 

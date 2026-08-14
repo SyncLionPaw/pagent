@@ -7,6 +7,7 @@ from pagentv5 import tool
 from pagentv5.events import RunEnd, ToolCallEndEvent, ToolResultEvent
 from pagentv5.provider import Provider
 from pagentv5.runtime import Runner
+from pagentv5.session import MemorySessionBackend, Session
 
 
 def chat_chunk(
@@ -196,3 +197,52 @@ async def test_runner_loop_is_reusable_across_runs(monkeypatch):
     assert isinstance(second[-1], RunEnd)
     assert second[0].run_id == "r2"
     assert runner.run_in_progress is False
+
+
+@pytest.mark.asyncio
+async def test_runner_owns_session_transcript(monkeypatch):
+    captured_inputs: list[list[dict]] = []
+    provider = make_provider(
+        monkeypatch,
+        [
+            chat_chunk(
+                delta={"content": "hello"},
+                finish_reason="stop",
+                usage={"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+            )
+        ],
+    )
+
+    async def capture_chat_completion(messages, tools, request_kwargs):
+        del tools, request_kwargs
+        captured_inputs.append(messages)
+        return native_stream(
+            chat_chunk(
+                delta={"content": "hello"},
+                finish_reason="stop",
+                usage={"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+            )
+        )
+
+    monkeypatch.setattr(
+        provider,
+        "create_chat_completion",
+        capture_chat_completion,
+    )
+    session = Session("messages", MemorySessionBackend())
+    session.append({"role": "system", "content": "Be concise."})
+    runner = Runner(provider, session=session)
+
+    _ = [event async for event in runner.run("hi")]
+
+    assert captured_inputs == [
+        [
+            {"role": "system", "content": "Be concise."},
+            {"role": "user", "content": "hi"},
+        ]
+    ]
+    assert session.messages == [
+        {"role": "system", "content": "Be concise."},
+        {"role": "user", "content": "hi"},
+        {"role": "assistant", "content": "hello"},
+    ]

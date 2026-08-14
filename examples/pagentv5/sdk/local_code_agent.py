@@ -10,7 +10,7 @@ import asyncio
 import os
 from pathlib import Path
 
-from pagentv5 import LocalCodeAgent
+from pagentv5 import LocalCodeAgent, SessionConfig
 
 
 async def main() -> None:
@@ -22,6 +22,7 @@ async def main() -> None:
         "deepseek-v4-flash",
         provider_id="deepseek",
         project_path=project_path,
+        session=SessionConfig(storage="jsonl", session_id="local-code-agent"),
         max_turns=32,
         yolo=True,
         emit_type="text",

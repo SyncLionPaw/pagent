@@ -15,7 +15,7 @@ import asyncio
 import os
 from pathlib import Path
 
-from pagentv5 import SandboxWorker
+from pagentv5 import SandboxWorker, SessionConfig
 
 
 def ssh_connection() -> dict[str, str]:
@@ -46,6 +46,7 @@ async def main() -> None:
         provider_id="deepseek",
         sandbox="ssh",
         sandbox_connection=ssh_connection(),
+        session=SessionConfig(storage="jsonl", session_id="ssh-sandbox-worker"),
         max_turns=32,
         yolo=True,
         emit_type="text",

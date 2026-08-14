@@ -8,7 +8,7 @@ Usage:
 import asyncio
 import os
 
-from pagentv5 import SandboxWorker
+from pagentv5 import SandboxWorker, SessionConfig
 
 
 async def main() -> None:
@@ -18,6 +18,7 @@ async def main() -> None:
     async with SandboxWorker(
         "deepseek-v4-flash",
         provider_id="deepseek",
+        session=SessionConfig(storage="jsonl", session_id="sandbox-worker"),
         max_turns=32,
         yolo=True,
         emit_type="text",

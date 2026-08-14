@@ -11,6 +11,7 @@ from ..provider.tool_io import (
     append_assistant_response,
     append_tool_round,
 )
+from ..session import Session
 from ..tools import FunctionTool, ToolOutput, to_openai_tools
 from .event_translation import event_is_selected, translate_provider_message
 from .model_step import ModelStep
@@ -46,6 +47,7 @@ class Runner:
         event_types: Collection[str] | None = None,
         require_tool_approval: bool = False,
         approve_tool: ToolApproval | None = None,
+        session: Session | None = None,
     ) -> None:
         if max_turns < 1:
             raise ValueError("max_turns must be >= 1")
@@ -60,6 +62,7 @@ class Runner:
         self.event_types = frozenset(event_types) if event_types is not None else None
         self.require_tool_approval = require_tool_approval
         self.approve_tool = approve_tool
+        self.session = session
         self.last_input: ProviderInput | None = None
 
     @property
@@ -79,6 +82,21 @@ class Runner:
         self.tools = selected
         self.tool_map = {tool.name: tool for tool in selected}
         self.tool_schemas = to_openai_tools(selected) or None
+
+    def build_input(self, input: ProviderInput) -> ProviderInput:
+        if self.session is None:
+            return input
+        messages = [dict(message) for message in self.session.messages]
+        if isinstance(input, str):
+            messages.append({"role": "user", "content": input})
+        else:
+            messages.extend(dict(message) for message in input)
+        return messages
+
+    def commit_session(self) -> None:
+        if self.session is None or not isinstance(self.last_input, list):
+            return
+        self.session.replace(self.last_input)
 
     async def execute_tool(
         self,
@@ -117,9 +135,9 @@ class Runner:
 
         state = self.state
         state.begin_run(run_id or uuid4().hex)
-        current_input = input
+        current_input = self.build_input(input)
         self.last_input = current_input
-        api_protocol = provider_api_protocol(self.provider, input)
+        api_protocol = provider_api_protocol(self.provider, current_input)
         synthesis = False
 
         try:
@@ -274,6 +292,7 @@ class Runner:
         finally:
             if state.busy:
                 state.end_run("error")
+            self.commit_session()
 
     async def end_with_error(
         self,

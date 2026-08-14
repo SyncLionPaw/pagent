@@ -14,6 +14,7 @@ pagentv5 的最小可运行示例。分层很直接：
 | `tools.py` | 注册函数工具，观察生成、执行、回传、再生成 | 是 |
 | `resources.py` | 组合 Task、Sandbox、UserDir 和 Session | 否 |
 | `sdk/base_agent.py` | 使用 BaseAgent | 是 |
+| `sdk/base_agent_persistent.py` | 在当前目录持久化 BaseAgent 对话 | 是 |
 | `sdk/local_code_agent.py` | 使用 LocalCodeAgent 直接操作项目 | 是 |
 | `sdk/sandbox_worker.py` | 使用 Podman SandboxWorker | 是 |
 | `sdk/sandbox_worker_ssh.py` | 使用 SSH SandboxWorker | 是 |
@@ -31,6 +32,7 @@ uv run python -m examples.pagentv5.quickstart
 uv run python -m examples.pagentv5.events
 uv run python -m examples.pagentv5.tools
 uv run python -m examples.pagentv5.sdk.base_agent
+uv run python -m examples.pagentv5.sdk.base_agent_persistent
 uv run python -m examples.pagentv5.sdk.local_code_agent
 uv run python -m examples.pagentv5.sdk.sandbox_worker
 

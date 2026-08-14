@@ -10,6 +10,7 @@ from ..events import RunnerEvent, TextDeltaEvent
 from ..provider import Provider, ProviderInput, ProviderProtocol
 from ..runtime import Runner, ToolApproval
 from ..sandbox import DockerBackend, PodmanBackend, Sandbox, SandboxConfig
+from ..session import Session, SessionConfig
 from ..tools import FunctionTool
 from ..userdir import UserDir, UserDirConfig
 
@@ -31,6 +32,56 @@ def validate_emit_type(emit_type: str) -> EmitType:
     if emit_type not in {"event", "text"}:
         raise ValueError("emit_type must be 'event' or 'text'")
     return emit_type
+
+
+def open_agent_session(
+    session: Session | SessionConfig | None,
+    *,
+    base_path: str | Path | None,
+) -> Session:
+    if isinstance(session, Session):
+        if base_path is not None:
+            raise TypeError("session_base_path cannot be used with a Session instance")
+        session.require_open()
+        return session
+    config = session or SessionConfig(storage="memory")
+    return Session.open(config, base_path=base_path)
+
+
+def seed_agent_session(
+    session: Session,
+    *,
+    system: str | None,
+    messages: list[dict[str, Any]] | None,
+) -> str | None:
+    if messages is not None and session.messages:
+        raise ValueError("messages cannot be used with a non-empty session")
+
+    selected = [dict(message) for message in messages or session.messages]
+    system_index = next(
+        (
+            index
+            for index, message in enumerate(selected)
+            if message.get("role") == "system"
+        ),
+        None,
+    )
+    existing_system = (
+        selected[system_index].get("content")
+        if system_index is not None
+        and isinstance(selected[system_index].get("content"), str)
+        else None
+    )
+    selected_system = system or existing_system
+    if system is not None:
+        system_message = {"role": "system", "content": system}
+        if system_index is None:
+            selected.insert(0, system_message)
+        else:
+            selected[system_index] = system_message
+    if selected != session.messages:
+        session.replace(selected)
+    return selected_system
 
 
 def parse_sandbox(
@@ -72,6 +123,8 @@ class BaseAgent(Runner):
         tools: list[FunctionTool] | None = None,
         system: str | None = None,
         messages: list[dict[str, Any]] | None = None,
+        session: Session | SessionConfig | None = None,
+        session_base_path: str | Path | None = None,
         max_turns: int | None = None,
         max_turn: int | None = None,
         yolo: bool = False,
@@ -90,22 +143,20 @@ class BaseAgent(Runner):
             max_retries=max_retries,
         )
         self.custom_tools = list(tools or [])
-        self.messages = [dict(message) for message in messages or []]
-        existing_system = next(
-            (
-                message.get("content")
-                for message in self.messages
-                if message.get("role") == "system"
-                and isinstance(message.get("content"), str)
-            ),
-            None,
-        )
-        self.system = system or existing_system
-        if system and not any(
-            message.get("role") == "system" for message in self.messages
-        ):
-            self.messages.insert(0, {"role": "system", "content": system})
         selected_max_turns = resolve_max_turns(max_turns, max_turn)
+        selected_session = open_agent_session(
+            session,
+            base_path=session_base_path,
+        )
+        try:
+            self.system = seed_agent_session(
+                selected_session,
+                system=system,
+                messages=messages,
+            )
+        except Exception:
+            selected_session.close()
+            raise
         self.yolo = yolo
         self.emit_type = validate_emit_type(emit_type)
         self.closed = False
@@ -115,18 +166,17 @@ class BaseAgent(Runner):
             max_turns=selected_max_turns,
             require_tool_approval=not yolo,
             approve_tool=approve_tool,
+            session=selected_session,
         )
 
     async def initialize(self) -> None:
         self.require_open()
 
-    def build_input(self, input: ProviderInput) -> list[dict[str, Any]]:
-        messages = [dict(message) for message in self.messages]
-        if isinstance(input, str):
-            messages.append({"role": "user", "content": input})
-        else:
-            messages.extend(dict(message) for message in input)
-        return messages
+    @property
+    def messages(self) -> list[dict[str, Any]]:
+        if self.session is None:
+            return []
+        return list(self.session.messages)
 
     async def run(
         self,
@@ -139,18 +189,13 @@ class BaseAgent(Runner):
         await self.initialize()
 
         selected_emit_type = validate_emit_type(emit_type or self.emit_type)
-        messages = self.build_input(input)
-        try:
-            async for event in super().run(messages, **request_kwargs):
-                if event_types is not None and event.type not in event_types:
-                    continue
-                if selected_emit_type == "event":
-                    yield event
-                elif isinstance(event, TextDeltaEvent):
-                    yield event.delta
-        finally:
-            if isinstance(self.last_input, list):
-                self.messages = [dict(message) for message in self.last_input]
+        async for event in super().run(input, **request_kwargs):
+            if event_types is not None and event.type not in event_types:
+                continue
+            if selected_emit_type == "event":
+                yield event
+            elif isinstance(event, TextDeltaEvent):
+                yield event.delta
 
     async def ask(
         self,
@@ -171,15 +216,22 @@ class BaseAgent(Runner):
 
     def clear(self) -> None:
         self.require_open()
-        self.messages = []
+        messages: list[dict[str, Any]] = []
         if self.system:
-            self.messages.append({"role": "system", "content": self.system})
+            messages.append({"role": "system", "content": self.system})
+        if self.session is None:
+            raise RuntimeError("agent has no session")
+        self.session.replace(messages)
 
     def require_open(self) -> None:
         if self.closed:
             raise RuntimeError("agent is closed")
 
     async def close(self) -> None:
+        if self.closed:
+            return
+        if self.session is not None:
+            self.session.close()
         self.closed = True
 
     async def __aenter__(self) -> BaseAgent:
