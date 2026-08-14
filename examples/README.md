@@ -5,6 +5,7 @@
 | 目录 | 内容 |
 |------|------|
 | `app/` | 终端应用入口 wrapper；正式使用优先运行 `uv run pagent` |
+| `pagentv5/` | v5 Provider + Runner：Provider 配置、事件流、quickstart |
 | `pagentv4/runner/` | `Runner.create()`、多轮、工具、return type、sandbox |
 | `pagentv4/thread_based/` | `ChatRunner` / `CodeRunner` / thread-based runner 选择指南 |
 | `pagentv4/vanilla/` | 无持久化、无 sandbox 的 `VanillaRunner` |

@@ -57,7 +57,7 @@ build-backend = "uv_build"
 requires = ["uv_build>=0.8.20,<0.9.0"]
 
 [tool.uv.build-backend]
-module-name = ["pagent", "pagentv4", "app"]
+module-name = ["pagent", "pagentv4", "pagentv5", "app"]
 
 [dependency-groups]
 cloud = [
