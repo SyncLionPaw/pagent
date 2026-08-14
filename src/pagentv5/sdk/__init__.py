@@ -1,7 +1,7 @@
 from .agent import (
     BaseAgent,
     EmitType,
-    LocalCodeAgent,
+    LocalWorkspaceAgent,
     SandBoxWorker,
     SandboxWorker,
     SdkOutput,
@@ -11,7 +11,7 @@ from .agent import (
 __all__ = [
     "BaseAgent",
     "EmitType",
-    "LocalCodeAgent",
+    "LocalWorkspaceAgent",
     "SandBoxWorker",
     "SandboxWorker",
     "SdkOutput",

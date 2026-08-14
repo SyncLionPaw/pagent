@@ -1,13 +1,13 @@
 # pagentv5 SDK
 
 pagentv5 提供三种便捷 Agent。`BaseAgent` 继承 `Runner`，
-`SandboxWorker` 和 `LocalCodeAgent` 继承 `BaseAgent`，并根据用途装配不同资源。
+`SandboxWorker` 和 `LocalWorkspaceAgent` 继承 `BaseAgent`，并根据用途装配不同资源。
 
 | SDK | 持有资源 | 适用场景 |
 |---|---|---|
 | `BaseAgent` | Session、显式传入的工具 | 对话、业务函数工具 |
 | `SandboxWorker` | Session、独立 Sandbox 工作根 | 生成文件、执行命令、隔离工作区 |
-| `LocalCodeAgent` | Session、读写 UserDir | 编辑本地代码项目 |
+| `LocalWorkspaceAgent` | Session、读写 UserDir | 操作本地目录 |
 
 ## BaseAgent
 
@@ -49,15 +49,15 @@ agent = BaseAgent(
 并在 `close()` 时关闭它。Runner 在每次运行前读取 Session，运行结束后保存完整
 Provider transcript。
 
-## LocalCodeAgent
+## LocalWorkspaceAgent
 
 ```python
-from pagentv5 import LocalCodeAgent
+from pagentv5 import LocalWorkspaceAgent
 
-async with LocalCodeAgent(
+async with LocalWorkspaceAgent(
     "deepseek-v4-flash",
     provider_id="deepseek",
-    project_path="./my-project",
+    workspace_path="./workspace",
     yolo=True,
     emit_type="text",
 ) as agent:
@@ -65,7 +65,7 @@ async with LocalCodeAgent(
         print(text, end="")
 ```
 
-`project_path` 会成为工作根，Agent 获得 `run_command`、`read_file`、
+`workspace_path` 会成为工作根，Agent 获得 `run_command`、`read_file`、
 `write_file`、`str_replace` 和 `list_dir`。
 
 ## SandboxWorker
@@ -122,9 +122,9 @@ async def approve(call):
     return call.name in {"read_file", "list_dir"}
 
 
-agent = LocalCodeAgent(
+agent = LocalWorkspaceAgent(
     "deepseek-v4-flash",
-    project_path=".",
+    workspace_path=".",
     approve_tool=approve,
 )
 ```

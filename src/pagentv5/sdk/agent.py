@@ -325,22 +325,22 @@ class SandboxWorker(BaseAgent):
         await super().close()
 
 
-class LocalCodeAgent(BaseAgent):
-    """Agent that directly uses a local project directory as its work root."""
+class LocalWorkspaceAgent(BaseAgent):
+    """Agent that directly uses a local directory as its work root."""
 
     def __init__(
         self,
         model_id: str,
         *,
-        project_path: str | Path,
+        workspace_path: str | Path,
         **kwargs: Any,
     ) -> None:
         super().__init__(model_id, **kwargs)
-        self.project_path = Path(project_path).expanduser().resolve()
+        self.workspace_path = Path(workspace_path).expanduser().resolve()
         self.userdir = UserDir(
             UserDirConfig(
                 access="readwrite",
-                path=str(self.project_path),
+                path=str(self.workspace_path),
             )
         )
         self.set_tools(self.build_tools())

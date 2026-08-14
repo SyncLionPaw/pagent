@@ -4,7 +4,7 @@ import pytest
 
 from pagentv5 import (
     BaseAgent,
-    LocalCodeAgent,
+    LocalWorkspaceAgent,
     Runner,
     SandboxWorker,
     tool,
@@ -315,12 +315,12 @@ async def test_approval_callback_allows_tool():
 
 
 @pytest.mark.asyncio
-async def test_local_code_agent_exposes_project_tools(tmp_path: Path):
+async def test_local_workspace_agent_exposes_directory_tools(tmp_path: Path):
     provider = SequencedProvider([])
-    agent = LocalCodeAgent(
+    agent = LocalWorkspaceAgent(
         "test-model",
         provider=provider,
-        project_path=tmp_path,
+        workspace_path=tmp_path,
         yolo=True,
     )
 

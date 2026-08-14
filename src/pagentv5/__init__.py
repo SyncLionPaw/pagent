@@ -1,7 +1,7 @@
 from .provider import PROVIDER_CATALOG, Provider
 from .runtime import Runner
 from .sandbox import Sandbox, SandboxConfig
-from .sdk import BaseAgent, LocalCodeAgent, SandBoxWorker, SandboxWorker
+from .sdk import BaseAgent, LocalWorkspaceAgent, SandBoxWorker, SandboxWorker
 from .service import ResourceService
 from .session import Session, SessionConfig
 from .task import LocalTaskBackend, ProviderBinding, Task, TaskSpec
@@ -13,7 +13,7 @@ __all__ = [
     "BaseAgent",
     "FunctionTool",
     "LocalTaskBackend",
-    "LocalCodeAgent",
+    "LocalWorkspaceAgent",
     "Provider",
     "ProviderBinding",
     "ResourceService",

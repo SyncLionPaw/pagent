@@ -15,7 +15,7 @@ pagentv5 的最小可运行示例。分层很直接：
 | `resources.py` | 组合 Task、Sandbox、UserDir 和 Session | 否 |
 | `sdk/base_agent.py` | 使用 BaseAgent | 是 |
 | `sdk/base_agent_persistent.py` | 在当前目录持久化 BaseAgent 对话 | 是 |
-| `sdk/local_code_agent.py` | 使用 LocalCodeAgent 直接操作项目 | 是 |
+| `sdk/local_workspace_agent.py` | 使用 LocalWorkspaceAgent 操作本地目录 | 是 |
 | `sdk/sandbox_worker.py` | 使用 Podman SandboxWorker | 是 |
 | `sdk/sandbox_worker_ssh.py` | 使用 SSH SandboxWorker | 是 |
 
@@ -33,7 +33,7 @@ uv run python -m examples.pagentv5.events
 uv run python -m examples.pagentv5.tools
 uv run python -m examples.pagentv5.sdk.base_agent
 uv run python -m examples.pagentv5.sdk.base_agent_persistent
-uv run python -m examples.pagentv5.sdk.local_code_agent
+uv run python -m examples.pagentv5.sdk.local_workspace_agent
 uv run python -m examples.pagentv5.sdk.sandbox_worker
 
 # SSH 还需设置 PAGENT_SSH_HOST 和 PAGENT_SSH_USER
@@ -96,12 +96,12 @@ Desktop IPC 的 endpoint 映射见
 三种 SDK 门面共享相同的 `run()`、`ask()` 和异步上下文接口：
 
 ```python
-from pagentv5 import BaseAgent, LocalCodeAgent, SandboxWorker
+from pagentv5 import BaseAgent, LocalWorkspaceAgent, SandboxWorker
 ```
 
 - `BaseAgent`：模型与自定义工具。
 - `SandboxWorker`：附带独立 Sandbox 工作根。
-- `LocalCodeAgent`：将本地项目目录作为可读写工作根。
+- `LocalWorkspaceAgent`：将本地目录作为可读写工作根。
 
 `emit_type="event"` 返回完整事件流，`emit_type="text"` 返回文本增量。
 `max_turn` 是 `max_turns` 的便捷别名。`yolo=False` 时，工具调用需要通过
