@@ -6,8 +6,7 @@ import re
 from datetime import UTC, datetime
 from pathlib import Path
 
-from pagentv4.paths import default_pagent_home
-
+from ..paths import default_pagent_home
 from ..sandbox import Sandbox
 from ..session import Session
 from ..userdir import open_userdir

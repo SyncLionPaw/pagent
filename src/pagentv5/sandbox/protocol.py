@@ -3,14 +3,39 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
-from pagentv4.sandbox.base import (
-    BackendIdentity,
-    CommandResult,
-    DirEntry,
-    SandboxError,
-    SandboxLimits,
-    SandboxNotStartedError,
-)
+
+@dataclass(frozen=True, slots=True)
+class SandboxLimits:
+    timeout: float | None = None
+    stdout_bytes: int | None = 1024 * 1024
+    stderr_bytes: int | None = 256 * 1024
+    memory_bytes: int | None = None
+    cpu_seconds: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CommandResult:
+    ok: bool
+    exit_code: int
+    stdout: str
+    stderr: str
+    duration_seconds: float
+    stdout_truncated: bool = False
+    stderr_truncated: bool = False
+    timed_out: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class DirEntry:
+    name: str
+    is_dir: bool
+    size: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class BackendIdentity:
+    computer_name: str
+    extra: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,8 +80,6 @@ __all__ = [
     "CommandResult",
     "DirEntry",
     "SandboxBackend",
-    "SandboxError",
     "SandboxLimits",
-    "SandboxNotStartedError",
     "SandboxSpec",
 ]

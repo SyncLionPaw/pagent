@@ -1,9 +1,8 @@
 import json
 
-from pagentv4.sandbox.text import prepare_read_file_output
-
 from ..tools import FunctionTool
 from .sandbox import Sandbox
+from .text import prepare_read_file_output
 
 WORKROOT_TOOLS = (
     "run_command",

@@ -3,8 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from types import TracebackType
 
-from pagentv4.paths import default_pagent_home
-
+from ..paths import default_pagent_home
 from .backends import (
     JsonlSessionBackend,
     MemorySessionBackend,

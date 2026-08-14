@@ -2,8 +2,7 @@
 
 `@tool` turns a plain function into a `FunctionTool`: it derives the JSON schema
 from the signature and docstring, renders the OpenAI tool dict, and runs the
-call with argument parsing and error capture. Adapted from pagentv4; the code
-is model-agnostic and carries no runtime coupling.
+call with argument parsing and error capture.
 """
 
 import inspect

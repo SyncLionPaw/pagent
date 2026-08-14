@@ -1,4 +1,4 @@
-from pagentv4.sandbox.backends.local import LocalBackend
+from ..sandbox.local import LocalBackend
 
 
 class LocalUserDirBackend(LocalBackend):

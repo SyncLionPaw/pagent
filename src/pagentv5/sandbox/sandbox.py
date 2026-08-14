@@ -5,8 +5,6 @@ import posixpath
 from pathlib import Path
 from types import TracebackType
 
-from pagentv4.sandbox.policy import check_backend_path
-
 from .backend import create_backend
 from .config import SandboxConfig
 from .protocol import (
@@ -16,6 +14,7 @@ from .protocol import (
     SandboxLimits,
     SandboxSpec,
 )
+from .util import check_backend_path
 
 
 class Commands:

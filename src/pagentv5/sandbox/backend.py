@@ -1,21 +1,9 @@
-import shutil
-
-from pagentv4.sandbox.backends.local import LocalBackend
-from pagentv4.sandbox.guard import BackendGuard
-
 from .config import SandboxConfig
 from .container import DockerBackend, PodmanBackend
-from .protocol import SandboxBackend, SandboxError
-
-CONTAINER_CLI_PREFERENCE = ("docker", "podman")
-
-
-def detect_container_cli() -> str:
-    for cli in CONTAINER_CLI_PREFERENCE:
-        if shutil.which(cli):
-            return cli
-    joined = " / ".join(CONTAINER_CLI_PREFERENCE)
-    raise SandboxError(f"no container CLI found in PATH; install one of: {joined}")
+from .guard import BackendGuard
+from .local import LocalBackend
+from .protocol import SandboxBackend
+from .util import detect_container_cli
 
 
 def create_backend(
@@ -28,7 +16,7 @@ def create_backend(
     if config.backend == "local":
         backend: SandboxBackend = LocalBackend()
     elif config.backend == "ssh":
-        from pagentv4.sandbox.backends.ssh import SshBackend
+        from .ssh import SshBackend
 
         backend = SshBackend()
     else:

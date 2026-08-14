@@ -92,11 +92,11 @@ async def test_sandbox_projects_five_workroot_tools(tmp_path: Path):
 
 
 def test_missing_container_runtime_is_a_sandbox_error(monkeypatch):
-    from pagentv5.sandbox import backend
+    from pagentv5.sandbox import util
 
-    monkeypatch.setattr(backend.shutil, "which", lambda _name: None)
+    monkeypatch.setattr(util.shutil, "which", lambda _name: None)
     with pytest.raises(SandboxError, match="docker / podman"):
-        backend.detect_container_cli()
+        util.detect_container_cli()
 
 
 @pytest.mark.asyncio
