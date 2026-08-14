@@ -34,7 +34,6 @@ async def test_local_sandbox_files_commands_and_lifecycle(tmp_path: Path):
     sandbox = await Sandbox.open(
         SandboxConfig(
             backend="local",
-            command_policy="open",
             default_limits=SandboxLimits(timeout=5),
         ),
         tmp_path / "workspace",
@@ -66,16 +65,15 @@ async def test_sandbox_rejects_paths_outside_work_root(tmp_path: Path):
 
 
 @pytest.mark.asyncio
-async def test_workdir_guard_blocks_command_escape(tmp_path: Path):
+async def test_sandbox_executes_commands_without_text_guard(tmp_path: Path):
     async with await Sandbox.open(
-        SandboxConfig(backend="local", command_policy="workdir"),
+        SandboxConfig(backend="local"),
         tmp_path / "workspace",
     ) as sandbox:
-        result = await sandbox.commands.run("cat ../secret")
+        result = await sandbox.commands.run("printf outside > ../outside.txt")
 
-    assert result.ok is False
-    assert result.exit_code == 126
-    assert "parent directory" in result.stderr
+    assert result.ok is True
+    assert (tmp_path / "outside.txt").read_text(encoding="utf-8") == "outside"
 
 
 @pytest.mark.asyncio

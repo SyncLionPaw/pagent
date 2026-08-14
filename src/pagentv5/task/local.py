@@ -88,7 +88,9 @@ class LocalTaskBackend:
                 f"task lock path mismatch: {spec.file_self_fs_pos!r} != {expected_path!r}"
             )
         sandbox_payload = payload.get("sandbox", {})
-        needs_migration = "compute" in sandbox_payload
+        needs_migration = (
+            "compute" in sandbox_payload or "command_policy" in sandbox_payload
+        )
         if not spec.file_self_fs_pos or needs_migration:
             spec = spec.with_lock(expected_path)
             self.write_spec(spec_path, spec)

@@ -4,7 +4,6 @@ from typing import Literal, TypeAlias
 from .protocol import SandboxLimits
 
 SandboxBackendName: TypeAlias = Literal["none", "local", "container", "ssh"]
-CommandPolicy: TypeAlias = Literal["open", "workdir"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,15 +15,12 @@ class SandboxConfig:
     connection: dict[str, str] = field(default_factory=dict)
     default_limits: SandboxLimits = field(default_factory=SandboxLimits)
     container_ttl_seconds: int | None = None
-    command_policy: CommandPolicy = "workdir"
     auto_restart: bool = True
     restart_max_attempts: int = 2
 
     def __post_init__(self) -> None:
         if self.backend not in {"none", "local", "container", "ssh"}:
             raise ValueError(f"unknown sandbox backend: {self.backend!r}")
-        if self.command_policy not in {"open", "workdir"}:
-            raise ValueError(f"unknown command policy: {self.command_policy!r}")
         if not self.home.startswith("/"):
             raise ValueError("sandbox home must be an absolute virtual path")
         if self.backend == "container" and not self.image:

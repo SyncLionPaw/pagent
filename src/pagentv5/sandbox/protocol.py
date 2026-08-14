@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 from pagentv4.sandbox.base import (
@@ -9,8 +10,19 @@ from pagentv4.sandbox.base import (
     SandboxError,
     SandboxLimits,
     SandboxNotStartedError,
-    SandboxSpec,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class SandboxSpec:
+    workdir: str | None = None
+    home: str = "/home/agent"
+    image: str | None = None
+    command: tuple[str, ...] | None = None
+    env: dict[str, str] = field(default_factory=dict)
+    connection: dict[str, str] = field(default_factory=dict)
+    default_limits: SandboxLimits = field(default_factory=SandboxLimits)
+    container_ttl_seconds: int | None = None
 
 
 @runtime_checkable
@@ -38,13 +50,8 @@ class SandboxBackend(Protocol):
     def effective_workdir(self) -> str | None: ...
 
 
-class CommandGuard(Protocol):
-    def check(self, command: str, *, workdir: str) -> None: ...
-
-
 __all__ = [
     "BackendIdentity",
-    "CommandGuard",
     "CommandResult",
     "DirEntry",
     "SandboxBackend",

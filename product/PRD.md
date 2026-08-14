@@ -87,8 +87,6 @@ agent 的命令 cwd 和文件工具的根目录，是唯一的「工作根」，
 - 无 Sandbox + UserDir 只读 → 没有工作根，只能看文件。
 - 两者都无 → 没有任何文件/命令工具。
 
-`command_policy` 也跟工作根走，是单一开关，默认 `workdir`（拦截 `run_command` 越界工作根的路径），`open` 放开。Cursor 模式下工作根是 UserDir，越界检查就以用户目录为界；有 Sandbox 时以沙箱工作区为界。
-
 ### 7.3 工具跟着资源走：compose_tools 纯函数
 
 工具集不再由用户手写白名单，而是从两个资源的配置**静态推导**出来。核心是一个纯函数：输入两个资源配置，输出工具名列表，不启动沙箱、不读文件系统，可脱离运行时单测。
@@ -152,8 +150,7 @@ UserDir = `readwrite` 的本质是 agent 在用户目录里直接干活，要求
 
 ```toml
 [sandbox]
-backend = "local"          # none | local | container | ssh
-command_policy = "workdir" # workdir（拦截越界工作根的路径）| open
+backend = "local" # none | local | container | ssh
 
 [userdir]
 access = "readonly"        # none | readonly | readwrite
@@ -164,7 +161,8 @@ path = ""                  # readonly/readwrite 时必填；none 时忽略且不
 
 ### 7.6 Session：对话历史资源
 
-Session 是第四个资源，只服务 Runner，agent 不感知，不投影任何工具。它的后端满足 `save` / `load` / `list` / `delete` 协议，可替换存储实现。
+Session 是 Agent/Runner 持有的第四个资源，不投影任何工具。它的后端满足
+`save` / `load` / `list` / `delete` 协议，可替换存储实现。
 
 | 取值 | 含义 |
 |------|------|
@@ -194,20 +192,11 @@ Skills 的其他性质：
 - **无生命周期**：`SkillRegistry` 是内存里「名字 → skill」的索引，扫目录得到，不需要 close。
 - **system prompt 只放摘要**：启动时只把每个 skill 的 name + description 汇总进 system prompt，模型显式调 `use_skill(name)` 才加载完整指令。
 
-### 7.8 command_policy 改为阻断插件
+### 7.8 运行策略归属
 
-command_policy 从沙箱内建字段，改为一个可插拔的**阻断插件**：注册进工具执行前的拦截点，越界就拒绝该次工具调用。
-
-复用已有机制，不造新框架：
-
-- 拦截点用现成的 `before_tool` hook，插件返回 `ToolDecision.deny(message)` 拒绝执行。
-- 越界判断逻辑就是现在的 `check_command`，插件从「工作根」（见 7.2）拿边界，命令引用工作根之外的路径就拦。
-- hook 拿到工作根，不只能管 `run_command`，也能扩展到别的工具（如 readwrite 模式拦 `write_file` 写出工作根）。
-
-定位和边界：
-
-- **安全层级不变**：这是静态启发式扫描，防手滑，不是防越狱。真隔离靠沙箱 / 容器，插件不承担安全隔离职责。
-- **允许裸奔**：不注册任何护栏插件也能跑（等价现在的 `open`）；内置一条 workdir 护栏等价现在的 `workdir`。
+V5 资源层直接执行 `run_command`，不扫描或改写 shell 指令。核心保留超时、输出大小、
+资源限制和结构化结果。工具审批由 Runner hook 或应用层处理，隔离边界由容器、SSH
+账户及宿主权限提供。
 - **审批策略不变**：`permission.mode`（prompt / auto）是另一回事，保持现状，不并进这套插件。
 
 待定（后面再定，先不锁死）：是否开放用户注册自定义护栏、是否支持多条护栏叠加、要不要把人工审批也统一到这套插件机制里。

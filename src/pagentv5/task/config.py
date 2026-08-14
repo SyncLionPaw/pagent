@@ -8,7 +8,7 @@ from ..sandbox import SandboxConfig, SandboxLimits
 from ..session import SessionConfig
 from ..userdir import UserDirConfig, validate_resource_combination
 
-TASK_SCHEMA_VERSION = 2
+TASK_SCHEMA_VERSION = 3
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,7 +76,6 @@ class TaskSpec:
                 "home": self.sandbox.home,
                 "image": self.sandbox.image,
                 "container_ttl_seconds": self.sandbox.container_ttl_seconds,
-                "command_policy": self.sandbox.command_policy,
                 "auto_restart": self.sandbox.auto_restart,
                 "restart_max_attempts": self.sandbox.restart_max_attempts,
                 "env": dict(self.sandbox.env),
@@ -146,7 +145,6 @@ class TaskSpec:
                     cpu_seconds=limits.get("cpu_seconds"),
                 ),
                 container_ttl_seconds=sandbox.get("container_ttl_seconds"),
-                command_policy=sandbox.get("command_policy", "workdir"),
                 auto_restart=sandbox.get("auto_restart", True),
                 restart_max_attempts=sandbox.get("restart_max_attempts", 2),
             ),

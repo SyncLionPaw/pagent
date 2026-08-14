@@ -50,6 +50,7 @@ def test_task_spec_toml_roundtrip(tmp_path: Path):
     assert loaded == spec
     assert '[sandbox]\nbackend = "local"' in path.read_text(encoding="utf-8")
     assert "compute =" not in path.read_text(encoding="utf-8")
+    assert "command_policy =" not in path.read_text(encoding="utf-8")
     assert "[sandbox.limits]" in path.read_text(encoding="utf-8")
     assert "[sandbox.env]" in path.read_text(encoding="utf-8")
 
@@ -70,7 +71,7 @@ async def test_open_migrates_legacy_sandbox_compute(tmp_path: Path):
     legacy_text = task.spec_path.read_text(encoding="utf-8")
     task.spec_path.write_text(
         legacy_text.replace('backend = "local"', 'compute = "local"').replace(
-            "schema_version = 2",
+            "schema_version = 3",
             "schema_version = 1",
         ),
         encoding="utf-8",
@@ -82,7 +83,29 @@ async def test_open_migrates_legacy_sandbox_compute(tmp_path: Path):
     migrated_text = task.spec_path.read_text(encoding="utf-8")
     assert 'backend = "local"' in migrated_text
     assert "compute =" not in migrated_text
-    assert "schema_version = 2" in migrated_text
+    assert "schema_version = 3" in migrated_text
+
+
+@pytest.mark.asyncio
+async def test_open_removes_legacy_command_policy(tmp_path: Path):
+    backend = LocalTaskBackend(tmp_path / "tasks")
+    task = await backend.create("policy-task", task_spec(tmp_path))
+    await task.close()
+    legacy_text = task.spec_path.read_text(encoding="utf-8")
+    task.spec_path.write_text(
+        legacy_text.replace(
+            "auto_restart = true",
+            'command_policy = "workdir"\nauto_restart = true',
+        ).replace("schema_version = 3", "schema_version = 2"),
+        encoding="utf-8",
+    )
+
+    migrated = await backend.open("policy-task")
+    await migrated.close()
+
+    migrated_text = task.spec_path.read_text(encoding="utf-8")
+    assert "command_policy =" not in migrated_text
+    assert "schema_version = 3" in migrated_text
 
 
 @pytest.mark.asyncio

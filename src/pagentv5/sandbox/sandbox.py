@@ -5,23 +5,17 @@ import posixpath
 from pathlib import Path
 from types import TracebackType
 
-from pagentv4.sandbox.policy import check_backend_path, check_command
+from pagentv4.sandbox.policy import check_backend_path
 
 from .backend import create_backend
 from .config import SandboxConfig
 from .protocol import (
-    CommandGuard,
     CommandResult,
     DirEntry,
     SandboxBackend,
     SandboxLimits,
     SandboxSpec,
 )
-
-
-class WorkdirCommandGuard:
-    def check(self, command: str, *, workdir: str) -> None:
-        check_command(command, workdir=workdir, policy="workdir")
 
 
 class Commands:
@@ -40,22 +34,8 @@ class Commands:
     ) -> CommandResult:
         if isinstance(command, list):
             argv = [self.sandbox.map_command(part) for part in command]
-            guard_text = " ".join(argv)
         else:
-            guard_text = self.sandbox.map_command(command)
-            argv = ["sh", "-c", guard_text]
-
-        for guard in self.sandbox.command_guards:
-            try:
-                guard.check(guard_text, workdir=self.sandbox.workdir)
-            except PermissionError as error:
-                return CommandResult(
-                    ok=False,
-                    exit_code=126,
-                    stdout="",
-                    stderr=str(error),
-                    duration_seconds=0.0,
-                )
+            argv = ["sh", "-c", self.sandbox.map_command(command)]
 
         applied = limits
         if timeout is not None:
@@ -138,15 +118,12 @@ class Sandbox:
         backend: SandboxBackend,
         config: SandboxConfig,
         workdir: str,
-        *,
-        command_guards: tuple[CommandGuard, ...] = (),
     ) -> None:
         resolved_workdir = str(Path(workdir).expanduser().resolve())
         self.backend = backend
         self.config = config
         self.workdir = resolved_workdir
         self.home = posixpath.normpath(config.home)
-        self.command_guards = command_guards
         self.spec = SandboxSpec(
             workdir=resolved_workdir,
             home=self.home,
@@ -155,7 +132,6 @@ class Sandbox:
             connection=dict(config.connection),
             default_limits=config.default_limits,
             container_ttl_seconds=config.container_ttl_seconds,
-            command_policy="open",
         )
         self.commands = Commands(self)
         self.files = Files(self)
@@ -168,22 +144,15 @@ class Sandbox:
         workdir: str | Path,
         *,
         backend: SandboxBackend | None = None,
-        command_guards: tuple[CommandGuard, ...] | None = None,
         bind_mounts: tuple[str, ...] = (),
     ) -> Sandbox:
         if config.backend == "none":
             raise ValueError("cannot open sandbox with backend 'none'")
         Path(workdir).expanduser().resolve().mkdir(parents=True, exist_ok=True)
-        guards = command_guards
-        if guards is None:
-            guards = (
-                (WorkdirCommandGuard(),) if config.command_policy == "workdir" else ()
-            )
         sandbox = cls(
             backend or create_backend(config, bind_mounts=bind_mounts),
             config,
             str(workdir),
-            command_guards=guards,
         )
         await sandbox.start()
         return sandbox

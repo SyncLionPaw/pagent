@@ -259,7 +259,6 @@ class SandboxWorker(BaseAgent):
         sandbox_backend: Literal["local", "container", "ssh"] = "local",
         sandbox_image: str | None = None,
         sandbox_connection: dict[str, str] | None = None,
-        command_policy: Literal["open", "workdir"] = "workdir",
         **kwargs: Any,
     ) -> None:
         super().__init__(model_id, **kwargs)
@@ -275,7 +274,6 @@ class SandboxWorker(BaseAgent):
             backend=sandbox_backend,
             image=sandbox_image,
             connection=dict(sandbox_connection or {}),
-            command_policy=command_policy,
         )
         self.sandbox_runtime = sandbox_runtime
         self.sandbox: Sandbox | None = None
