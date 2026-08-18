@@ -42,11 +42,16 @@ export class AgentBridge implements AgentTransport {
   private child: ChildProcessWithoutNullStreams | undefined;
   private stdoutBuffer = "";
   private stopping = false;
+  private ready = false;
+  private pending: object[] = [];
 
   constructor(private readonly options: AgentBridgeOptions) { }
 
   start(): void {
     this.stopping = false;
+    this.ready = false;
+    this.pending = [];
+    this.stdoutBuffer = "";
     const child = spawn(this.options.command, this.options.args, {
       cwd: this.options.cwd,
       env: { ...process.env, ...this.options.env, PATH: enrichedPath() },
@@ -66,6 +71,7 @@ export class AgentBridge implements AgentTransport {
       }
       this.child = undefined;
       this.stdoutBuffer = "";
+      this.pending = [];
       this.options.onError(error);
     });
 
@@ -75,15 +81,20 @@ export class AgentBridge implements AgentTransport {
       }
       this.child = undefined;
       this.stdoutBuffer = "";
+      this.pending = [];
       this.options.onExit(code);
     });
   }
 
   send(command: object): void {
-    if (!this.child) {
+    if (this.stopping) {
       return;
     }
-    this.child.stdin.write(JSON.stringify(command) + "\n");
+    if (!this.ready) {
+      this.pending.push(command);
+      return;
+    }
+    this.writeCommand(command);
   }
 
   stop(): void {
@@ -94,8 +105,28 @@ export class AgentBridge implements AgentTransport {
     const child = this.child;
     this.child = undefined;
     this.stdoutBuffer = "";
+    this.pending = [];
     child.stdin.end();
     child.kill();
+  }
+
+  private writeCommand(command: object): void {
+    if (!this.child) {
+      return;
+    }
+    this.child.stdin.write(JSON.stringify(command) + "\n");
+  }
+
+  private markReady(): void {
+    if (this.ready) {
+      return;
+    }
+    this.ready = true;
+    const queued = this.pending;
+    this.pending = [];
+    for (const command of queued) {
+      this.writeCommand(command);
+    }
   }
 
   private onStdoutChunk(chunk: string): void {
@@ -106,6 +137,7 @@ export class AgentBridge implements AgentTransport {
       this.stdoutBuffer = this.stdoutBuffer.slice(index + 1);
       if (line) {
         this.options.onLine(line);
+        this.markReady();
       }
       index = this.stdoutBuffer.indexOf("\n");
     }

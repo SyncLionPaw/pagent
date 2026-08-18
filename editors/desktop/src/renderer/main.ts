@@ -56,9 +56,7 @@ import { mountToaster, toast } from "./toast";
 
 const INPUT_MAX_HEIGHT_PX = 160;
 const LEFT_PANE_WIDTH_PX = 232;
-const LEFT_COLLAPSED_WIDTH_PX = 44;
 const RIGHT_PANE_WIDTH_PX = 352;
-const RIGHT_COLLAPSED_WIDTH_PX = 44;
 const RIGHT_PANE_MIN_WIDTH_PX = 300;
 const RIGHT_PANE_MAX_WIDTH_RATIO = 0.45;
 const LEFT_SPLIT_RATIO_KEY = "pagent-desktop-left-split-ratio";
@@ -979,6 +977,19 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             <i class="codicon codicon-extensions" aria-hidden="true"></i>
           </button>
         </div>
+        <div class="titlebar-center">
+          <div class="center-title" data-task-title>新建任务</div>
+          <div class="center-header-side">
+            <button class="center-pill center-pill-button" type="button" data-select-project title="${escapeHtml(runtime.projectPath)}">
+              <span class="center-pill-icon" aria-hidden="true">${renderIcon("folder")}</span>
+              <span data-project-label>${escapeHtml(projectLabel(runtime))}</span>
+            </button>
+            <span class="center-pill center-pill-status ${sandboxPresenceClass(runtime)}" data-sandbox-pill>
+              <span class="center-pill-icon" data-sandbox-backend-icon aria-hidden="true">${renderIcon(sandboxBackendIconName(runtime))}</span>
+              <span data-sandbox-backend>${sandboxBackendLabel(runtime)}</span>
+            </span>
+          </div>
+        </div>
         <div class="titlebar-right">
           <button class="titlebar-action" type="button" data-docs-open title="打开文档" aria-label="打开文档">
             <i class="codicon codicon-github" aria-hidden="true"></i>
@@ -1125,19 +1136,6 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
         <div class="pane-resizer" data-resizer="left"></div>
 
         <section class="pane pane-center">
-          <div class="pane-topbar center-topbar">
-            <div class="center-title" data-task-title>新建任务</div>
-            <div class="center-header-side">
-              <button class="center-pill center-pill-button" type="button" data-select-project title="${escapeHtml(runtime.projectPath)}">
-                <span class="center-pill-icon" aria-hidden="true">${renderIcon("folder")}</span>
-                <span data-project-label>${escapeHtml(projectLabel(runtime))}</span>
-              </button>
-              <span class="center-pill center-pill-status ${sandboxPresenceClass(runtime)}" data-sandbox-pill>
-                <span class="center-pill-icon" data-sandbox-backend-icon aria-hidden="true">${renderIcon(sandboxBackendIconName(runtime))}</span>
-                <span data-sandbox-backend>${sandboxBackendLabel(runtime)}</span>
-              </span>
-            </div>
-          </div>
           <div class="chat-log" data-chat-log></div>
           <nav
             class="message-shortcuts"
@@ -2041,27 +2039,25 @@ async function start(): Promise<void> {
   }
 
   function applyWorkbenchChrome(): void {
-    const leftHidden = uiState.sidebarDocked;
+    const leftHidden = uiState.leftCollapsed || uiState.sidebarDocked;
     workbench.dataset.leftCollapsed = String(uiState.leftCollapsed);
     workbench.dataset.rightCollapsed = String(uiState.rightCollapsed);
     workbench.dataset.sidebarDocked = String(uiState.sidebarDocked);
     workbench.style.setProperty(
       "--left-pane-width",
-      leftHidden
-        ? "0px"
-        : `${uiState.leftCollapsed ? LEFT_COLLAPSED_WIDTH_PX : uiState.leftWidth}px`,
+      leftHidden ? "0px" : `${uiState.leftWidth}px`,
     );
     workbench.style.setProperty(
       "--right-pane-width",
-      `${uiState.rightCollapsed ? RIGHT_COLLAPSED_WIDTH_PX : uiState.rightWidth}px`,
+      uiState.rightCollapsed ? "0px" : `${uiState.rightWidth}px`,
     );
     workbench.style.setProperty(
       "--left-gap",
-      leftHidden || uiState.leftCollapsed ? "0px" : "6px",
+      leftHidden ? "0px" : "10px",
     );
     workbench.style.setProperty(
       "--right-gap",
-      uiState.rightCollapsed ? "0px" : "6px",
+      uiState.rightCollapsed ? "0px" : "10px",
     );
     historyDockButton.hidden = !uiState.sidebarDocked;
     syncPaneToggleButtons();

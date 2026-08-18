@@ -82,13 +82,20 @@ type SandboxStatusPayload = {
   alive: boolean;
   workdir: string;
 };
+type ThreadListWaiter = {
+  resolve: (payload: ThreadListPayload) => void;
+  reject: (error: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+};
 type SandboxTreeWaiter = {
   threadId: string;
   resolve: (payload: SandboxTreePayload) => void;
+  timer: ReturnType<typeof setTimeout>;
 };
 type SandboxStatusWaiter = {
   threadId: string;
   resolve: (payload: SandboxStatusPayload) => void;
+  timer: ReturnType<typeof setTimeout>;
 };
 
 let mainWindow: BrowserWindow | undefined;
@@ -106,7 +113,7 @@ let sandboxStatus: SandboxStatusPayload = {
   alive: false,
   workdir: "",
 };
-let threadListWaiters: Array<(payload: ThreadListPayload) => void> = [];
+let threadListWaiters: ThreadListWaiter[] = [];
 let sandboxTreeWaiters: SandboxTreeWaiter[] = [];
 let sandboxStatusWaiters: SandboxStatusWaiter[] = [];
 let sandboxTreeCache: SandboxTreePayload = {
@@ -904,10 +911,34 @@ function clearLastError(notify = true): void {
   }
 }
 
+function failPendingWaiters(error: Error): void {
+  const threadWaiters = threadListWaiters.splice(0);
+  for (const waiter of threadWaiters) {
+    clearTimeout(waiter.timer);
+    waiter.reject(error);
+  }
+  const treeWaiters = sandboxTreeWaiters.splice(0);
+  for (const waiter of treeWaiters) {
+    clearTimeout(waiter.timer);
+    waiter.resolve(
+      waiter.threadId === sandboxTreeCache.thread_id
+        ? sandboxTreeCache
+        : { thread_id: waiter.threadId, workdir: "", nodes: [] },
+    );
+  }
+  const statusWaiters = sandboxStatusWaiters.splice(0);
+  for (const waiter of statusWaiters) {
+    clearTimeout(waiter.timer);
+    waiter.resolve({ thread_id: waiter.threadId, backend: "", alive: false, workdir: "" });
+  }
+}
+
 function reportBridgeFailure(message: string, where: string): void {
+  const error = new Error(message);
   bridge = undefined;
   bridgeStatus = "error";
   lastError = message;
+  failPendingWaiters(error);
   notifyRuntimeState();
   postWireEvent({
     method: "Error",
@@ -921,11 +952,16 @@ function handleWireLine(line: string): void {
     postDesktopEvent({ type: "log", text: `[wire] skip invalid line: ${line}` });
     return;
   }
+  if (bridgeStatus === "starting") {
+    bridgeStatus = "ready";
+    notifyRuntimeState();
+  }
   if (event.method === "ThreadList") {
     const payload = normalizeThreadList(event.params);
     const waiters = threadListWaiters.splice(0);
     for (const waiter of waiters) {
-      waiter(payload);
+      clearTimeout(waiter.timer);
+      waiter.resolve(payload);
     }
     return;
   }
@@ -939,6 +975,7 @@ function handleWireLine(line: string): void {
       (waiter) => waiter.threadId !== payload.thread_id,
     );
     for (const waiter of matched) {
+      clearTimeout(waiter.timer);
       waiter.resolve(payload);
     }
     return;
@@ -954,6 +991,7 @@ function handleWireLine(line: string): void {
       (waiter) => waiter.threadId !== payload.thread_id,
     );
     for (const waiter of matched) {
+      clearTimeout(waiter.timer);
       waiter.resolve(payload);
     }
     return;
@@ -986,6 +1024,27 @@ function disposeBridge(): void {
   bridgeStatus = "idle";
   recentStderr = "";
   sandboxStatus = { thread_id: "", backend: "", alive: false, workdir: "" };
+  const emptyThreadList: ThreadListPayload = {
+    home: userPagentHome(),
+    threads_root: path.join(userPagentHome(), "threads"),
+    threads: [],
+  };
+  for (const waiter of threadListWaiters.splice(0)) {
+    clearTimeout(waiter.timer);
+    waiter.resolve(emptyThreadList);
+  }
+  for (const waiter of sandboxTreeWaiters.splice(0)) {
+    clearTimeout(waiter.timer);
+    waiter.resolve(
+      waiter.threadId === sandboxTreeCache.thread_id
+        ? sandboxTreeCache
+        : { thread_id: waiter.threadId, workdir: "", nodes: [] },
+    );
+  }
+  for (const waiter of sandboxStatusWaiters.splice(0)) {
+    clearTimeout(waiter.timer);
+    waiter.resolve({ thread_id: waiter.threadId, backend: "", alive: false, workdir: "" });
+  }
 }
 
 function ensureBridge(): AgentTransport | undefined {
@@ -1011,8 +1070,6 @@ function ensureBridge(): AgentTransport | undefined {
       : buildWireBridge();
 
   bridge = nextBridge;
-  bridgeStatus = "ready";
-  notifyRuntimeState();
   nextBridge.start();
   nextBridge.send({
     cmd: "client_features",
@@ -1068,18 +1125,18 @@ function requestThreadList(): Promise<ThreadListPayload> {
       reject(new Error("bridge unavailable"));
       return;
     }
-    const timer = setTimeout(() => {
-      const index = threadListWaiters.indexOf(onList);
-      if (index >= 0) {
-        threadListWaiters.splice(index, 1);
-      }
-      reject(new Error("list_threads timeout"));
-    }, 10_000);
-    const onList = (payload: ThreadListPayload) => {
-      clearTimeout(timer);
-      resolvePromise(payload);
+    const waiter: ThreadListWaiter = {
+      resolve: resolvePromise,
+      reject,
+      timer: setTimeout(() => {
+        const index = threadListWaiters.indexOf(waiter);
+        if (index >= 0) {
+          threadListWaiters.splice(index, 1);
+        }
+        reject(new Error("list_threads timeout"));
+      }, 10_000),
     };
-    threadListWaiters.push(onList);
+    threadListWaiters.push(waiter);
     activeBridge.send({ cmd: "list_threads", project_path: projectPath });
   });
 }
@@ -1152,6 +1209,7 @@ function requestSandboxTree(): Promise<SandboxTreePayload> {
     const waiter: SandboxTreeWaiter = {
       threadId: targetThreadId,
       resolve: onTree,
+      timer,
     };
     sandboxTreeWaiters.push(waiter);
     activeBridge.send({ cmd: "sandbox_tree" });
@@ -1199,6 +1257,7 @@ function requestSandboxStatus(): Promise<SandboxStatusPayload> {
     const waiter: SandboxStatusWaiter = {
       threadId: targetThreadId,
       resolve: onStatus,
+      timer,
     };
     sandboxStatusWaiters.push(waiter);
     bridge.send({ cmd: "sandbox_status" });

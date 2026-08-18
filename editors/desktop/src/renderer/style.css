@@ -38,6 +38,9 @@ html[data-theme="dark"] {
     --composer-shadow:
         0 14px 36px rgba(0, 0, 0, 0.3),
         0 0 0 1px rgba(255, 255, 255, 0.085);
+    --workspace-card-shadow:
+        0 18px 48px rgba(0, 0, 0, 0.24),
+        0 1px 0 rgba(255, 255, 255, 0.035) inset;
 }
 
 html[data-theme="light"] {
@@ -81,6 +84,9 @@ html[data-theme="light"] {
     --composer-shadow:
         0 16px 40px rgba(47, 61, 78, 0.14),
         0 0 0 1px rgba(24, 32, 44, 0.075);
+    --workspace-card-shadow:
+        0 12px 34px rgba(44, 55, 70, 0.09),
+        0 1px 0 rgba(255, 255, 255, 0.85) inset;
 }
 
 :root {
@@ -177,7 +183,7 @@ body {
     background: var(--background);
     color: var(--text-primary);
     font: 13px/1.5 var(--vscode-font-family);
-    letter-spacing: -0.005em;
+    letter-spacing: 0;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -214,32 +220,35 @@ input:focus-visible {
     height: 100%;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 44px minmax(0, 1fr);
+    grid-template-areas:
+        "titlebar"
+        "workbench";
     background: var(--background);
 }
 
 .desktop-titlebar {
-    display: none;
-    user-select: none;
-}
-
-.desktop-shell.macos {
-    grid-template-rows: 40px minmax(0, 1fr);
-    grid-template-areas:
-        "titlebar"
-        "workbench";
-}
-
-.desktop-shell.macos .desktop-titlebar {
     display: flex;
     grid-area: titlebar;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
     padding: 0 14px;
-    -webkit-app-region: drag;
-    background: color-mix(in srgb, var(--background) 94%, transparent);
-    box-shadow: 0 1px 0 0 var(--hairline);
+    user-select: none;
+    background: var(--background);
+    box-shadow: none;
     backdrop-filter: blur(20px) saturate(1.2);
+}
+
+.desktop-shell.macos {
+    grid-template-rows: 44px minmax(0, 1fr);
+    grid-template-areas:
+        "titlebar"
+        "workbench";
+}
+
+.desktop-shell.macos .desktop-titlebar {
+    -webkit-app-region: drag;
 }
 
 .titlebar-left {
@@ -260,16 +269,31 @@ input:focus-visible {
     -webkit-app-region: no-drag;
 }
 
+.titlebar-center {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 8px;
+}
+
+.titlebar-center .center-header-side {
+    margin-left: auto;
+    -webkit-app-region: no-drag;
+}
+
 .desktop-workbench {
     --left-pane-width: 232px;
     --right-pane-width: 352px;
-    --left-gap: 6px;
-    --right-gap: 6px;
+    --left-gap: 10px;
+    --right-gap: 10px;
     display: grid;
     grid-template-columns:
         var(--left-pane-width) var(--left-gap) minmax(0, 1fr) var(--right-gap) var(--right-pane-width);
     min-height: 0;
     height: 100%;
+    padding: 4px 10px 10px;
     background: var(--background);
     transition: grid-template-columns 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -277,6 +301,10 @@ input:focus-visible {
 .pane {
     min-width: 0;
     min-height: 0;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--workspace-card-shadow);
 }
 
 .pane-expanded {
@@ -303,7 +331,7 @@ input:focus-visible {
     gap: 8px;
     height: 100%;
     padding: 10px 6px;
-    background: color-mix(in srgb, var(--background) 72%, transparent);
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
     backdrop-filter: blur(18px) saturate(1.35);
     -webkit-backdrop-filter: blur(18px) saturate(1.35);
     opacity: 0;
@@ -316,7 +344,7 @@ input:focus-visible {
 
 .pane-left,
 .pane-right {
-    background: var(--background);
+    background: var(--surface);
     position: relative;
     overflow: hidden;
     transition:
@@ -334,14 +362,16 @@ input:focus-visible {
     position: relative;
     display: flex;
     flex-direction: column;
-    background: var(--surface);
-    border-right: 1px solid var(--hairline);
-    border-left: 1px solid var(--hairline);
+    background: transparent;
+    overflow: hidden;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
 }
 
 .pane-topbar {
-    height: 48px;
-    min-height: 48px;
+    height: 50px;
+    min-height: 50px;
     display: flex;
     align-items: center;
     padding: 0 12px;
@@ -357,14 +387,7 @@ input:focus-visible {
 }
 
 .pane-resizer::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    right: 0;
-    left: 0;
-    height: 48px;
-    background: var(--surface);
-    box-shadow: 0 1px 0 0 var(--hairline);
+    display: none;
 }
 
 .pane-resizer::after {
@@ -372,10 +395,10 @@ input:focus-visible {
     position: absolute;
     top: 50%;
     left: 50%;
-    width: 3px;
-    height: 28px;
+    width: 2px;
+    height: 36px;
     border-radius: 999px;
-    background: transparent;
+    background: color-mix(in srgb, var(--text-tertiary) 24%, transparent);
     transform: translate(-50%, -50%);
     transition: background-color 120ms ease;
 }
@@ -406,22 +429,24 @@ input:focus-visible {
 }
 
 .desktop-workbench[data-left-collapsed="true"] .pane-left .pane-collapsed {
-    box-shadow: 1px 0 0 0 var(--hairline);
+    box-shadow: none;
 }
 
 .desktop-workbench[data-right-collapsed="true"] .pane-right .pane-collapsed {
-    box-shadow: -1px 0 0 0 var(--hairline);
+    box-shadow: none;
     transform: translateX(0);
+}
+
+.desktop-workbench[data-left-collapsed="true"] [data-resizer="left"],
+.desktop-workbench[data-right-collapsed="true"] [data-resizer="right"] {
+    opacity: 0;
+    pointer-events: none;
 }
 
 .desktop-workbench[data-sidebar-docked="true"] .pane-left,
 .desktop-workbench[data-sidebar-docked="true"] [data-resizer="left"] {
     opacity: 0;
     pointer-events: none;
-}
-
-.desktop-workbench[data-sidebar-docked="true"] .pane-center {
-    box-shadow: 1px 0 0 0 var(--hairline);
 }
 
 
@@ -457,8 +482,7 @@ input:focus-visible {
     color: var(--text-tertiary);
     font-size: 11px;
     font-weight: 600;
-    letter-spacing: 0.065em;
-    text-transform: uppercase;
+    letter-spacing: 0;
     user-select: none;
 }
 
@@ -666,7 +690,7 @@ input:focus-visible {
     gap: 10px;
     padding: 0 12px;
     border-top: 1px solid var(--hairline);
-    background: color-mix(in srgb, var(--background) 94%, transparent);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
     overflow: visible;
 }
 
@@ -841,7 +865,7 @@ input:focus-visible {
     flex: 1;
     min-height: 0;
     overflow: hidden;
-    background: var(--background);
+    background: var(--surface);
 }
 
 .left-split-pane {
@@ -905,8 +929,8 @@ input:focus-visible {
 
 .capability-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 7px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
 }
 
 .capability-card {
@@ -915,11 +939,11 @@ input:focus-visible {
     align-items: center;
     gap: 7px;
     min-width: 0;
-    height: 40px;
-    padding: 0 10px;
-    border: 1px solid var(--border-soft);
+    height: 36px;
+    padding: 0 9px;
+    border: 0;
     border-radius: var(--radius-md);
-    background: color-mix(in srgb, var(--surface-raised) 72%, transparent);
+    background: transparent;
     color: var(--text-secondary);
     cursor: pointer;
     text-align: left;
@@ -931,15 +955,12 @@ input:focus-visible {
 }
 
 .capability-card:hover {
-    border-color: color-mix(in srgb, var(--primary) 36%, var(--border));
     background: color-mix(in srgb, var(--primary) 8%, transparent);
     color: var(--text-primary);
-    transform: translateY(-1px);
 }
 
 .capability-card.active {
-    border-color: color-mix(in srgb, var(--primary) 58%, transparent);
-    background: color-mix(in srgb, var(--primary) 12%, var(--surface-raised));
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
     color: var(--text-primary);
 }
 
@@ -2218,15 +2239,6 @@ input:focus-visible {
     flex-direction: column;
 }
 
-.center-topbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 16px 0 18px;
-    gap: 14px;
-}
-
 .center-header-side {
     display: flex;
     align-items: center;
@@ -3038,7 +3050,7 @@ input:focus-visible {
     overflow-y: auto;
     padding: 22px clamp(18px, 4vw, 48px) 132px;
     scroll-padding-bottom: 132px;
-    background: var(--surface);
+    background: transparent;
     scrollbar-gutter: stable;
 }
 
