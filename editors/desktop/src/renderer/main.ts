@@ -977,6 +977,7 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
             <i class="codicon codicon-extensions" aria-hidden="true"></i>
           </button>
         </div>
+        <span class="titlebar-divider" aria-hidden="true"></span>
         <div class="titlebar-center">
           <div class="center-title" data-task-title>新建任务</div>
           <div class="center-header-side">
@@ -2043,22 +2044,21 @@ async function start(): Promise<void> {
     workbench.dataset.leftCollapsed = String(uiState.leftCollapsed);
     workbench.dataset.rightCollapsed = String(uiState.rightCollapsed);
     workbench.dataset.sidebarDocked = String(uiState.sidebarDocked);
-    workbench.style.setProperty(
-      "--left-pane-width",
-      leftHidden ? "0px" : `${uiState.leftWidth}px`,
-    );
+    const leftPaneWidth = leftHidden ? "0px" : `${uiState.leftWidth}px`;
+    const leftGap = leftHidden ? "0px" : "10px";
+    workbench.style.setProperty("--left-pane-width", leftPaneWidth);
     workbench.style.setProperty(
       "--right-pane-width",
       uiState.rightCollapsed ? "0px" : `${uiState.rightWidth}px`,
     );
-    workbench.style.setProperty(
-      "--left-gap",
-      leftHidden ? "0px" : "10px",
-    );
+    workbench.style.setProperty("--left-gap", leftGap);
     workbench.style.setProperty(
       "--right-gap",
       uiState.rightCollapsed ? "0px" : "10px",
     );
+    // 标题栏分隔符与左栏右边界对齐：左栏右边界 = 工作区左内边距(10px) + 左栏宽度。
+    shell.style.setProperty("--left-edge", `calc(10px + ${leftPaneWidth})`);
+    shell.dataset.leftHidden = String(leftHidden);
     historyDockButton.hidden = !uiState.sidebarDocked;
     syncPaneToggleButtons();
   }

@@ -231,9 +231,8 @@ input:focus-visible {
     display: flex;
     grid-area: titlebar;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 0 14px;
+    gap: 0;
+    padding: 0 14px 0 0;
     user-select: none;
     background: var(--background);
     box-shadow: none;
@@ -255,7 +254,14 @@ input:focus-visible {
     display: flex;
     align-items: center;
     gap: 8px;
+    box-sizing: border-box;
+    width: var(--left-edge, 242px);
+    padding-left: 10px;
     -webkit-app-region: no-drag;
+}
+
+.desktop-shell[data-left-hidden="true"] .titlebar-left {
+    width: auto;
 }
 
 .desktop-shell.macos .titlebar-left {
@@ -276,6 +282,14 @@ input:focus-visible {
     align-items: center;
     gap: 12px;
     padding: 0 8px;
+}
+
+.titlebar-divider {
+    flex: none;
+    width: 1px;
+    height: 18px;
+    background: var(--border);
+    border-radius: 1px;
 }
 
 .titlebar-center .center-header-side {
