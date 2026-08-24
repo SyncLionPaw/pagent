@@ -22,6 +22,14 @@ api_key = "" # 空值同样回退 DEEPSEEK_API_KEY
 kind = "deepseek"
 model = "deepseek-v4-pro"
 
+# vision = true 声明该 provider 支持图片输入：带图消息只发给这类 provider，
+# 当前 provider 不支持时自动切到它（找不到则报错，不发给纯文本模型）。
+[provider.deepseek_vision]
+kind = "deepseek"
+model = "deepseek-v4-flash-vision-exp"
+vision = true
+api_key = "" # 空值回退 DEEPSEEK_API_KEY
+
 [sandbox]
 backend = "local" # local（thread workspace）| inplace（直接改项目）| container | docker | podman | ssh
 command_policy = "workdir" # open | workdir — workdir 拦截 run_command 里的越界路径；所有后端通用

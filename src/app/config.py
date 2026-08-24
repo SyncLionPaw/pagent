@@ -40,6 +40,9 @@ class ProviderConfig:
     model: str
     api_key: str | None = None
     base_url: str | None = None
+    # 该 provider 的模型是否支持图片输入。带图消息只会发给声明 vision = true 的
+    # provider，避免把 image_url 发给纯文本模型触发 400。
+    vision: bool = False
 
     def resolved_api_key(self) -> str | None:
         if self.api_key and self.api_key.strip():
@@ -121,6 +124,23 @@ class ReplConfig:
         if normalized == self.resolved_provider_name():
             return self.resolved_provider()
         raise ValueError(f"unknown provider {normalized!r}")
+
+    def vision_provider_name(self) -> str | None:
+        """返回第一个声明 ``vision = true`` 的 provider 名；没有则 None。
+
+        带图消息据此自动切到支持视觉的 provider；优先返回当前主 provider（若它
+        本身支持视觉），否则按配置顺序取第一个 vision provider。
+        """
+        if not self.providers:
+            provider = self.resolved_provider()
+            return self.resolved_provider_name() if provider.vision else None
+        current = self.resolved_provider_name()
+        if self.providers.get(current) and self.providers[current].vision:
+            return current
+        for name, provider in self.providers.items():
+            if provider.vision:
+                return name
+        return None
 
     def resolved_api_key(self) -> str | None:
         return self.resolved_provider().resolved_api_key()
@@ -285,11 +305,16 @@ def parse_provider_entry(name: str, payload: dict) -> ProviderConfig:
     if base_url is not None and not isinstance(base_url, str):
         raise ValueError(f"provider.{name}.base_url must be a string")
 
+    vision = payload.get("vision", False)
+    if not isinstance(vision, bool):
+        raise ValueError(f"provider.{name}.vision must be a boolean")
+
     return ProviderConfig(
         kind=kind,
         model=model.strip(),
         api_key=api_key.strip() if api_key and api_key.strip() else None,
         base_url=base_url.strip() if base_url and base_url.strip() else None,
+        vision=vision,
     )
 
 

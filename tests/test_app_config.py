@@ -454,6 +454,80 @@ def test_reference_template_parses_full_schema():
     assert config.sandbox_tools == SANDBOX_TOOL_NAMES
 
 
+def test_provider_vision_defaults_false():
+    config = parse_repl_config(
+        {"provider": {"deepseek": {"kind": "deepseek", "model": "deepseek-v4-flash"}}}
+    )
+    assert config.providers["deepseek"].vision is False
+
+
+def test_provider_vision_parses_true():
+    config = parse_repl_config(
+        {
+            "provider": {
+                "vis": {
+                    "kind": "deepseek",
+                    "model": "deepseek-v4-flash-vision-exp",
+                    "vision": True,
+                }
+            }
+        }
+    )
+    assert config.providers["vis"].vision is True
+
+
+def test_provider_vision_rejects_non_bool():
+    with pytest.raises(ValueError, match="provider.vis.vision must be a boolean"):
+        parse_repl_config(
+            {"provider": {"vis": {"kind": "deepseek", "model": "m", "vision": "yes"}}}
+        )
+
+
+def test_vision_provider_name_picks_declared_vision():
+    config = parse_repl_config(
+        {
+            "provider": {
+                "deepseek": {"kind": "deepseek", "model": "deepseek-v4-flash"},
+                "vis": {
+                    "kind": "deepseek",
+                    "model": "deepseek-v4-flash-vision-exp",
+                    "vision": True,
+                },
+            },
+            "agent": {"provider": "deepseek"},
+        }
+    )
+    assert config.vision_provider_name() == "vis"
+
+
+def test_vision_provider_name_prefers_current_when_vision():
+    config = parse_repl_config(
+        {
+            "provider": {
+                "vis": {
+                    "kind": "deepseek",
+                    "model": "deepseek-v4-flash-vision-exp",
+                    "vision": True,
+                },
+                "vis2": {
+                    "kind": "deepseek",
+                    "model": "other-vision",
+                    "vision": True,
+                },
+            },
+            "agent": {"provider": "vis"},
+        }
+    )
+    assert config.vision_provider_name() == "vis"
+
+
+def test_vision_provider_name_none_when_absent():
+    config = parse_repl_config(
+        {"provider": {"deepseek": {"kind": "deepseek", "model": "deepseek-v4-flash"}}}
+    )
+    assert config.vision_provider_name() is None
+
+
 def test_runner_location_default_is_local():
     assert ReplConfig().resolved_runner_location() == "local"
 

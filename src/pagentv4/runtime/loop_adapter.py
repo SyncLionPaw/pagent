@@ -35,6 +35,7 @@ from .helper import (
     message_to_event,
     project_event,
 )
+from .images import save_images_to_sandbox
 from .loop_core import run_event_loop
 from .run_state import RunState
 
@@ -213,6 +214,7 @@ class LoopAdapter:
         *,
         return_type: ArunReturnType = "event",
         event_handler: EventHandler | None = None,
+        images: list[str] | None = None,
         **run_kwargs,
     ) -> AsyncGenerator:
         if return_type not in {"event", "text", "acp", "message"}:
@@ -223,6 +225,12 @@ class LoopAdapter:
         turn_id = self.messages.max_turn_id() + 1
         self.run_state.turn_id = turn_id
         append_message(self.messages, Message.user(user_input), turn_id=turn_id)
+        if images:
+            await save_images_to_sandbox(self.sandbox, images)
+            for image_url in images:
+                append_message(
+                    self.messages, Message.user_image(image_url), turn_id=turn_id
+                )
         await asyncio.sleep(0)
 
         async for event in self._event_source(user_input, turn_id, **run_kwargs):

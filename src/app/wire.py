@@ -61,7 +61,13 @@ from pagentv4 import (
 )
 from pagentv4.adapters.acp import encode_event_line, json_value
 from pagentv4.core.context_limit import DEFAULT_CONTEXT_LIMIT, resolve_context_limit
-from pagentv4.core.message import TextChunk, ThinkingChunk, ToolCall, ToolResult
+from pagentv4.core.message import (
+    ImageUrl,
+    TextChunk,
+    ThinkingChunk,
+    ToolCall,
+    ToolResult,
+)
 from pagentv4.core.turn_result import TurnResult
 from pagentv4.ithread import SPEC_FILENAME, ThreadSpec
 from pagentv4.paths import resolve_pagent_home
@@ -197,6 +203,8 @@ def history_message_items(messages) -> list[dict]:
             if message.role == "system":
                 continue
             out.append({"kind": "text", "role": message.role, "text": content.text})
+        elif isinstance(content, ImageUrl):
+            out.append({"kind": "image", "role": message.role, "url": content.url})
         elif isinstance(content, ThinkingChunk):
             out.append({"kind": "thinking", "role": message.role, "text": content.text})
         elif isinstance(content, ToolCall):
@@ -744,6 +752,64 @@ def emit_provider_handoff(handoff: ProviderHandoff) -> None:
     emit_line(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
+def switch_runner_provider(
+    runner, config: ReplConfig, provider_name: str, *, reason: str = ""
+) -> ProviderIdentity:
+    """把主 Agent 切到 ``config`` 中命名的 provider，并广播 handoff / state 事件。
+
+    调用方负责先 ``refresh_provider_from_disk`` 拿到最新凭据。缺 provider 或缺
+    API Key 时抛错，由调用方决定如何回给前端。
+    """
+    target = config.provider_named(provider_name)
+    api_key = target.resolved_api_key()
+    if not api_key and provider_requires_api_key(target.kind):
+        env_name = provider_api_key_env(target.kind)
+        raise ValueError(
+            f"Provider {provider_name!r} 缺少 API Key；请配置或设置 {env_name}"
+        )
+    identity = ProviderIdentity(
+        name=provider_name,
+        kind=target.kind,
+        model=target.model,
+        base_url=target.resolved_base_url(),
+    )
+    provider = build_provider(
+        target.kind,
+        target.model,
+        base_url=target.base_url,
+        api_key=api_key,
+    )
+    message = runner.handoff(provider, identity, reason=reason)
+    emit_provider_handoff(message.content)
+    emit_provider_state(identity)
+    return identity
+
+
+def ensure_vision_provider(runner, config: ReplConfig) -> None:
+    """带图消息发送前，确保主 Agent 走的是支持视觉的 provider。
+
+    当前 provider 已是 vision 就直接返回；否则自动 handoff 到已声明 ``vision = true``
+    的 provider。没有任何 vision provider 时抛错——图片不会发给纯文本模型。
+    """
+    fresh_config = refresh_provider_from_disk(config)
+    active_name = runner.active_provider_identity.name
+    try:
+        active = fresh_config.provider_named(active_name)
+    except ValueError:
+        active = None
+    if active is not None and active.vision:
+        return
+    target_name = fresh_config.vision_provider_name()
+    if target_name is None:
+        raise ValueError(
+            "当前没有支持视觉的 provider；请在 pagent.toml 给支持图片的模型加 "
+            "vision = true。"
+        )
+    switch_runner_provider(
+        runner, fresh_config, target_name, reason="图片输入需要视觉模型"
+    )
+
+
 def emit_config_snapshot(config: ReplConfig) -> None:
     """下发脱敏后的配置快照，供前端渲染设置面板。api_key 从不原样下发。"""
     payload = {
@@ -934,6 +1000,7 @@ async def run_user_turn(
     state: dict,
     *,
     generate_title: bool = False,
+    images: list[str] | None = None,
 ) -> None:
     """跑一轮 Agent，事件逐行透传 stdout；需审批工具补发 PermitRequest。"""
     ask_permit = not config.permission_auto()
@@ -941,7 +1008,7 @@ async def run_user_turn(
     completed = False
     restore_subagent_observer = install_subagent_observer(runner, state)
     try:
-        async for event in runner.run(text, return_type="event"):
+        async for event in runner.run(text, return_type="event", images=images):
             emit_line(encode_event_line(event))
             if isinstance(event, TurnResult) and event.usage:
                 last_usage = event.usage
@@ -1297,43 +1364,30 @@ async def handle_command(command: dict, runner, config: ReplConfig, state: dict)
         provider_name = provider_name.strip()
         try:
             fresh_config = refresh_provider_from_disk(config)
-            target = fresh_config.provider_named(provider_name)
-            api_key = target.resolved_api_key()
-            if not api_key and provider_requires_api_key(target.kind):
-                env_name = provider_api_key_env(target.kind)
-                raise ValueError(
-                    f"Provider {provider_name!r} 缺少 API Key；请配置或设置 {env_name}"
-                )
-            identity = ProviderIdentity(
-                name=provider_name,
-                kind=target.kind,
-                model=target.model,
-                base_url=target.resolved_base_url(),
-            )
-            provider = build_provider(
-                target.kind,
-                target.model,
-                base_url=target.base_url,
-                api_key=api_key,
-            )
             reason = command.get("reason")
-            message = runner.handoff(
-                provider,
-                identity,
+            switch_runner_provider(
+                runner,
+                fresh_config,
+                provider_name,
                 reason=reason.strip() if isinstance(reason, str) else "",
             )
         except (Exception, SystemExit) as exc:
             log(f"[wire] handoff_provider failed: {exc}")
             emit_error(format_exc(exc), where="handoff_provider")
             return runner
-        emit_provider_handoff(message.content)
-        emit_provider_state(identity)
         log(f"[wire] handoff_provider：已切换到 {provider_name}")
         return runner
 
     if cmd == "user":
         text = command.get("text", "")
-        if not isinstance(text, str) or not text.strip():
+        if not isinstance(text, str):
+            log("[wire] user command missing text")
+            return runner
+        raw_images = command.get("images")
+        images = []
+        if isinstance(raw_images, list):
+            images = [item for item in raw_images if isinstance(item, str)]
+        if not text.strip() and not images:
             log("[wire] user command missing text")
             return runner
         # 以 / 开头的走 slash 命令：本地只读能力，不跑 Agent、不进对话历史。
@@ -1347,8 +1401,17 @@ async def handle_command(command: dict, runner, config: ReplConfig, state: dict)
         if turn_active(state):
             log("[wire] 上一轮还在跑，忽略新 user（一次一轮）")
             return runner
+        # 带图这一轮要走视觉模型：当前 provider 非 vision 时自动切过去；没有可用
+        # 视觉 provider 就在这里拦下，不把图片发给纯文本模型（避免 400）。
+        if images:
+            try:
+                ensure_vision_provider(runner, config)
+            except Exception as exc:
+                log(f"[wire] vision provider unavailable: {exc}")
+                emit_error(format_exc(exc), where="user")
+                return runner
         # 落一次 metainfo：首条用户消息定标题，供前端会话列表展示面向用户的名字。
-        generate_title = touch_thread_metainfo(runner, text)
+        generate_title = touch_thread_metainfo(runner, text or "图片")
         state["turn"] = asyncio.create_task(
             run_user_turn(
                 runner,
@@ -1356,6 +1419,7 @@ async def handle_command(command: dict, runner, config: ReplConfig, state: dict)
                 config,
                 state,
                 generate_title=generate_title,
+                images=images,
             )
         )
         return runner

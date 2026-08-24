@@ -21,6 +21,8 @@ max_turns = 24 # 单轮对话最大工具调用轮数。默认 24
 # ── [provider.<name>] LLM 接入 ────────────────────────
 # kind 可选：openai / deepseek / kimi / mimo / longcat / ollama / vllm / sglang。
 # 可并列定义多个命名 provider，由 [agent] provider 选择。
+# vision = true 声明该 provider 的模型支持图片输入；带图消息只发给这类 provider，
+# 当前 provider 不支持时自动切到第一个 vision provider（找不到则报错，不发给纯文本模型）。
 [provider.deepseek]
 kind = "deepseek"
 model = "deepseek-v4-flash"
@@ -32,6 +34,13 @@ api_key = ""
 api_key = "" # 空值同样回退 DEEPSEEK_API_KEY
 kind = "deepseek"
 model = "deepseek-v4-pro"
+
+# 支持图片输入的 provider：发图时自动切到它（见上方 vision 说明）。
+[provider.deepseek_vision]
+kind = "deepseek"
+model = "deepseek-v4-flash-vision-exp"
+vision = true
+api_key = "" # 空值回退 DEEPSEEK_API_KEY
 #
 # [provider.local]
 # kind = "ollama"

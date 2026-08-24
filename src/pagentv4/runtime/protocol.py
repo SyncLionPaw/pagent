@@ -16,5 +16,6 @@ class AgentRunner(Protocol):
         *,
         return_type: ArunReturnType = "event",
         event_handler: EventHandler | None = None,
+        images: list[str] | None = None,
         **run_kwargs: Any,
     ) -> AsyncIterator[Any]: ...

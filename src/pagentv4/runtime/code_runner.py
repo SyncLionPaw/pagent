@@ -172,6 +172,7 @@ class CodeRunner(BaseRunner):
         *,
         return_type: ArunReturnType = "event",
         event_handler: EventHandler | None = None,
+        images: list[str] | None = None,
         **run_kwargs,
     ) -> AsyncIterator:
         await self.ensure_initialized()
@@ -179,6 +180,7 @@ class CodeRunner(BaseRunner):
             user_input,
             return_type=return_type,
             event_handler=event_handler,
+            images=images,
             **run_kwargs,
         ):
             yield item

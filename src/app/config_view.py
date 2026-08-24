@@ -28,6 +28,7 @@ def provider_to_public_dict(name: str, provider: ProviderConfig) -> dict:
         "kind": provider.kind,
         "model": provider.model,
         "base_url": provider.resolved_base_url(),
+        "vision": provider.vision,
         "api_key_masked": mask_api_key(resolved_key),
         "api_key_configured": bool(resolved_key),
         "api_key_required": provider_requires_api_key(provider.kind),
