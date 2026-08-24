@@ -203,7 +203,7 @@ export type DesktopApi = {
     completeOnboarding(options?: { preferredBackend?: "local" | "container" | "ssh"; skipped?: boolean }): Promise<void>;
     resumeThread(threadId: string): Promise<void>;
     deleteThread(threadId: string): Promise<boolean>;
-    sendUserInput(text: string): Promise<void>;
+    sendUserInput(text: string, images?: string[]): Promise<void>;
     clearLastError(): Promise<void>;
     resetSession(options?: ResetSessionOptions): Promise<void>;
     requestHistoryReplay(): Promise<void>;

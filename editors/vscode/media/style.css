@@ -229,6 +229,26 @@ body {
   color: var(--vscode-editor-foreground);
 }
 
+.bubble-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.bubble-body:empty + .bubble-images,
+.bubble-images:first-child {
+  margin-top: 0;
+}
+
+.bubble-image {
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 6px;
+  object-fit: cover;
+  cursor: zoom-in;
+}
+
 .bubble.assistant.error,
 .bubble.error {
   border: 1px solid var(--vscode-errorForeground, var(--vscode-testing-iconFailed, var(--vscode-panel-border)));

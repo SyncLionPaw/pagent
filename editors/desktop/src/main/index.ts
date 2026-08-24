@@ -1445,14 +1445,25 @@ ipcMain.handle("desktop:delete-thread", async (_event, threadId: string) => {
   }
   return true;
 });
-ipcMain.handle("desktop:send-user-input", async (_event, text: string) => {
-  clearLastError();
-  const activeBridge = ensureBridge();
-  if (!activeBridge) {
-    return;
-  }
-  activeBridge.send({ cmd: "user", text, project_path: projectPath });
-});
+ipcMain.handle(
+  "desktop:send-user-input",
+  async (_event, text: string, images?: string[]) => {
+    clearLastError();
+    const activeBridge = ensureBridge();
+    if (!activeBridge) {
+      return;
+    }
+    const imageList = Array.isArray(images)
+      ? images.filter((item): item is string => typeof item === "string")
+      : [];
+    activeBridge.send({
+      cmd: "user",
+      text,
+      images: imageList,
+      project_path: projectPath,
+    });
+  },
+);
 ipcMain.handle("desktop:send-wire-command", async (_event, command: Record<string, unknown>) => {
   const activeBridge = ensureBridge();
   if (!activeBridge) {

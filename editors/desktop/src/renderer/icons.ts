@@ -21,6 +21,7 @@ import {
   Globe,
   HardDrive,
   History,
+  Image,
   Keyboard,
   LoaderCircle,
   Minus,
@@ -69,6 +70,7 @@ type DesktopIconName =
   | "globe"
   | "hard-drive"
   | "history"
+  | "image"
   | "keyboard"
   | "loader-circle"
   | "minus"
@@ -114,6 +116,7 @@ const iconRegistry: Record<DesktopIconName, IconNode> = {
   globe: Globe,
   "hard-drive": HardDrive,
   history: History,
+  image: Image,
   keyboard: Keyboard,
   "loader-circle": LoaderCircle,
   minus: Minus,

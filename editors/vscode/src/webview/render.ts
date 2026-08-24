@@ -83,6 +83,8 @@ export class ChatRenderer {
   private placeholder: HTMLElement | undefined;
   // 空状态引导节点；有消息即隐藏。
   private emptyState: HTMLElement | undefined;
+  // 回放期间最近一个 user 气泡正文；供后续 image 项挂到同一条消息里。
+  private lastUserBody: HTMLElement | undefined;
   // 会话切换期间的骨架屏及淡出计时器。
   private historySkeleton: HTMLElement | undefined;
   private historyTransitionTimer: ReturnType<typeof setTimeout> | undefined;
@@ -115,15 +117,18 @@ export class ChatRenderer {
   }
 
   /** 追加一条用户气泡，并立刻挂出“思考中”占位（发出即有反馈）。 */
-  addUser(text: string): void {
+  addUser(text: string, images: string[] = []): void {
     this.finishAssistantTurn();
     this.flushArtifacts();
     this.finishActivityStack();
     this.assistantTurnLabeled = false;
     this.hideEmptyState();
     const body = this.appendBubble("user");
-    body.textContent = text;
-    body.dataset.messageText = text;
+    if (text) {
+      body.textContent = text;
+      body.dataset.messageText = text;
+    }
+    appendBubbleImages(body, images);
     this.applyMessageCollapse(body);
     this.forceScrollToBottom();
     this.showPlaceholder();
@@ -152,6 +157,7 @@ export class ChatRenderer {
     this.reasoningPreview = undefined;
     this.reasoningText = "";
     this.placeholder = undefined;
+    this.lastUserBody = undefined;
     if (this.historyTransitionTimer) {
       clearTimeout(this.historyTransitionTimer);
       this.historyTransitionTimer = undefined;
@@ -342,6 +348,8 @@ export class ChatRenderer {
         );
       } else if (kind === "thinking") {
         this.replayThinking(readString(record, "text"));
+      } else if (kind === "image") {
+        this.replayImage(readString(record, "url"));
       } else if (kind === "tool_call") {
         this.addToolCard(
           readString(record, "tool_call_id"),
@@ -397,14 +405,32 @@ export class ChatRenderer {
     const body = this.appendBubble(role, parseMessageTime(timestamp));
     body.dataset.messageText = text;
     if (role === "assistant") {
+      this.lastUserBody = undefined;
       this.assistantTurnTexts.push(text);
       this.assistantTurnTimestamp =
         parseMessageTime(timestamp) ?? this.assistantTurnTimestamp;
       renderMarkdownInto(body, text, this.options.highlightCode);
     } else {
+      this.lastUserBody = body;
       body.textContent = text;
     }
     this.applyMessageCollapse(body);
+  }
+
+  /** 回放一张用户上传的图片：挂到最近的 user 气泡；没有则单开一条 user 气泡。 */
+  private replayImage(url: string): void {
+    if (!url) {
+      return;
+    }
+    if (this.lastUserBody) {
+      appendBubbleImages(this.lastUserBody, [url]);
+      return;
+    }
+    this.finishActivityStack();
+    this.assistantTurnLabeled = false;
+    const body = this.appendBubble("user");
+    appendBubbleImages(body, [url]);
+    this.lastUserBody = body;
   }
 
   /** 回放一段思考内容到折叠面板（历史默认折叠，折叠行显示摘要预览）。 */
@@ -1614,6 +1640,24 @@ function makeRoleLabel(role: "user" | "assistant"): HTMLElement {
   label.className = "role-label";
   label.textContent = role === "user" ? "you" : "pagent";
   return label;
+}
+
+/** 把用户消息里的图片渲染成缩略图，追加到气泡内容区（文本下方）。 */
+function appendBubbleImages(body: HTMLElement, images: string[]): void {
+  if (images.length === 0) {
+    return;
+  }
+  const gallery = document.createElement("div");
+  gallery.className = "bubble-images";
+  for (const url of images) {
+    const img = document.createElement("img");
+    img.className = "bubble-image";
+    img.src = url;
+    img.alt = "用户上传图片";
+    img.loading = "lazy";
+    gallery.appendChild(img);
+  }
+  body.appendChild(gallery);
 }
 
 function setSubagentState(

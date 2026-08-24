@@ -1147,10 +1147,28 @@ function renderShell(appInfo: AppInfo, runtime: RuntimeState): void {
           <div class="message-shortcut-preview" data-message-shortcut-preview hidden></div>
           <div class="composer-dock">
             <div class="mention-popup" data-mention-popup hidden></div>
-            <div class="composer composer-floating">
+            <div class="composer composer-floating" data-composer>
+              <div class="composer-attachments" data-attachments hidden></div>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                class="composer-file-input"
+                data-image-input
+                hidden
+              />
               <textarea id="prompt" placeholder="给 pagent 下达任务，输入 @ 引用文件"></textarea>
               <div class="composer-actions">
                 <div class="composer-actions-start">
+                  <button
+                    type="button"
+                    class="composer-btn attach-button"
+                    data-attach-image
+                    title="添加图片"
+                    aria-label="添加图片"
+                  >
+                    ${renderIcon("image")}
+                  </button>
                   <div class="provider-picker" data-provider-picker>
                     <button
                       type="button"
@@ -1760,6 +1778,10 @@ async function start(): Promise<void> {
   const providerMenu = findRequired<HTMLElement>("[data-provider-menu]");
   const mentionPopup = findRequired<HTMLElement>("[data-mention-popup]");
   const sendMessageButton = findRequired<HTMLButtonElement>("[data-send-message]");
+  const composerEl = findRequired<HTMLElement>("[data-composer]");
+  const attachmentStrip = findRequired<HTMLElement>("[data-attachments]");
+  const imageInput = findRequired<HTMLInputElement>("[data-image-input]");
+  const attachImageButton = findRequired<HTMLButtonElement>("[data-attach-image]");
   const composerHint = findRequired<HTMLElement>("[data-composer-hint]");
   const errorText = findRequired<HTMLElement>("[data-last-error]");
   const clearLastErrorButton = findRequired<HTMLButtonElement>("[data-clear-last-error]");
@@ -3767,23 +3789,82 @@ async function start(): Promise<void> {
     await window.desktop.sendWireCommand({ cmd: "cancel" });
   }
 
+  // 待发送的图片附件：每项是一个 data:image/...;base64 的 URL。
+  const pendingImages: string[] = [];
+  const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+
+  function renderAttachments(): void {
+    attachmentStrip.hidden = pendingImages.length === 0;
+    attachmentStrip.replaceChildren(
+      ...pendingImages.map((url, index) => {
+        const item = document.createElement("div");
+        item.className = "composer-attachment";
+        const thumb = document.createElement("img");
+        thumb.src = url;
+        thumb.alt = "待发送图片";
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "composer-attachment-remove";
+        remove.title = "移除";
+        remove.setAttribute("aria-label", "移除图片");
+        remove.innerHTML = renderIcon("x");
+        remove.addEventListener("click", () => {
+          pendingImages.splice(index, 1);
+          renderAttachments();
+        });
+        item.append(thumb, remove);
+        return item;
+      }),
+    );
+  }
+
+  function readImageFile(file: File): Promise<string | null> {
+    if (!file.type.startsWith("image/")) {
+      return Promise.resolve(null);
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setComposerHint(`图片过大（上限 10MB）：${file.name}`);
+      return Promise.resolve(null);
+    }
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () =>
+        resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function addImageFiles(files: Iterable<File>): Promise<void> {
+    for (const file of files) {
+      const dataUrl = await readImageFile(file);
+      if (dataUrl) {
+        pendingImages.push(dataUrl);
+      }
+    }
+    renderAttachments();
+  }
+
   async function sendMessage(): Promise<void> {
     if (uiState.activityState === "running") {
       return;
     }
     const text = promptInput.value;
-    if (!text.trim()) {
+    const images = pendingImages.slice();
+    if (!text.trim() && images.length === 0) {
       return;
     }
-    chatRenderer.addUser(text);
+    chatRenderer.addUser(text, images);
     promptInput.value = "";
+    pendingImages.length = 0;
+    renderAttachments();
     resizePrompt(promptInput);
     setComposerHint("");
     uiState.activityState = "running";
     applyActivityState();
-    appendTerminalEntry("command", text);
+    appendTerminalEntry("command", text || `[图片 ×${images.length}]`);
     try {
-      await window.desktop.sendUserInput(text);
+      await window.desktop.sendUserInput(text, images);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       chatRenderer.showError(message);
@@ -4231,6 +4312,61 @@ async function start(): Promise<void> {
     void sendMessage();
   });
   resizePrompt(promptInput);
+
+  // 图片附件：点击按钮选文件、粘贴图片、拖拽文件到 composer。
+  attachImageButton.addEventListener("click", () => imageInput.click());
+  imageInput.addEventListener("change", () => {
+    if (imageInput.files) {
+      void addImageFiles(Array.from(imageInput.files));
+    }
+    imageInput.value = "";
+  });
+  promptInput.addEventListener("paste", (event) => {
+    const items = event.clipboardData?.items;
+    if (!items) {
+      return;
+    }
+    const files: File[] = [];
+    for (const item of Array.from(items)) {
+      if (item.kind === "file" && item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) {
+          files.push(file);
+        }
+      }
+    }
+    if (files.length === 0) {
+      return;
+    }
+    event.preventDefault();
+    void addImageFiles(files);
+  });
+  composerEl.addEventListener("dragover", (event) => {
+    if (event.dataTransfer?.types.includes("Files")) {
+      event.preventDefault();
+      composerEl.classList.add("is-dragover");
+    }
+  });
+  composerEl.addEventListener("dragleave", (event) => {
+    if (event.target === composerEl) {
+      composerEl.classList.remove("is-dragover");
+    }
+  });
+  composerEl.addEventListener("drop", (event) => {
+    composerEl.classList.remove("is-dragover");
+    const files = event.dataTransfer?.files;
+    if (!files || files.length === 0) {
+      return;
+    }
+    const images = Array.from(files).filter((file) =>
+      file.type.startsWith("image/"),
+    );
+    if (images.length === 0) {
+      return;
+    }
+    event.preventDefault();
+    void addImageFiles(images);
+  });
 
   historyDockButton.addEventListener("mousedown", (event) => {
     event.preventDefault();
