@@ -18,6 +18,37 @@
 
 ---
 
+## 0.7.30 — 2026-08-25
+
+图片输入、执行轨迹和 Desktop 对话体验更新，并完善产品展示文档。
+
+### Highlights
+
+- **图片附件**：上传图片按内容寻址保存到 thread 的 `attachments/`，消息历史仅保留引用；旧版内联 base64 消息会在加载时自动迁移
+- **视觉输入**：Composer 为模型生成最长边 2048px 的压缩版本，同时保留原图用于消息预览和历史回放
+- **图片预览**：对话内图片支持点击放大，通过遮罩点击或 Esc 关闭
+- **执行轨迹**：回答过程支持折叠列表与横向瀑布图两种样式，并以颜色区分思考、工具和子 Agent
+- **消息阅读**：长回复折叠阈值提高到 640px，减少中等长度回复的误折叠
+- **Desktop 文档**：新增文档交付、视觉创作和多模态协作产品实景
+
+### Install
+
+```bash
+uv tool install --force pagent
+```
+
+- VS Code：`pagent-vscode-0.7.30.vsix`
+- 桌面端：
+  - macOS Apple Silicon：`pagent-Desktop-0.7.30-mac-arm64.zip`
+  - Windows x64：`pagent-Desktop-0.7.30-win-x64.zip`
+  - Linux x64：`pagent-Desktop-0.7.30-linux-x64.tar.gz`
+
+### Links
+
+- Compare: https://github.com/SyncLionPaw/pagent/compare/v0.7.24...v0.7.30
+
+---
+
 ## 0.7.24 — 2026-08-07
 
 Desktop 插件市场、PDF 预览和消息操作更新，并强化公开依赖来源约束。
