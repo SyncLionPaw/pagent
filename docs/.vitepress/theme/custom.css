@@ -64,3 +64,72 @@
   overflow: visible !important;
   line-height: 1.35;
 }
+
+/* Desktop product showcase */
+.desktop-showcase-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin: 24px 0 28px;
+}
+
+.desktop-showcase-card {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  background: var(--vp-c-bg-soft);
+}
+
+.desktop-showcase-featured {
+  grid-column: 1 / -1;
+}
+
+.desktop-showcase-image {
+  display: block;
+  overflow: hidden;
+  border-bottom: 1px solid var(--vp-c-divider);
+  background: #0c0e13;
+}
+
+.desktop-showcase-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  transition: transform 180ms ease;
+}
+
+.desktop-showcase-image:hover img {
+  transform: scale(1.012);
+}
+
+.desktop-showcase-card figcaption {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px 14px;
+}
+
+.desktop-showcase-card figcaption strong {
+  color: var(--vp-c-text-1);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.desktop-showcase-card figcaption span {
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .desktop-showcase-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .desktop-showcase-featured {
+    grid-column: auto;
+  }
+}

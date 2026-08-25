@@ -4,6 +4,7 @@ from collections.abc import AsyncIterator
 from typing import Any, Protocol, runtime_checkable
 
 from .helper import ArunReturnType, EventHandler
+from .images import ImageInput
 
 
 @runtime_checkable
@@ -16,6 +17,6 @@ class AgentRunner(Protocol):
         *,
         return_type: ArunReturnType = "event",
         event_handler: EventHandler | None = None,
-        images: list[str] | None = None,
+        images: list[str | ImageInput] | None = None,
         **run_kwargs: Any,
     ) -> AsyncIterator[Any]: ...

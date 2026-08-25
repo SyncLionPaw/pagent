@@ -13,6 +13,23 @@ class ImageUrl(BaseModel):
     url: str
 
 
+class ImageAttachment(BaseModel):
+    """Thread-local image references resolved at runtime boundaries."""
+
+    type: Literal["image_attachment"] = "image_attachment"
+    original_path: str = Field(min_length=1)
+    original_mime: str = Field(min_length=1)
+    model_path: str = Field(min_length=1)
+    model_mime: str = Field(min_length=1)
+
+    @field_validator("original_mime", "model_mime")
+    @classmethod
+    def require_image_mime(cls, value: str) -> str:
+        if value.startswith("image/"):
+            return value
+        raise ValueError("image attachment MIME must start with image/")
+
+
 class AudioUrl(BaseModel):
     """User input: remote audio + transcript fallback (see user_content_to_openai)."""
 
@@ -95,7 +112,7 @@ class ProviderHandoff(BaseModel):
 
 # User-side input parts (one Message row = one chunk; merged on export).
 UserChunk = Annotated[
-    Union[TextChunk, ImageUrl, AudioUrl],
+    Union[TextChunk, ImageUrl, ImageAttachment, AudioUrl],
     Field(discriminator="type"),
 ]
 
@@ -118,8 +135,12 @@ class Message(BaseModel):
         c = self.content
         if self.role == "system" and not isinstance(c, TextChunk):
             raise ValueError("system message must be text")
-        if self.role == "user" and not isinstance(c, (TextChunk, ImageUrl, AudioUrl)):
-            raise ValueError("user message must be text, image_url, or audio_url")
+        if self.role == "user" and not isinstance(
+            c, (TextChunk, ImageUrl, ImageAttachment, AudioUrl)
+        ):
+            raise ValueError(
+                "user message must be text, image_url, image_attachment, or audio_url"
+            )
         if self.role == "assistant" and not isinstance(
             c, (TextChunk, ThinkingChunk, ToolCall)
         ):
@@ -196,6 +217,23 @@ class Message(BaseModel):
         return cls.model_validate(payload)
 
     @classmethod
+    def user_image_attachment(
+        cls,
+        attachment: ImageAttachment,
+        message_id: str | None = None,
+        turn_id: int | None = None,
+    ) -> "Message":
+        payload = {
+            "role": "user",
+            "content": attachment,
+        }
+        if message_id is not None:
+            payload["message_id"] = message_id
+        if turn_id is not None:
+            payload["turn_id"] = turn_id
+        return cls.model_validate(payload)
+
+    @classmethod
     def tool_result(
         cls,
         tool_call_id: str,
@@ -252,6 +290,10 @@ def user_part_to_openai(chunk: UserChunk) -> dict:
         return {"type": "text", "text": chunk.text}
     if isinstance(chunk, ImageUrl):
         return {"type": "image_url", "image_url": {"url": chunk.url}}
+    if isinstance(chunk, ImageAttachment):
+        raise ValueError(
+            "image_attachment must be resolved before OpenAI serialization"
+        )
     if isinstance(chunk, AudioUrl):
         return {
             "type": "audio_url",
@@ -318,6 +360,11 @@ def describe_content(content) -> str:
         return f"thinking, {compact_text(content.text)!r}"
     if isinstance(content, ImageUrl):
         return f"image_url, {content.url!r}"
+    if isinstance(content, ImageAttachment):
+        return (
+            f"image_attachment, original={content.original_path!r}, "
+            f"model={content.model_path!r}"
+        )
     if isinstance(content, AudioUrl):
         return f"audio_url, {str(content.url)!r}, {compact_text(content.text)!r}"
     if isinstance(content, ToolCall):
@@ -533,7 +580,9 @@ class Messages(BaseModel):
                 chunks: list[UserChunk] = []
                 while i < len(data) and data[i].role == "user":
                     chunk = data[i].content
-                    if not isinstance(chunk, (TextChunk, ImageUrl, AudioUrl)):
+                    if not isinstance(
+                        chunk, (TextChunk, ImageUrl, ImageAttachment, AudioUrl)
+                    ):
                         raise ValueError(f"unsupported user chunk: {chunk!r}")
                     chunks.append(chunk)
                     i += 1

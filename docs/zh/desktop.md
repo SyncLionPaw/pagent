@@ -6,7 +6,37 @@
 
 这份文档面向**第一次使用的普通用户**，从下载到发出第一条消息，一步一步带你走通。想改桌面端源码，请看 [开发者 README](https://github.com/SyncLionPaw/pagent/blob/main/editors/desktop/README.md)。
 
-![pagent Desktop 主界面：左侧会话历史、中间对话、右侧文件与生成物](/desktop/05-main-window.png)
+## Desktop 实景
+
+<div class="desktop-showcase-grid">
+  <figure class="desktop-showcase-card desktop-showcase-featured">
+    <a href="../desktop/showcase/document-workflow.png" target="_blank" rel="noopener" class="desktop-showcase-image">
+      <img src="/desktop/showcase/document-workflow.png" alt="pagent Desktop 执行文档任务并预览交付的 PDF" />
+    </a>
+    <figcaption>
+      <strong>生成并检查文档</strong>
+      <span>在同一窗口跟进执行过程、打开交付文件，并检查生成的 PDF。</span>
+    </figcaption>
+  </figure>
+  <figure class="desktop-showcase-card">
+    <a href="../desktop/showcase/visual-creation.png" target="_blank" rel="noopener" class="desktop-showcase-image">
+      <img src="/desktop/showcase/visual-creation.png" alt="pagent Desktop 生成插画海报及可编辑的 SVG 源文件" loading="lazy" />
+    </a>
+    <figcaption>
+      <strong>创作视觉内容</strong>
+      <span>生成图片和可编辑源文件，并直接预览两种交付结果。</span>
+    </figcaption>
+  </figure>
+  <figure class="desktop-showcase-card">
+    <a href="../desktop/showcase/multimodal-preview.png" target="_blank" rel="noopener" class="desktop-showcase-image">
+      <img src="/desktop/showcase/multimodal-preview.png" alt="pagent Desktop 结合用户上传的图片生成并预览网页" loading="lazy" />
+    </a>
+    <figcaption>
+      <strong>多模态协作</strong>
+      <span>在对话中添加图片参考，同时对照查看生成的网页结果。</span>
+    </figcaption>
+  </figure>
+</div>
 
 ::: tip 五分钟上手路线
 1. [装后端命令 `pagent`](#第-1-步-安装后端命令必做) →
@@ -57,7 +87,7 @@ uv tool install pagent
 
 ### macOS 提示「已损坏，无法打开」？别慌
 
-![macOS 弹窗：pagent Desktop 已损坏，无法打开](/desktop/01-open-warning.png)
+<!-- 占位截图暂时隐藏：/desktop/01-open-warning.png -->
 
 这**不是**应用坏了。因为这个应用没有花钱买 Apple 的签名证书，macOS 对所有"来路不明"的应用都会这样拦一下。解决办法很简单：
 
@@ -90,7 +120,7 @@ xattr -cr "/Applications/pagent Desktop.app"
 
 ### 第 1 步「环境」
 
-![首次设置向导第一步：检测 uv 和 pagent CLI](/desktop/02-setup-env.png)
+<!-- 占位截图暂时隐藏：/desktop/02-setup-env.png -->
 
 这一步检查电脑上有没有装好 `uv` 和 `pagent CLI`：
 
@@ -99,7 +129,7 @@ xattr -cr "/Applications/pagent Desktop.app"
 
 ### 第 2 步「API Key」
 
-![首次设置向导第二步：填写 API Key、模型、Base URL](/desktop/03-setup-apikey.png)
+<!-- 占位截图暂时隐藏：/desktop/03-setup-apikey.png -->
 
 填入你的大模型 **API Key**（形如 `sk-...`），选好 **模型**。**Base URL（可选）** 留空即用默认。
 
@@ -108,7 +138,7 @@ xattr -cr "/Applications/pagent Desktop.app"
 
 ### 第 3 步「沙箱」
 
-![首次设置向导第三步：选择沙箱类型，本机/容器/远程](/desktop/04-setup-sandbox.png)
+<!-- 占位截图暂时隐藏：/desktop/04-setup-sandbox.png -->
 
 "沙箱"就是 AI 干活的地方。选 **本机**（推荐 · 无需 Docker）就好，之后在「新建任务」里随时能改。点 **完成** 进入主界面。
 
@@ -133,7 +163,7 @@ xattr -cr "/Applications/pagent Desktop.app"
 
 进入主界面后，点左侧的 **新建任务**。
 
-![新建任务对话框：沙箱类型、镜像、项目目录](/desktop/06-new-task.png)
+<!-- 占位截图暂时隐藏：/desktop/06-new-task.png -->
 
 填三样：
 
@@ -158,7 +188,7 @@ Git 保存当前状态。此模式下通过 **项目** 面板浏览文件，单�
 
 ## 认识主界面
 
-![主界面三栏：会话历史、对话、文件与生成物](/desktop/05-main-window.png)
+<!-- 占位截图暂时隐藏：/desktop/05-main-window.png -->
 
 窗口分三栏：
 
@@ -170,7 +200,7 @@ Git 保存当前状态。此模式下通过 **项目** 面板浏览文件，单�
 
 ### 底部输入框
 
-![底部输入框：发送、YOLO 闪电、圆环、@ 引用文件](/desktop/07-composer.png)
+<!-- 占位截图暂时隐藏：/desktop/07-composer.png -->
 
 输入框提示是 **给 pagent 下达任务，输入 @ 引用文件**。几个关键按钮：
 
@@ -187,7 +217,7 @@ Git 保存当前状态。此模式下通过 **项目** 面板浏览文件，单�
 
 ### 右侧：文件与生成物
 
-![右侧面板：文件树、生成物预览、日志](/desktop/08-artifacts.png)
+<!-- 占位截图暂时隐藏：/desktop/08-artifacts.png -->
 
 AI 生成的网页、PDF、图片等，都能在右侧直接预览。文件树能看到沙箱和项目里的所有文件，日志区能看到后端的运行情况——**遇到问题时先看这里**。
 
@@ -199,7 +229,7 @@ AI 生成的网页、PDF、图片等，都能在右侧直接预览。文件树�
 
 在左侧会话列表，鼠标移到某条会话上，点 **删除会话** 图标，会弹出确认框：
 
-![删除会话确认弹窗](/desktop/09-delete-confirm.png)
+<!-- 占位截图暂时隐藏：/desktop/09-delete-confirm.png -->
 
 弹窗会显示 **删除「会话标题」后无法恢复，确认删除吗？**，点 **删除** 确认，点 **取消** 放弃。**删除无法撤销**，请确认后再操作。
 
@@ -211,7 +241,7 @@ AI 生成的网页、PDF、图片等，都能在右侧直接预览。文件树�
 
 ## 设置与帮助
 
-![设置面板：环境自检状态灯 + 磁盘占用](/desktop/10-settings.png)
+<!-- 占位截图暂时隐藏：/desktop/10-settings.png -->
 
 | 入口 | 里面有什么 |
 | --- | --- |

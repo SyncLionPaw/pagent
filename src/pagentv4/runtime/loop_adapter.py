@@ -24,7 +24,7 @@ from inspect import isawaitable
 
 from ..core.agent import Agent
 from ..core.events import ToolCallBegin, ToolResult
-from ..core.message import Message, Messages, ToolCall
+from ..core.message import ImageAttachment, ImageUrl, Message, Messages, ToolCall
 from ..core.tool import FunctionTool, ToolOutput
 from .frame import RunFrame
 from .helper import (
@@ -35,7 +35,7 @@ from .helper import (
     message_to_event,
     project_event,
 )
-from .images import save_images_to_sandbox
+from .images import ImageInput
 from .loop_core import run_event_loop
 from .run_state import RunState
 
@@ -160,11 +160,29 @@ class LoopAdapter:
         turn_id: int,
         **run_kwargs,
     ) -> AsyncGenerator:
-        async for message in self.agent.generate_messages(self.messages, **run_kwargs):
+        provider_messages = self.messages_for_provider()
+        async for message in self.agent.generate_messages(
+            provider_messages, **run_kwargs
+        ):
             append_message(self.messages, message, turn_id=turn_id)
             event = message_to_event(message)
             if event is not None:
                 yield event
+
+    def messages_for_provider(self) -> Messages:
+        return self.messages
+
+    def persist_images(
+        self, images: list[str | ImageInput]
+    ) -> list[ImageUrl | ImageAttachment]:
+        """Keep inline model images for runners without persistent thread storage."""
+        return [
+            ImageUrl(
+                type="image_url",
+                url=image.model_url if isinstance(image, ImageInput) else image,
+            )
+            for image in images
+        ]
 
     async def emit_tool_events(
         self,
@@ -214,7 +232,7 @@ class LoopAdapter:
         *,
         return_type: ArunReturnType = "event",
         event_handler: EventHandler | None = None,
-        images: list[str] | None = None,
+        images: list[str | ImageInput] | None = None,
         **run_kwargs,
     ) -> AsyncGenerator:
         if return_type not in {"event", "text", "acp", "message"}:
@@ -226,11 +244,13 @@ class LoopAdapter:
         self.run_state.turn_id = turn_id
         append_message(self.messages, Message.user(user_input), turn_id=turn_id)
         if images:
-            await save_images_to_sandbox(self.sandbox, images)
-            for image_url in images:
-                append_message(
-                    self.messages, Message.user_image(image_url), turn_id=turn_id
+            for image in self.persist_images(images):
+                message = (
+                    Message.user_image_attachment(image)
+                    if isinstance(image, ImageAttachment)
+                    else Message.user_image(image.url)
                 )
+                append_message(self.messages, message, turn_id=turn_id)
         await asyncio.sleep(0)
 
         async for event in self._event_source(user_input, turn_id, **run_kwargs):

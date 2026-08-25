@@ -4,6 +4,7 @@ import type {
   DesktopEvent,
   ResetSessionOptions,
   RuntimeState,
+  UserImageInput,
 } from "../shared/protocol";
 
 function subscribeToChannel<T>(
@@ -90,7 +91,7 @@ const desktopApi: DesktopApi = {
   deleteThread(threadId: string) {
     return ipcRenderer.invoke("desktop:delete-thread", threadId);
   },
-  sendUserInput(text: string, images?: string[]) {
+  sendUserInput(text: string, images?: UserImageInput[]) {
     return ipcRenderer.invoke("desktop:send-user-input", text, images);
   },
   clearLastError() {

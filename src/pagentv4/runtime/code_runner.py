@@ -45,6 +45,7 @@ from ..core.tool import FunctionTool
 from ..ithread import ThreadSpec
 from .base_runner import BaseRunner, assemble_run_resources
 from .helper import ArunReturnType, EventHandler
+from .images import ImageInput
 from .thread import Thread
 
 
@@ -172,7 +173,7 @@ class CodeRunner(BaseRunner):
         *,
         return_type: ArunReturnType = "event",
         event_handler: EventHandler | None = None,
-        images: list[str] | None = None,
+        images: list[str | ImageInput] | None = None,
         **run_kwargs,
     ) -> AsyncIterator:
         await self.ensure_initialized()

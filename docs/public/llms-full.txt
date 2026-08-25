@@ -1092,7 +1092,37 @@ This guide is for **first-time users**: from download to your first message, ste
 The desktop app currently ships **Chinese-only** UI. This guide keeps the on-screen Chinese labels in quotes (e.g. **新建任务** / New task) so you can match them to the buttons you actually see.
 :::
 
-![pagent Desktop main window: sessions on the left, chat in the center, files and artifacts on the right](/desktop/05-main-window.png)
+## Desktop in action
+
+<div class="desktop-showcase-grid">
+  <figure class="desktop-showcase-card desktop-showcase-featured">
+    <a href="./desktop/showcase/document-workflow.png" target="_blank" rel="noopener" class="desktop-showcase-image">
+      <img src="/desktop/showcase/document-workflow.png" alt="pagent Desktop completing a document task while previewing the delivered PDF" />
+    </a>
+    <figcaption>
+      <strong>Build and inspect documents</strong>
+      <span>Follow the agent's work, open delivered files, and inspect the generated PDF in the same window.</span>
+    </figcaption>
+  </figure>
+  <figure class="desktop-showcase-card">
+    <a href="./desktop/showcase/visual-creation.png" target="_blank" rel="noopener" class="desktop-showcase-image">
+      <img src="/desktop/showcase/visual-creation.png" alt="pagent Desktop generating an illustrated poster and editable SVG source" loading="lazy" />
+    </a>
+    <figcaption>
+      <strong>Create visual artifacts</strong>
+      <span>Generate images and editable source files, then preview both without leaving the task.</span>
+    </figcaption>
+  </figure>
+  <figure class="desktop-showcase-card">
+    <a href="./desktop/showcase/multimodal-preview.png" target="_blank" rel="noopener" class="desktop-showcase-image">
+      <img src="/desktop/showcase/multimodal-preview.png" alt="pagent Desktop using an uploaded image while previewing generated HTML" loading="lazy" />
+    </a>
+    <figcaption>
+      <strong>Work multimodally</strong>
+      <span>Attach visual references in chat and compare generated web output side by side.</span>
+    </figcaption>
+  </figure>
+</div>
 
 ::: tip Five-minute path
 1. [Install the `pagent` backend](#step-1-install-the-backend-required) →
@@ -1143,7 +1173,7 @@ Go to [pagent GitHub Releases](https://github.com/SyncLionPaw/pagent/releases) a
 
 ### macOS says the app is "damaged"?
 
-![macOS dialog: pagent Desktop is damaged and can't be opened](/desktop/01-open-warning.png)
+<!-- Placeholder screenshot hidden: /desktop/01-open-warning.png -->
 
 The app is **not** broken. Because it isn't signed with a paid Apple certificate, macOS blocks all "unidentified" apps this way. The fix is one line.
 
@@ -1176,7 +1206,7 @@ The top reads **完成下列步骤后即可开始使用。** (Complete the steps
 
 ### Step 1 — Environment (**环境**)
 
-![Setup wizard step 1: checking uv and pagent CLI](/desktop/02-setup-env.png)
+<!-- Placeholder screenshot hidden: /desktop/02-setup-env.png -->
 
 This checks whether `uv` and the `pagent CLI` are installed:
 
@@ -1185,7 +1215,7 @@ This checks whether `uv` and the `pagent CLI` are installed:
 
 ### Step 2 — API Key
 
-![Setup wizard step 2: enter API key, model, base URL](/desktop/03-setup-apikey.png)
+<!-- Placeholder screenshot hidden: /desktop/03-setup-apikey.png -->
 
 Enter your model **API Key** (looks like `sk-...`) and pick a **模型** (Model). Leave **Base URL（可选）** (optional) empty to use the default.
 
@@ -1194,7 +1224,7 @@ Enter your model **API Key** (looks like `sk-...`) and pick a **模型** (Model)
 
 ### Step 3 — Sandbox (**沙箱**)
 
-![Setup wizard step 3: choose sandbox — local / container / remote](/desktop/04-setup-sandbox.png)
+<!-- Placeholder screenshot hidden: /desktop/04-setup-sandbox.png -->
 
 The "sandbox" is where the AI does its work. Pick **本机** (Local — recommended, no Docker); you can change it later per task. Click **完成** (Finish) to enter the app.
 
@@ -1219,7 +1249,7 @@ You can reopen this wizard anytime from the bottom-left user menu → **首次�
 
 In the main window, click **新建任务** (New task) on the left.
 
-![New task dialog: sandbox type, image, project folder](/desktop/06-new-task.png)
+<!-- Placeholder screenshot hidden: /desktop/06-new-task.png -->
 
 Fill in three things:
 
@@ -1245,7 +1275,7 @@ You'll watch the AI work step by step, and the generated page appears on the rig
 
 ## Get to know the main window
 
-![Three panes: sessions, chat, files and artifacts](/desktop/05-main-window.png)
+<!-- Placeholder screenshot hidden: /desktop/05-main-window.png -->
 
 The window has three panes:
 
@@ -1257,7 +1287,7 @@ Drag the dividers to resize. Press **⌘K** or the shortcuts button in the title
 
 ### The composer
 
-![Composer: send, YOLO lightning, ring, @ mention](/desktop/07-composer.png)
+<!-- Placeholder screenshot hidden: /desktop/07-composer.png -->
 
 The placeholder reads **给 pagent 下达任务，输入 @ 引用文件** (Give pagent a task, type @ to reference a file). Key controls:
 
@@ -1274,7 +1304,7 @@ By default the AI **asks for approval** before touching files or running command
 
 ### Right side: files & artifacts
 
-![Right panel: file tree, artifact preview, log](/desktop/08-artifacts.png)
+<!-- Placeholder screenshot hidden: /desktop/08-artifacts.png -->
 
 Generated pages, PDFs, and images preview right here. The file tree shows everything in the sandbox and project, and the log shows what the backend is doing — **check here first when something goes wrong**.
 
@@ -1286,7 +1316,7 @@ Generated pages, PDFs, and images preview right here. The file tree shows everyt
 
 In the session list, hover a session and click the **删除会话** (Delete session) icon. A confirmation appears:
 
-![Delete session confirmation dialog](/desktop/09-delete-confirm.png)
+<!-- Placeholder screenshot hidden: /desktop/09-delete-confirm.png -->
 
 It reads **删除「session title」后无法恢复，确认删除吗？** (Deleting "…" can't be undone — delete it?). Click **删除** (Delete) to confirm, or **取消** (Cancel). **This can't be undone**, so double-check first.
 
@@ -1298,7 +1328,7 @@ Click any session on the left to switch to it. On startup, the app tries to **re
 
 ## Settings & help
 
-![Settings panel: environment health lights + disk usage](/desktop/10-settings.png)
+<!-- Placeholder screenshot hidden: /desktop/10-settings.png -->
 
 | Entry | What's inside |
 | --- | --- |

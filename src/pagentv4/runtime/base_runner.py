@@ -23,7 +23,7 @@ from typing import NamedTuple
 
 from ..conversation import ConversationStore
 from ..core.agent import Agent
-from ..core.message import Messages
+from ..core.message import ImageAttachment, ImageUrl, Messages
 from ..core.provider import ProviderProtocol
 from ..core.tool import FunctionTool
 from ..ithread import IThread, ThreadSpec
@@ -32,6 +32,12 @@ from ..skills import (
     SkillRegistry,
     build_skills_system_prompt,
     make_use_skill_tool,
+)
+from .images import (
+    ImageInput,
+    migrate_inline_images,
+    persist_image_inputs,
+    resolve_message_attachments,
 )
 from .loop_adapter import LoopAdapter
 from .run_state import RunState
@@ -191,6 +197,8 @@ class BaseRunner(LoopAdapter):
         self.store = store or thread.open_store()
         self.conversation_id = thread.messages_conversation_id
         self.messages = messages if messages is not None else thread.load_messages()
+        if migrate_inline_images(self.messages, self.thread):
+            self.flush_conversation()
 
     async def after_continuing(self, *, turn: int) -> None:
         del turn
@@ -203,6 +211,14 @@ class BaseRunner(LoopAdapter):
 
     def flush_conversation(self) -> None:
         self.store.save(self.conversation_id, self.messages)
+
+    def persist_images(
+        self, images: list[str | ImageInput]
+    ) -> list[ImageUrl | ImageAttachment]:
+        return persist_image_inputs(self.thread, images)
+
+    def messages_for_provider(self) -> Messages:
+        return resolve_message_attachments(self.messages, self.thread)
 
     async def close(self) -> None:
         self.run_state.phase = "closing"

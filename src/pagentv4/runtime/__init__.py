@@ -21,6 +21,7 @@ from .hooks import (
     ToolHookContext,
     ToolHooks,
 )
+from .images import ImageInput
 from .inbound import (
     CancelRun,
     CheckpointPolicy,
@@ -66,6 +67,7 @@ __all__ = [
     "IThread",
     "InboundEvent",
     "InboundMailbox",
+    "ImageInput",
     "JsonlConversationStore",
     "PermitTool",
     "RunCancelled",

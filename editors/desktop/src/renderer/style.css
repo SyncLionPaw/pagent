@@ -1136,7 +1136,7 @@ input:focus-visible {
     margin-top: 8px;
 }
 
-.desktop-root .bubble-body:empty + .bubble-images,
+.desktop-root .bubble-body:empty+.bubble-images,
 .desktop-root .bubble-images:first-child {
     margin-top: 0;
 }
@@ -1148,6 +1148,27 @@ input:focus-visible {
     object-fit: cover;
     cursor: zoom-in;
     background: var(--surface);
+}
+
+/* 缩略图放大预览：铺满视口的半透明遮罩，居中显示原图，点击任意处或 Esc 关闭。 */
+.image-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    background: rgba(0, 0, 0, 0.72);
+    cursor: zoom-out;
+}
+
+.image-lightbox-full {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
 }
 
 .desktop-root .activity-stack {
@@ -1221,6 +1242,46 @@ input:focus-visible {
     white-space: nowrap;
 }
 
+.desktop-root .activity-stack-view-switch {
+    display: inline-grid;
+    grid-template-columns: repeat(2, 21px);
+    flex: none;
+    height: 24px;
+    align-items: center;
+    padding: 1px;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-sm);
+    background: var(--surface-inset);
+}
+
+.desktop-root .activity-stack-view-option {
+    display: grid;
+    width: 21px;
+    height: 20px;
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+}
+
+.desktop-root .activity-stack-view-option:hover {
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--text-tertiary) 10%, transparent);
+}
+
+.desktop-root .activity-stack-view-option.active {
+    background: var(--surface-raised);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 18%);
+    color: var(--primary);
+}
+
+.desktop-root .activity-stack-view-option .codicon {
+    font-size: 12px;
+}
+
 .desktop-root .activity-stack-summary::after {
     content: "";
     width: 6px;
@@ -1245,13 +1306,88 @@ input:focus-visible {
     background: color-mix(in srgb, var(--surface-raised) 45%, transparent);
 }
 
-.desktop-root .activity-stack-content>.thinking-panel,
-.desktop-root .activity-stack-content>.tool-card,
-.desktop-root .activity-stack-content>.subagent-panel {
+.desktop-root .activity-stack-content>.activity-item {
+    display: contents;
+}
+
+.desktop-root .activity-stack-content>.activity-item>.thinking-panel,
+.desktop-root .activity-stack-content>.activity-item>.tool-card,
+.desktop-root .activity-stack-content>.activity-item>.subagent-panel {
     width: 100%;
     margin: 0;
     border-radius: var(--radius-sm);
     background: var(--surface-inset);
+}
+
+/* 横向瀑布图：按统一序号把不同类型的活动投影到平行泳道，详情区保持原交互。 */
+.desktop-root .activity-waterfall {
+    display: none;
+}
+
+.desktop-root .activity-stack[data-view="waterfall"]>.activity-waterfall {
+    display: grid;
+    gap: 4px;
+    overflow-x: auto;
+    padding: 7px 10px 8px;
+    border-top: 1px solid var(--hairline);
+    background: color-mix(in srgb, var(--surface-inset) 48%, transparent);
+    scrollbar-width: thin;
+}
+
+.desktop-root .activity-waterfall-lane {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr);
+    min-width: 220px;
+    align-items: center;
+    gap: 7px;
+}
+
+.desktop-root .activity-waterfall-label {
+    overflow: hidden;
+    color: var(--text-tertiary);
+    font-size: 9px;
+    font-weight: 560;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.desktop-root .activity-waterfall-track {
+    display: grid;
+    min-height: 7px;
+    grid-template-columns: repeat(var(--activity-columns, 1), minmax(12px, 1fr));
+    gap: 3px;
+    align-items: center;
+}
+
+.desktop-root .activity-waterfall-segment {
+    width: 100%;
+    height: 6px;
+    border-radius: 2px;
+    background: var(--text-tertiary);
+    opacity: 0.9;
+}
+
+.desktop-root .activity-waterfall-lane[data-kind="thinking"] .activity-waterfall-segment {
+    background: var(--primary);
+}
+
+.desktop-root .activity-waterfall-lane[data-kind="tool"] .activity-waterfall-segment {
+    background: var(--warning);
+}
+
+.desktop-root .activity-waterfall-lane[data-kind="subagent"] .activity-waterfall-segment {
+    background: color-mix(in srgb, var(--success) 78%, var(--primary));
+}
+
+.desktop-root .activity-waterfall-segment.is-ok,
+.desktop-root .activity-waterfall-segment[data-state="done"] {
+    box-shadow: inset -4px 0 0 var(--success);
+}
+
+.desktop-root .activity-waterfall-segment.is-fail,
+.desktop-root .activity-waterfall-segment[data-state="cancelled"] {
+    box-shadow: inset -4px 0 0 var(--danger);
 }
 
 .desktop-root .delivered-artifacts {

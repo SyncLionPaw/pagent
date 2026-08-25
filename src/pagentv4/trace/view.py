@@ -11,6 +11,7 @@ from pathlib import Path
 
 from ..core.message import (
     AudioUrl,
+    ImageAttachment,
     ImageUrl,
     Message,
     Messages,
@@ -50,7 +51,7 @@ def message_kind(message: Message) -> str:
         return "tool_call"
     if isinstance(content, ToolResult):
         return "tool_result"
-    if isinstance(content, ImageUrl):
+    if isinstance(content, (ImageUrl, ImageAttachment)):
         return "image"
     if isinstance(content, AudioUrl):
         return "audio"
@@ -73,6 +74,8 @@ def render_message_body(message: Message) -> str:
         return f"tool_call_id: {content.tool_call_id}\n\n{content.text}"
     if isinstance(content, ImageUrl):
         return content.url
+    if isinstance(content, ImageAttachment):
+        return f"original: {content.original_path}\nmodel: {content.model_path}"
     if isinstance(content, AudioUrl):
         return f"{content.url}\n\n{content.text}"
     return str(content)

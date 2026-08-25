@@ -62,6 +62,7 @@ from pagentv4 import (
 from pagentv4.adapters.acp import encode_event_line, json_value
 from pagentv4.core.context_limit import DEFAULT_CONTEXT_LIMIT, resolve_context_limit
 from pagentv4.core.message import (
+    ImageAttachment,
     ImageUrl,
     TextChunk,
     ThinkingChunk,
@@ -71,6 +72,11 @@ from pagentv4.core.message import (
 from pagentv4.core.turn_result import TurnResult
 from pagentv4.ithread import SPEC_FILENAME, ThreadSpec
 from pagentv4.paths import resolve_pagent_home
+from pagentv4.runtime.images import (
+    ImageInput,
+    attachment_data_url,
+    migrate_inline_images,
+)
 from pagentv4.runtime.thread import Thread, default_threads_root
 
 from .clean import clean_pagent, format_clean_report, iter_thread_dirs
@@ -166,6 +172,23 @@ def parse_command(line: str) -> dict | None:
     return command
 
 
+def parse_image_inputs(value) -> list[str | ImageInput]:
+    if not isinstance(value, list):
+        return []
+    images: list[str | ImageInput] = []
+    for item in value:
+        if isinstance(item, str):
+            images.append(item)
+            continue
+        if not isinstance(item, dict):
+            continue
+        original_url = item.get("original_url")
+        model_url = item.get("model_url")
+        if isinstance(original_url, str) and isinstance(model_url, str):
+            images.append(ImageInput(original_url=original_url, model_url=model_url))
+    return images
+
+
 def emit_permit_request(event: ToolCallBegin) -> None:
     """需审批的工具：在 ToolCallBegin 之后补发一条审批请求，让前端弹批准/拒绝。
 
@@ -184,7 +207,7 @@ def emit_permit_request(event: ToolCallBegin) -> None:
     emit_line(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
-def history_message_items(messages) -> list[dict]:
+def history_message_items(messages, thread=None) -> list[dict]:
     """把 Messages 规整成前端易渲染的简单数组，供 HistoryReplay 回放。
 
     每个 Message 存一个 content chunk（流式 text/thinking 已在存储层合并成一行），
@@ -205,6 +228,16 @@ def history_message_items(messages) -> list[dict]:
             out.append({"kind": "text", "role": message.role, "text": content.text})
         elif isinstance(content, ImageUrl):
             out.append({"kind": "image", "role": message.role, "url": content.url})
+        elif isinstance(content, ImageAttachment):
+            if thread is None:
+                raise ValueError("thread is required to replay image attachments")
+            out.append(
+                {
+                    "kind": "image",
+                    "role": message.role,
+                    "url": attachment_data_url(thread, content, original=True),
+                }
+            )
         elif isinstance(content, ThinkingChunk):
             out.append({"kind": "thinking", "role": message.role, "text": content.text})
         elif isinstance(content, ToolCall):
@@ -238,7 +271,7 @@ def history_message_items(messages) -> list[dict]:
 
 def history_messages(runner) -> list[dict]:
     """把 runner.messages 规整成前端易渲染的简单数组。"""
-    return history_message_items(runner.messages)
+    return history_message_items(runner.messages, runner.thread)
 
 
 def emit_history_replay_payload(
@@ -295,7 +328,10 @@ def emit_thread_history_replay(thread, project_path: str | None = None) -> None:
     bound = getattr(thread, "project_path", None)
     resolved = project_path or (str(bound) if bound is not None else "")
     messages = thread.load_messages()
+    changed = migrate_inline_images(messages, thread)
     if messages.complete_orphan_tool_results():
+        changed = True
+    if changed:
         store = thread.open_store()
         store.save(thread.messages_conversation_id, messages)
         close = getattr(store, "close", None)
@@ -309,7 +345,7 @@ def emit_thread_history_replay(thread, project_path: str | None = None) -> None:
         thread_id=thread.id,
         title=metainfo.get("title", ""),
         project_path=resolved,
-        messages=history_message_items(messages),
+        messages=history_message_items(messages, thread),
         usage=usage if isinstance(usage, dict) else None,
         context_limit=limit,
     )
@@ -1000,7 +1036,7 @@ async def run_user_turn(
     state: dict,
     *,
     generate_title: bool = False,
-    images: list[str] | None = None,
+    images: list[str | ImageInput] | None = None,
 ) -> None:
     """跑一轮 Agent，事件逐行透传 stdout；需审批工具补发 PermitRequest。"""
     ask_permit = not config.permission_auto()
@@ -1383,10 +1419,7 @@ async def handle_command(command: dict, runner, config: ReplConfig, state: dict)
         if not isinstance(text, str):
             log("[wire] user command missing text")
             return runner
-        raw_images = command.get("images")
-        images = []
-        if isinstance(raw_images, list):
-            images = [item for item in raw_images if isinstance(item, str)]
+        images = parse_image_inputs(command.get("images"))
         if not text.strip() and not images:
             log("[wire] user command missing text")
             return runner

@@ -26,6 +26,7 @@ from .events import (
 from .message import (
     AssistantChunk,
     AudioUrl,
+    ImageAttachment,
     ImageUrl,
     Message,
     Messages,
@@ -66,6 +67,7 @@ __all__ = [
     "DeepSeek",
     "Event",
     "FunctionTool",
+    "ImageAttachment",
     "ImageUrl",
     "Kimi",
     "LongCat",

@@ -44,6 +44,7 @@ import type {
   SandboxTreeNode,
   ThreadMeta,
   ThreadSummary,
+  UserImageInput,
   WireEvent,
 } from "../shared/protocol";
 import {
@@ -1447,14 +1448,18 @@ ipcMain.handle("desktop:delete-thread", async (_event, threadId: string) => {
 });
 ipcMain.handle(
   "desktop:send-user-input",
-  async (_event, text: string, images?: string[]) => {
+  async (_event, text: string, images?: UserImageInput[]) => {
     clearLastError();
     const activeBridge = ensureBridge();
     if (!activeBridge) {
       return;
     }
     const imageList = Array.isArray(images)
-      ? images.filter((item): item is string => typeof item === "string")
+      ? images.filter(
+        (item): item is UserImageInput =>
+          typeof item?.original_url === "string" &&
+          typeof item?.model_url === "string",
+      )
       : [];
     activeBridge.send({
       cmd: "user",

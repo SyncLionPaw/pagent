@@ -249,6 +249,27 @@ body {
   cursor: zoom-in;
 }
 
+/* 缩略图放大预览：铺满视口的半透明遮罩，居中显示原图，点击任意处或 Esc 关闭。 */
+.image-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: rgba(0, 0, 0, 0.72);
+  cursor: zoom-out;
+}
+
+.image-lightbox-full {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+}
+
 .bubble.assistant.error,
 .bubble.error {
   border: 1px solid var(--vscode-errorForeground, var(--vscode-testing-iconFailed, var(--vscode-panel-border)));

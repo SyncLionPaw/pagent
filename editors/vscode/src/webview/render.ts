@@ -30,6 +30,36 @@ export type WireEventMessage = {
   params: Record<string, unknown>;
 };
 
+export type ActivityView = "stack" | "waterfall";
+type ActivityKind = "thinking" | "tool" | "subagent";
+
+function activityViewLabel(view: ActivityView): string {
+  return view === "waterfall" ? "执行轨迹" : "执行过程";
+}
+
+function activityKindLabel(kind: ActivityKind): string {
+  if (kind === "thinking") {
+    return "思考";
+  }
+  if (kind === "tool") {
+    return "工具";
+  }
+  return "子 Agent";
+}
+
+function activitySegmentFor(item: Element): HTMLElement | undefined {
+  const index = item.getAttribute("data-activity-index");
+  const stack = item.closest(".activity-stack");
+  if (!index || !stack) {
+    return undefined;
+  }
+  return (
+    stack.querySelector<HTMLElement>(
+      `.activity-waterfall-segment[data-activity-index="${index}"]`,
+    ) ?? undefined
+  );
+}
+
 type SubagentPanel = {
   root: HTMLElement;
   icon: HTMLElement;
@@ -41,11 +71,15 @@ type SubagentPanel = {
 const STICK_THRESHOLD_PX = 80;
 // Markdown 增量渲染节流间隔（ms）：降低 marked + DOMPurify 高频重跑造成的布局抖动。
 const MARKDOWN_RENDER_INTERVAL_MS = 48;
-const MESSAGE_COLLAPSED_HEIGHT_PX = 240;
+// 正文超过这个高度（px）才补折叠开关，避免略长的回复也被折叠；
+// 折叠后展示的高度由 style.css 的 .message-collapsible.is-collapsed 控制。
+const MESSAGE_COLLAPSE_TRIGGER_PX = 640;
 
 type ChatRendererOptions = {
   collapseMessages?: boolean;
   stackActivities?: boolean;
+  activityView?: ActivityView;
+  onActivityViewChange?: (view: ActivityView) => void;
   activityIcon?: () => HTMLElement;
   onArtifactOpen?: (path: string) => void;
   onEditUserMessage?: (text: string) => void;
@@ -99,10 +133,12 @@ export class ChatRenderer {
   // 当前主回复前的 thinking / tool / subagent 统一收进一个可折叠过程堆栈。
   private activityStack: HTMLDetailsElement | undefined;
   private activityContent: HTMLElement | undefined;
+  private activityTracks = new Map<ActivityKind, HTMLElement>();
   private activityMeta: HTMLElement | undefined;
   private activityCount = 0;
   private activityToolCount = 0;
   private activityThinkingCount = 0;
+  private activityView: ActivityView;
   private assistantTurnLabeled = false;
   private assistantTurnTexts: string[] = [];
   private assistantTurnTimestamp: Date | null = null;
@@ -113,7 +149,32 @@ export class ChatRenderer {
     private readonly onPermit?: (toolCallId: string, approved: boolean) => void,
     private readonly options: ChatRendererOptions = {},
   ) {
+    this.activityView = options.activityView ?? "stack";
+    this.root.dataset.activityView = this.activityView;
     this.showEmptyState();
+  }
+
+  setActivityView(view: ActivityView): void {
+    this.activityView = view;
+    this.root.dataset.activityView = view;
+    this.root.querySelectorAll<HTMLDetailsElement>(".activity-stack").forEach(
+      (stack) => {
+        stack.dataset.view = view;
+        const label = stack.querySelector<HTMLElement>(
+          ":scope > .activity-stack-summary > .activity-stack-label",
+        );
+        if (label) {
+          label.textContent = activityViewLabel(view);
+        }
+      },
+    );
+    this.root
+      .querySelectorAll<HTMLButtonElement>(".activity-stack-view-option")
+      .forEach((button) => {
+        const active = button.dataset.activityView === view;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
   }
 
   /** 追加一条用户气泡，并立刻挂出“思考中”占位（发出即有反馈）。 */
@@ -172,6 +233,7 @@ export class ChatRenderer {
     this.subagentPanels.clear();
     this.activityStack = undefined;
     this.activityContent = undefined;
+    this.activityTracks.clear();
     this.activityMeta = undefined;
     this.activityCount = 0;
     this.activityToolCount = 0;
@@ -653,7 +715,7 @@ export class ChatRenderer {
     this.markdownShouldStick = false;
   }
 
-  private activityHost(kind: "thinking" | "tool" | "subagent"): HTMLElement {
+  private activityHost(kind: ActivityKind): HTMLElement {
     if (!this.options.stackActivities) {
       return this.root;
     }
@@ -666,6 +728,7 @@ export class ChatRenderer {
       }
       const stack = document.createElement("details");
       stack.className = "activity-stack";
+      stack.dataset.view = this.activityView;
       stack.open = true;
 
       const summary = document.createElement("summary");
@@ -677,14 +740,33 @@ export class ChatRenderer {
       icon.classList.add("activity-stack-icon");
       const label = document.createElement("span");
       label.className = "activity-stack-label";
-      label.textContent = "执行过程";
+      label.textContent = activityViewLabel(this.activityView);
       const meta = document.createElement("span");
       meta.className = "activity-stack-meta";
-      summary.append(icon, label, meta);
-
+      const viewSwitch = this.makeActivityViewSwitch();
+      summary.append(icon, label, meta, viewSwitch);
       const content = document.createElement("div");
       content.className = "activity-stack-content";
-      stack.append(summary, content);
+      const waterfall = document.createElement("div");
+      waterfall.className = "activity-waterfall";
+      for (const laneKind of [
+        "thinking",
+        "tool",
+        "subagent",
+      ] satisfies ActivityKind[]) {
+        const lane = document.createElement("div");
+        lane.className = "activity-waterfall-lane";
+        lane.dataset.kind = laneKind;
+        const laneLabel = document.createElement("span");
+        laneLabel.className = "activity-waterfall-label";
+        laneLabel.textContent = activityKindLabel(laneKind);
+        const track = document.createElement("div");
+        track.className = "activity-waterfall-track";
+        lane.append(laneLabel, track);
+        waterfall.appendChild(lane);
+        this.activityTracks.set(laneKind, track);
+      }
+      stack.append(summary, waterfall, content);
       this.root.appendChild(stack);
       this.activityStack = stack;
       this.activityContent = content;
@@ -698,7 +780,59 @@ export class ChatRenderer {
       this.activityThinkingCount += 1;
     }
     this.updateActivityMeta();
-    return this.activityContent;
+    const item = document.createElement("div");
+    item.className = "activity-item";
+    item.dataset.kind = kind;
+    item.dataset.activityIndex = String(this.activityCount);
+    this.activityContent.appendChild(item);
+    const segment = document.createElement("span");
+    segment.className = "activity-waterfall-segment";
+    segment.dataset.activityIndex = String(this.activityCount);
+    segment.title = activityKindLabel(kind);
+    segment.style.gridColumnStart = String(this.activityCount);
+    this.activityTracks.get(kind)?.appendChild(segment);
+    this.activityStack?.style.setProperty(
+      "--activity-columns",
+      String(this.activityCount),
+    );
+    return item;
+  }
+
+  private makeActivityViewSwitch(): HTMLElement {
+    const control = document.createElement("div");
+    control.className = "activity-stack-view-switch";
+    control.setAttribute("role", "group");
+    control.setAttribute("aria-label", "执行过程展示方式");
+    const views: Array<{
+      view: ActivityView;
+      icon: string;
+      title: string;
+    }> = [
+        { view: "stack", icon: "codicon-list-tree", title: "折叠列表" },
+        { view: "waterfall", icon: "codicon-graph-line", title: "横向瀑布图" },
+      ];
+    for (const { view, icon, title } of views) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "activity-stack-view-option";
+      button.dataset.activityView = view;
+      button.title = title;
+      button.setAttribute("aria-label", title);
+      button.setAttribute("aria-pressed", String(this.activityView === view));
+      button.classList.toggle("active", this.activityView === view);
+      const glyph = document.createElement("i");
+      glyph.className = `codicon ${icon}`;
+      glyph.setAttribute("aria-hidden", "true");
+      button.appendChild(glyph);
+      button.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.setActivityView(view);
+        this.options.onActivityViewChange?.(view);
+      });
+      control.appendChild(button);
+    }
+    return control;
   }
 
   private updateActivityMeta(): void {
@@ -729,6 +863,7 @@ export class ChatRenderer {
     this.collapseActivityStack();
     this.activityStack = undefined;
     this.activityContent = undefined;
+    this.activityTracks.clear();
     this.activityMeta = undefined;
     this.activityCount = 0;
     this.activityToolCount = 0;
@@ -748,7 +883,7 @@ export class ChatRenderer {
     this.finishActivityStack();
   }
 
-  /** 新建一张工具卡片（折叠，默认展开）：标题工具名，展开区显示参数，末尾留结果占位。 */
+  /** 新建一张工具卡片（折叠，默认展开）：标题工具名，展开区显示参数与结果。 */
   private addToolCard(id: string, name: string, args: string): void {
     this.sealAssistantBubble();
     this.finishReasoningSegment();
@@ -795,6 +930,10 @@ export class ChatRenderer {
     body.appendChild(resultSlot);
 
     details.append(summary, body);
+    const segment = activitySegmentFor(parent);
+    if (segment) {
+      segment.title = name || "工具";
+    }
     const stick = this.isNearBottom();
     parent.appendChild(details);
     if (id) {
@@ -913,6 +1052,10 @@ export class ChatRenderer {
           ok ? "完成" : "失败",
         );
       }
+      const item = details.closest(".activity-item");
+      item?.classList.add(ok ? "is-ok" : "is-fail");
+      const segment = item ? activitySegmentFor(item) : undefined;
+      segment?.classList.add(ok ? "is-ok" : "is-fail");
     }
     if (this.isNearBottom()) {
       this.forceScrollToBottom();
@@ -1235,7 +1378,7 @@ export class ChatRenderer {
       return;
     }
     requestAnimationFrame(() => {
-      if (!body.isConnected || body.scrollHeight <= MESSAGE_COLLAPSED_HEIGHT_PX) {
+      if (!body.isConnected || body.scrollHeight <= MESSAGE_COLLAPSE_TRIGGER_PX) {
         return;
       }
       const bubble = body.parentElement;
@@ -1655,9 +1798,52 @@ function appendBubbleImages(body: HTMLElement, images: string[]): void {
     img.src = url;
     img.alt = "用户上传图片";
     img.loading = "lazy";
+    img.addEventListener("click", () => openImageLightbox(url));
     gallery.appendChild(img);
   }
   body.appendChild(gallery);
+}
+
+// 点击气泡里的缩略图后弹出的放大预览。全局单例，避免重复叠加多层遮罩；
+// 点击遮罩任意处或按 Esc 关闭。
+let imageLightbox: HTMLElement | undefined;
+let lightboxKeyHandler: ((event: KeyboardEvent) => void) | undefined;
+
+function openImageLightbox(url: string): void {
+  closeImageLightbox();
+
+  const overlay = document.createElement("div");
+  overlay.className = "image-lightbox";
+
+  const full = document.createElement("img");
+  full.className = "image-lightbox-full";
+  full.src = url;
+  full.alt = "图片预览";
+  overlay.appendChild(full);
+
+  overlay.addEventListener("click", closeImageLightbox);
+
+  const onKeydown = (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+      closeImageLightbox();
+    }
+  };
+  document.addEventListener("keydown", onKeydown);
+  lightboxKeyHandler = onKeydown;
+
+  document.body.appendChild(overlay);
+  imageLightbox = overlay;
+}
+
+function closeImageLightbox(): void {
+  if (lightboxKeyHandler) {
+    document.removeEventListener("keydown", lightboxKeyHandler);
+    lightboxKeyHandler = undefined;
+  }
+  if (imageLightbox) {
+    imageLightbox.remove();
+    imageLightbox = undefined;
+  }
 }
 
 function setSubagentState(
@@ -1667,6 +1853,10 @@ function setSubagentState(
 ): void {
   void text;
   panel.root.dataset.state = state;
+  const item = panel.root.closest(".activity-item");
+  item?.setAttribute("data-state", state);
+  const segment = item ? activitySegmentFor(item) : undefined;
+  segment?.setAttribute("data-state", state);
   if (state === "running") {
     panel.icon.className = "codicon codicon-loading codicon-modifier-spin";
     return;

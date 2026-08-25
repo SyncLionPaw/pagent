@@ -1,10 +1,21 @@
 """CodeRunner 单测：conversation 和 sandbox 都必须挂在 Thread 上。"""
 
+import base64
 import types
 
 import pytest
 
-from pagentv4 import Agent, CodeAgent, CodeRunner, RunEnd, TextDelta, Thread, tool
+from pagentv4 import (
+    Agent,
+    CodeAgent,
+    CodeRunner,
+    ImageAttachment,
+    ImageInput,
+    RunEnd,
+    TextDelta,
+    Thread,
+    tool,
+)
 from pagentv4.core.tool import FunctionTool
 
 
@@ -96,6 +107,11 @@ def schema_names(agent: Agent) -> set[str]:
     return {item["function"]["name"] for item in agent.tool_schemas}
 
 
+def image_data_url(payload: bytes) -> str:
+    encoded = base64.b64encode(payload).decode("ascii")
+    return f"data:image/png;base64,{encoded}"
+
+
 def test_code_agent_alias_points_to_code_runner():
     assert CodeAgent is CodeRunner
 
@@ -151,6 +167,39 @@ async def test_code_runner_create_opens_thread_and_sandbox(
     assert (tmp_path / "code-test" / "messages.jsonl").is_file()
     await runner.close()
     assert fake_sandbox[0].closed is True
+
+
+@pytest.mark.asyncio
+async def test_code_runner_persists_image_refs_and_sends_model_variant(
+    tmp_path, fake_sandbox
+):
+    provider = FakeProvider([[FakeStreamChunk(content="seen")]])
+    runner = await CodeRunner.create(
+        Agent(provider),
+        thread_id="image-ref",
+        root=tmp_path,
+        backend="local",
+    )
+    original_url = image_data_url(b"original")
+    model_url = image_data_url(b"scaled")
+
+    texts = [
+        text
+        async for text in runner.run(
+            "inspect",
+            return_type="text",
+            images=[ImageInput(original_url=original_url, model_url=model_url)],
+        )
+    ]
+
+    assert texts == ["seen"]
+    assert isinstance(runner.messages.data[2].content, ImageAttachment)
+    provider_parts = provider.calls[0]["messages"][1]["content"]
+    assert provider_parts[1]["image_url"]["url"] == model_url
+    messages_jsonl = runner.thread.messages_storage_path.read_text()
+    assert '"type":"image_attachment"' in messages_jsonl
+    assert "base64" not in messages_jsonl
+    await runner.close()
 
 
 @pytest.mark.asyncio

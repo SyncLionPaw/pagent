@@ -178,6 +178,11 @@ export type DesktopEvent =
     | { type: "wireEvent"; event: WireEvent }
     | { type: "log"; text: string };
 
+export type UserImageInput = {
+    original_url: string;
+    model_url: string;
+};
+
 export type DesktopApi = {
     getAppInfo(): Promise<AppInfo>;
     getRuntimeState(): Promise<RuntimeState>;
@@ -203,7 +208,7 @@ export type DesktopApi = {
     completeOnboarding(options?: { preferredBackend?: "local" | "container" | "ssh"; skipped?: boolean }): Promise<void>;
     resumeThread(threadId: string): Promise<void>;
     deleteThread(threadId: string): Promise<boolean>;
-    sendUserInput(text: string, images?: string[]): Promise<void>;
+    sendUserInput(text: string, images?: UserImageInput[]): Promise<void>;
     clearLastError(): Promise<void>;
     resetSession(options?: ResetSessionOptions): Promise<void>;
     requestHistoryReplay(): Promise<void>;

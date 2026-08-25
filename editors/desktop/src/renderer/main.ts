@@ -1,4 +1,7 @@
-import { ChatRenderer } from "../../../vscode/src/webview/render";
+import {
+  ChatRenderer,
+  type ActivityView,
+} from "../../../vscode/src/webview/render";
 import { ContextUsageRing } from "../../../vscode/src/webview/context-usage";
 import { INSTALL_COMMANDS, bindHealthPanel, renderHealthPanel } from "./environment-health";
 import { mountOnboarding } from "./onboarding";
@@ -47,6 +50,7 @@ import type {
   ThreadMeta,
   ThreadSummary,
   ToolSummary,
+  UserImageInput,
   WireEvent,
 } from "../shared/protocol";
 import { renderIcon, renderWechatIcon, type DesktopIconName } from "./icons";
@@ -60,6 +64,7 @@ const RIGHT_PANE_WIDTH_PX = 352;
 const RIGHT_PANE_MIN_WIDTH_PX = 300;
 const RIGHT_PANE_MAX_WIDTH_RATIO = 0.45;
 const LEFT_SPLIT_RATIO_KEY = "pagent-desktop-left-split-ratio";
+const ACTIVITY_VIEW_KEY = "pagent-desktop-activity-view";
 const LEFT_SPLIT_MIN_RATIO = 0.2;
 const LEFT_SPLIT_MAX_RATIO = 0.8;
 
@@ -291,6 +296,13 @@ function readStoredLeftSplitRatio(): number {
     return 0.5;
   }
   return Math.min(LEFT_SPLIT_MAX_RATIO, Math.max(LEFT_SPLIT_MIN_RATIO, value));
+}
+
+function readStoredActivityView(): ActivityView {
+  const stored = window.localStorage.getItem(ACTIVITY_VIEW_KEY);
+  return stored === "waterfall" || stored === "timeline"
+    ? "waterfall"
+    : "stack";
 }
 
 function projectLabel(runtime: RuntimeState): string {
@@ -1860,6 +1872,7 @@ async function start(): Promise<void> {
     leftSplitRatio: readStoredLeftSplitRatio(),
     rightWidth: RIGHT_PANE_WIDTH_PX,
     activityState: "sleeping" as ActivityState,
+    activityView: readStoredActivityView(),
     providers: [] as ProviderOption[],
     activeProvider: undefined as ProviderIdentity | undefined,
     providerSwitching: false,
@@ -1915,6 +1928,11 @@ async function start(): Promise<void> {
     {
       collapseMessages: true,
       stackActivities: true,
+      activityView: uiState.activityView,
+      onActivityViewChange: (view) => {
+        uiState.activityView = view;
+        window.localStorage.setItem(ACTIVITY_VIEW_KEY, view);
+      },
       activityIcon: () => {
         const icon = document.createElement("span");
         icon.innerHTML = renderIcon("workflow");
@@ -3789,18 +3807,24 @@ async function start(): Promise<void> {
     await window.desktop.sendWireCommand({ cmd: "cancel" });
   }
 
-  // 待发送的图片附件：每项是一个 data:image/...;base64 的 URL。
-  const pendingImages: string[] = [];
+  // original_url 只用于用户界面与历史回放；model_url 是 canvas 派生的模型输入。
+  const pendingImages: UserImageInput[] = [];
   const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+  const MODEL_IMAGE_MAX_EDGE = 2048;
+  const MODEL_IMAGE_QUALITY = 0.92;
+  const MODEL_IMAGE_PASSTHROUGH_TYPES = new Set([
+    "image/gif",
+    "image/svg+xml",
+  ]);
 
   function renderAttachments(): void {
     attachmentStrip.hidden = pendingImages.length === 0;
     attachmentStrip.replaceChildren(
-      ...pendingImages.map((url, index) => {
+      ...pendingImages.map((image, index) => {
         const item = document.createElement("div");
         item.className = "composer-attachment";
         const thumb = document.createElement("img");
-        thumb.src = url;
+        thumb.src = image.original_url;
         thumb.alt = "待发送图片";
         const remove = document.createElement("button");
         remove.type = "button";
@@ -3818,7 +3842,37 @@ async function start(): Promise<void> {
     );
   }
 
-  function readImageFile(file: File): Promise<string | null> {
+  function resizeImageForModel(originalUrl: string, mime: string): Promise<string> {
+    if (MODEL_IMAGE_PASSTHROUGH_TYPES.has(mime)) {
+      return Promise.resolve(originalUrl);
+    }
+    return new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => {
+        const longestEdge = Math.max(image.naturalWidth, image.naturalHeight);
+        if (longestEdge <= MODEL_IMAGE_MAX_EDGE) {
+          resolve(originalUrl);
+          return;
+        }
+
+        const scale = MODEL_IMAGE_MAX_EDGE / longestEdge;
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext("2d");
+        if (!context) {
+          resolve(originalUrl);
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL(mime, MODEL_IMAGE_QUALITY));
+      };
+      image.onerror = () => resolve(originalUrl);
+      image.src = originalUrl;
+    });
+  }
+
+  function readImageFile(file: File): Promise<UserImageInput | null> {
     if (!file.type.startsWith("image/")) {
       return Promise.resolve(null);
     }
@@ -3828,8 +3882,15 @@ async function start(): Promise<void> {
     }
     return new Promise((resolve) => {
       const reader = new FileReader();
-      reader.onload = () =>
-        resolve(typeof reader.result === "string" ? reader.result : null);
+      reader.onload = async () => {
+        if (typeof reader.result !== "string") {
+          resolve(null);
+          return;
+        }
+        const originalUrl = reader.result;
+        const modelUrl = await resizeImageForModel(originalUrl, file.type);
+        resolve({ original_url: originalUrl, model_url: modelUrl });
+      };
       reader.onerror = () => resolve(null);
       reader.readAsDataURL(file);
     });
@@ -3837,9 +3898,9 @@ async function start(): Promise<void> {
 
   async function addImageFiles(files: Iterable<File>): Promise<void> {
     for (const file of files) {
-      const dataUrl = await readImageFile(file);
-      if (dataUrl) {
-        pendingImages.push(dataUrl);
+      const image = await readImageFile(file);
+      if (image) {
+        pendingImages.push(image);
       }
     }
     renderAttachments();
@@ -3854,7 +3915,10 @@ async function start(): Promise<void> {
     if (!text.trim() && images.length === 0) {
       return;
     }
-    chatRenderer.addUser(text, images);
+    chatRenderer.addUser(
+      text,
+      images.map((image) => image.original_url),
+    );
     promptInput.value = "";
     pendingImages.length = 0;
     renderAttachments();
